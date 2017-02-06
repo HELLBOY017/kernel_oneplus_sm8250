@@ -217,7 +217,9 @@ static void do_input_boost(struct work_struct *work)
 	unsigned int i, ret;
 	struct cpu_sync *i_sync_info;
 
-	cancel_delayed_work_sync(&input_boost_rem);
+	if (!input_boost_ms)
+		return;
+
 	if (sched_boost_active) {
 		sched_set_boost(0);
 		sched_boost_active = false;
