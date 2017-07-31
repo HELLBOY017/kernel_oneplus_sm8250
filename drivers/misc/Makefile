@@ -105,3 +105,5 @@ obj-$(CONFIG_SIM_DETECT)	+= sim_detect.o
 obj-$(CONFIG_OEM_QMI)	+= oem_qmi_client.o
 #endif
 obj-y                           += qrc/
+
+obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
