@@ -172,4 +172,9 @@ extern int sysctl_sched_assist_scene_handler(struct ctl_table *table, int write,
 	void __user *buffer, size_t *lenp, loff_t *ppos);
 #endif /* OPLUS_FEATURE_SCHED_ASSIST */
 
+#define LIB_PATH_LENGTH 512
+extern char sched_lib_name[LIB_PATH_LENGTH];
+extern unsigned int sched_lib_mask_check;
+extern unsigned int sched_lib_mask_force;
+
 #endif /* _LINUX_SCHED_SYSCTL_H */
