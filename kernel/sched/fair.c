@@ -7960,6 +7960,15 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	}
 
 	if (sd_flag & SD_BALANCE_WAKE) {
+		int _wake_cap = wake_cap(p, cpu, prev_cpu);
+		int _cpus_allowed = cpumask_test_cpu(cpu, &p->cpus_allowed);
+
+		if (sysctl_sched_sync_hint_enable && sync && _cpus_allowed &&
+		    !_wake_cap && cpu_rq(cpu)->nr_running == 1 &&
+		    cpu_is_in_target_set(p, cpu)) {
+			return cpu;
+		}
+
 		record_wakee(p);
 
 		if (static_branch_unlikely(&sched_energy_present)) {
@@ -7973,9 +7982,8 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			new_cpu = prev_cpu;
 		}
 
-		want_affine = !wake_wide(p, sibling_count_hint) &&
-			      !wake_cap(p, cpu, prev_cpu) &&
-			      cpumask_test_cpu(cpu, &p->cpus_allowed);
+		want_affine = !wake_wide(p, sibling_count_hint) && !_wake_cap &&
+			      _cpus_allowed;
 	}
 
 sd_loop:
