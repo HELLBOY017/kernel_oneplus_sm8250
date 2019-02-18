@@ -5072,7 +5072,7 @@ struct usbpd *usbpd_create(struct device *parent)
 	}
 	pd->is_otg_mode = false;
 
-	pd->wq = alloc_ordered_workqueue("usbpd_wq", WQ_FREEZABLE | WQ_HIGHPRI);
+	pd->wq = alloc_ordered_workqueue("usbpd_wq", WQ_FREEZABLE);
 	if (!pd->wq) {
 		ret = -ENOMEM;
 		if (pd->use_external_boost)
