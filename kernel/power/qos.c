@@ -377,10 +377,6 @@ static int pm_qos_update_target_cpus(struct pm_qos_constraints *c,
 	pm_qos_set_value(c, curr_value);
 	ret = pm_qos_set_value_for_cpus(req, c, &cpus, new_cpus, action);
 
-	spin_unlock(&pm_qos_lock);
-
-	trace_pm_qos_update_target(action, prev_value, curr_value);
-
 	/*
 	 * if cpu mask bits are set, call the notifier call chain
 	 * to update the new qos restriction for the cores
@@ -395,6 +391,10 @@ static int pm_qos_update_target_cpus(struct pm_qos_constraints *c,
 	} else {
 		ret = 0;
 	}
+	spin_unlock(&pm_qos_lock);
+
+	trace_pm_qos_update_target(action, prev_value, curr_value);
+
 	return ret;
 }
 
