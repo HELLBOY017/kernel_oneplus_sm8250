@@ -10189,6 +10189,7 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
 #ifdef CONFIG_OPLUS_FEATURE_VT_CAP
 	int cluster_id = topology_physical_package_id(cpu);
 #endif
+	bool update = false;
 
 	capacity *= arch_scale_max_freq_capacity(sd, cpu);
 	capacity >>= SCHED_CAPACITY_SHIFT;
@@ -10201,7 +10202,10 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
 		cpu_rq(cpu)->cpu_capacity_orig = capacity;
 	real_cpu_cap[cpu] = capacity;
 #else
-	cpu_rq(cpu)->cpu_capacity_orig = capacity;
+	if (cpu_rq(cpu)->cpu_capacity_orig != capacity) {
+		cpu_rq(cpu)->cpu_capacity_orig = capacity;
+		update = true;
+	}
 #endif
 
 #ifdef CONFIG_OPLUS_FEATURE_VT_CAP
@@ -10213,7 +10217,13 @@ static void update_cpu_capacity(struct sched_domain *sd, int cpu)
 	if (!capacity)
 		capacity = 1;
 
-	cpu_rq(cpu)->cpu_capacity = capacity;
+	if (cpu_rq(cpu)->cpu_capacity != capacity) {
+		cpu_rq(cpu)->cpu_capacity = capacity;
+		update = true;
+	}
+	if (update)
+		trace_sched_capacity_update(cpu);
+
 	sdg->sgc->capacity = capacity;
 	sdg->sgc->min_capacity = capacity;
 	sdg->sgc->max_capacity = capacity;
