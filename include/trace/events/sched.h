@@ -2016,6 +2016,26 @@ TRACE_EVENT(game_opt_info,
 );
 #endif
 
+#ifndef CONFIG_SCHED_WALT
+
+TRACE_EVENT(sched_set_boost,
+
+	TP_PROTO(int type),
+
+	TP_ARGS(type),
+
+	TP_STRUCT__entry(
+		__field(int, type			)
+	),
+
+	TP_fast_assign(
+		__entry->type = type;
+	),
+
+	TP_printk("type %d", __entry->type)
+);
+#endif /*CONFIG_SCHED_WALT*/
+
 #include "walt.h"
 #endif /* CONFIG_SMP */
 #endif /* _TRACE_SCHED_H */
