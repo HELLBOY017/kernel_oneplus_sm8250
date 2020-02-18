@@ -137,7 +137,12 @@ all.config
 kernel/configs/android-*.cfg
 
 # Build script
-horizon_build.sh
+build.sh
 
 # Output dir
 out
+
+#
+#Ignoring Android.bp link file
+#
+Android.bp
