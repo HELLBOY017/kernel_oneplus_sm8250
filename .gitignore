@@ -141,3 +141,9 @@ build.sh
 
 # Ignore out directory
 out/
+
+#
+#Ignoring Android.bp link file
+#
+Android.bp
+
