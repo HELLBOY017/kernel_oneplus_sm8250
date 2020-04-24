@@ -174,6 +174,7 @@ static void update_general_status(struct f2fs_sb_info *sbi)
 	si->free_nids = NM_I(sbi)->nid_cnt[FREE_NID];
 	si->avail_nids = NM_I(sbi)->available_nids;
 	si->alloc_nids = NM_I(sbi)->nid_cnt[PREALLOC_NID];
+	si->gc_booster = sbi->gc_booster;
 	si->io_skip_bggc = sbi->io_skip_bggc;
 	si->other_skip_bggc = sbi->other_skip_bggc;
 	si->util_free = (int)(free_user_blocks(sbi) >> sbi->log_blocks_per_seg)
@@ -484,8 +485,8 @@ static int stat_show(struct seq_file *s, void *v)
 		seq_printf(s, "  - Total : %4d\n", si->nr_total_ckpt);
 		seq_printf(s, "  - Cur time : %4d(ms)\n", si->cur_ckpt_time);
 		seq_printf(s, "  - Peak time : %4d(ms)\n", si->peak_ckpt_time);
-		seq_printf(s, "GC calls: %d (BG: %d)\n",
-			   si->call_count, si->bg_gc);
+		seq_printf(s, "GC calls: %d (BG: %d) (Boost: %d)\n",
+			   si->call_count, si->bg_gc, si->gc_booster);
 		seq_printf(s, "  - data segments : %d (%d)\n",
 				si->data_segs, si->bg_data_segs);
 		seq_printf(s, "  - node segments : %d (%d)\n",

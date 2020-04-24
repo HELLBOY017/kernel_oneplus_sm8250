@@ -559,6 +559,11 @@ out:
 		sbi->gc_remaining_trials = t;
 		spin_unlock(&sbi->gc_remaining_trials_lock);
 
+	if (!strcmp(a->attr.name, "gc_booster")) {
+		sbi->gc_booster = !!t;
+		return count;
+	}
+
 		return count;
 	}
 
@@ -820,6 +825,7 @@ F2FS_RW_ATTR(GC_THREAD, f2fs_gc_kthread, gc_max_sleep_time, max_sleep_time);
 F2FS_RW_ATTR(GC_THREAD, f2fs_gc_kthread, gc_no_gc_sleep_time, no_gc_sleep_time);
 F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, gc_idle, gc_mode);
 F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, gc_urgent, gc_mode);
+F2FS_RW_ATTR(F2FS_SBI, f2fs_sb_info, gc_booster, gc_booster);
 F2FS_RW_ATTR(SM_INFO, f2fs_sm_info, reclaim_segments, rec_prefree_segments);
 F2FS_RW_ATTR(DCC_INFO, discard_cmd_control, max_small_discards, max_discards);
 F2FS_RW_ATTR(DCC_INFO, discard_cmd_control, max_discard_request, max_discard_request);
@@ -951,6 +957,7 @@ static struct attribute *f2fs_attrs[] = {
 	ATTR_LIST(gc_no_gc_sleep_time),
 	ATTR_LIST(gc_idle),
 	ATTR_LIST(gc_urgent),
+	ATTR_LIST(gc_booster),
 	ATTR_LIST(reclaim_segments),
 	ATTR_LIST(main_blkaddr),
 	ATTR_LIST(max_small_discards),
