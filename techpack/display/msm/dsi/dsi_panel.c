@@ -4892,6 +4892,8 @@ int dsi_panel_get_mode(struct dsi_panel *panel,
 			dsi_panel_parse_adfr(mode, utils);
 		}
 #endif
+		mode->splash_dms = of_property_read_bool(child_np,
+				"qcom,mdss-dsi-splash-dms-switch-to-this-timing");
 	}
 	goto done;
 
