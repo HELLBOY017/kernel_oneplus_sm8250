@@ -2239,7 +2239,7 @@ static inline unsigned long cpu_util_cum(int cpu, int delta)
 	return (delta >= capacity) ? capacity : delta;
 }
 
-#ifdef CONFIG_SCHED_TUNE
+#ifdef CONFIG_SCHED_WALT
 extern unsigned long stune_util(int cpu, unsigned long other_util,
 				struct sched_walt_cpu_load *walt_load);
 #endif
@@ -2660,7 +2660,7 @@ bool uclamp_boosted(struct task_struct *p);
  *
  * The utilization signals of all scheduling classes (CFS/RT/DL) and IRQ time
  * need to be aggregated differently depending on the usage made of them. This
- * enum is used within schedutil_freq_util() to differentiate the types of
+ * enum is used within schedutil_cpu_util() to differentiate the types of
  * utilization expected by the callers, and adjust the aggregation accordingly.
  */
 enum schedutil_type {
