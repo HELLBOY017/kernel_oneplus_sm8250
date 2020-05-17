@@ -87,7 +87,7 @@ config IOSCHED_ZEN
 choice
 
 	prompt "Default I/O scheduler"
-	default DEFAULT_MAPLE
+	default DEFAULT_CFQ
 	help
 	  Select the I/O scheduler which will be used by default for all
 	  block devices.
