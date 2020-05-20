@@ -61,6 +61,23 @@ cpu_boost_attr_rw(sched_boost_on_input);
 
 static bool sched_boost_active;
 
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+static int dynamic_stune_boost;
+show_one(dynamic_stune_boost);
+store_one(dynamic_stune_boost);
+cpu_boost_attr_rw(dynamic_stune_boost);
+
+static bool stune_boost_active;
+static int boost_slot;
+
+static unsigned int dynamic_stune_boost_ms = 40;
+show_one(dynamic_stune_boost_ms);
+store_one(dynamic_stune_boost_ms);
+cpu_boost_attr_rw(dynamic_stune_boost_ms);
+
+static struct delayed_work dynamic_stune_boost_rem;
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
+
 static struct delayed_work input_boost_rem;
 static u64 last_input_time;
 
@@ -212,6 +229,17 @@ static void do_input_boost_rem(struct work_struct *work)
 	}
 }
 
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+static void do_dynamic_stune_boost_rem(struct work_struct *work)
+{
+	/* Reset dynamic stune boost value to the default value */
+	if (stune_boost_active) {
+		reset_stune_boost("top-app", boost_slot);
+		stune_boost_active = false;
+	}
+}
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
+
 static void do_input_boost(struct work_struct *work)
 {
 	unsigned int i, ret;
@@ -220,10 +248,21 @@ static void do_input_boost(struct work_struct *work)
 	if (!input_boost_ms)
 		return;
 
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	cancel_delayed_work_sync(&dynamic_stune_boost_rem);
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
+	cancel_delayed_work_sync(&input_boost_rem);
 	if (sched_boost_active) {
 		sched_set_boost(0);
 		sched_boost_active = false;
 	}
+
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	if (stune_boost_active) {
+		reset_stune_boost("top-app", boost_slot);
+		stune_boost_active = false;
+	}
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 	/* Set the input_boost_min for all CPUs in the system */
 	pr_debug("Setting input boost min for all CPUs\n");
@@ -243,6 +282,16 @@ static void do_input_boost(struct work_struct *work)
 		else
 			sched_boost_active = true;
 	}
+
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	/* Set dynamic stune boost value */
+	ret = do_stune_boost("top-app", dynamic_stune_boost, &boost_slot);
+	if (!ret)
+		stune_boost_active = true;
+
+	queue_delayed_work(cpu_boost_wq, &dynamic_stune_boost_rem,
+					msecs_to_jiffies(dynamic_stune_boost_ms));
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 	queue_delayed_work(cpu_boost_wq, &input_boost_rem,
 					msecs_to_jiffies(input_boost_ms));
@@ -299,6 +348,11 @@ err2:
 
 static void cpuboost_input_disconnect(struct input_handle *handle)
 {
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	/* Reset dynamic stune boost value to the default value */
+	reset_stune_boost("top-app", boost_slot);
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
+
 	input_close_device(handle);
 	input_unregister_handle(handle);
 	kfree(handle);
@@ -350,6 +404,9 @@ static int cpu_boost_init(void)
 
 	INIT_WORK(&input_boost_work, do_input_boost);
 	INIT_DELAYED_WORK(&input_boost_rem, do_input_boost_rem);
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	INIT_DELAYED_WORK(&dynamic_stune_boost_rem, do_dynamic_stune_boost_rem);
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 	for_each_possible_cpu(cpu) {
 		s = &per_cpu(sync_info, cpu);
@@ -374,6 +431,16 @@ static int cpu_boost_init(void)
 				&sched_boost_on_input_attr.attr);
 	if (ret)
 		pr_err("Failed to create sched_boost_on_input node: %d\n", ret);
+
+#ifdef CONFIG_DYNAMIC_STUNE_BOOST
+	ret = sysfs_create_file(cpu_boost_kobj, &dynamic_stune_boost_attr.attr);
+	if (ret)
+		pr_err("Failed to create dynamic_stune_boost node: %d\n", ret);
+
+	ret = sysfs_create_file(cpu_boost_kobj, &dynamic_stune_boost_ms_attr.attr);
+	if (ret)
+		pr_err("Failed to create dynamic_stune_boost_ms node: %d\n", ret);
+#endif /* CONFIG_DYNAMIC_STUNE_BOOST */
 
 	ret = input_register_handler(&cpuboost_input_handler);
 	return 0;
