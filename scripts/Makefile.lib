@@ -253,35 +253,6 @@ cmd_gzip = (cat $(filter-out FORCE,$^) | gzip -n -f -9 > $@) || \
 
 # DTC
 # ---------------------------------------------------------------------------
-DTC ?= $(objtree)/scripts/dtc/dtc
-DTC_FLAGS += -Wno-interrupt_provider
-
-# Silence warnings
-DTC_FLAGS += -q
-
-# Disable noisy checks by default
-ifeq ($(findstring 1,$(KBUILD_ENABLE_EXTRA_GCC_CHECKS)),)
-DTC_FLAGS += -Wno-unit_address_vs_reg
-endif
-ifeq ($(DTC_EXT),)
-DTC_FLAGS += -Wno-simple_bus_reg \
-	-Wno-unit_address_format \
-	-Wno-avoid_unnecessary_addr_size \
-	-Wno-alias_paths \
-	-Wno-graph_child_address \
-	-Wno-graph_port \
-	-Wno-simple_bus_reg \
-	-Wno-unique_unit_address \
-	-Wno-pci_device_reg
-endif
-
-ifneq ($(findstring 2,$(KBUILD_ENABLE_EXTRA_GCC_CHECKS)),)
-DTC_FLAGS += -Wnode_name_chars_strict \
-	-Wproperty_name_chars_strict \
-	-Winterrupt_provider
-endif
-
-DTC_FLAGS += $(DTC_FLAGS_$(basetarget))
 
 # Generate an assembly file to wrap the output of the device tree compiler
 quiet_cmd_dt_S_dtb= DTB     $@

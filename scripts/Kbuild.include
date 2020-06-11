@@ -176,6 +176,20 @@ ld-version = $(shell $(LD) --version | $(srctree)/scripts/ld-version.sh)
 # Usage:  $(call ld-ifversion, -ge, 22252, y)
 ld-ifversion = $(shell [ $(ld-version) $(1) $(2) ] && echo $(3) || echo $(4))
 
+# dtc-option
+# Usage:  DTC_FLAGS += $(call dtc-option,-Wno-unit_address_vs_reg)
+#
+# When we use the external dtc, check if the desired options are supported.
+# When we use the kernel's copy (scripts/dtc/dtc), just use the fixed option.
+# Until Kbuild descends into the scripts/dtc/ directory, scripts/dtc/dtc may
+# not exist, i.e. $(call try-run,...) may not work.
+ifeq ("$(origin DTC)", "command line")
+dtc-option = $(call try-run,\
+	echo '/dts-v1/; / {};' | $(DTC) $(1),$(1),$(2))
+else
+dtc-option = $(1)
+endif
+
 ######
 
 ###
