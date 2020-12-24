@@ -168,6 +168,9 @@ extern int cpuset_get_cgrp_idx(struct task_struct *task);
 extern int cpuset_get_cgrp_idx_locked(struct task_struct *task);
 #endif
 
+void do_hp_cpuset(void);
+void do_lp_cpuset(void);
+
 #else /* !CONFIG_CPUSETS */
 
 static inline bool cpusets_enabled(void) { return false; }
