@@ -844,7 +844,8 @@ static void wake_oom_reaper(struct task_struct *tsk)
 
 static int __init oom_init(void)
 {
-	oom_reaper_th = kthread_run(oom_reaper, NULL, "oom_reaper");
+	oom_reaper_th = kthread_run_perf_critical(cpu_perf_mask, oom_reaper,
+					NULL, "oom_reaper");
 	return 0;
 }
 subsys_initcall(oom_init)
