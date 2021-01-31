@@ -374,7 +374,7 @@ unsigned char SelectDownload(UINT8 GyroSelect, UINT8 ActSelect, UINT8 MasterSlav
 
 	// 高速化対応Download
 TRACE("DataPM( %08x ), LengthPM( %08x ) , Parity( %08x ), DataDM( %08x ) , LengthDMA( %08x ) , LengthDMB( %08x ) \n"
-	, (int)ptr->DataPM , (int)ptr->LengthPM , (int)ptr->Parity , (int)ptr->DataDM , (int)ptr->LengthDMA , (int)ptr->LengthDMB );
+	, (uint64_t)ptr->DataPM , (int)ptr->LengthPM , (int)ptr->Parity , (uint64_t)ptr->DataDM , (int)ptr->LengthDMA , (int)ptr->LengthDMB );
 	return( DownloadToEP3( ptr->DataPM, ptr->LengthPM, ptr->Parity, ptr->DataDM, ptr->LengthDMA , ptr->LengthDMB ) ); 
 }
 
