@@ -40,8 +40,6 @@
 #include <linux/kernel.h>
 #include <asm/unaligned.h>
 
-#include "lz4armv8/lz4accel.h"
-
 /*-*****************************
  *	Decompression functions
  *******************************/
@@ -52,96 +50,6 @@
 #define assert(condition) ((void)0)
 #endif
 
-#ifndef LZ4_FAST_DEC_LOOP
-#if defined(__i386__) || defined(__x86_64__)
-#define LZ4_FAST_DEC_LOOP 1
-#elif defined(__aarch64__)
-     /* On aarch64, we disable this optimization for clang because on certain
-      * mobile chipsets and clang, it reduces performance. For more information
-      * refer to https://github.com/lz4/lz4/pull/707. */
-#define LZ4_FAST_DEC_LOOP 1
-#else
-#define LZ4_FAST_DEC_LOOP 0
-#endif
-#endif
-
-#if LZ4_FAST_DEC_LOOP
-#define FASTLOOP_SAFE_DISTANCE 64
-FORCE_O2_INLINE_GCC_PPC64LE void
-LZ4_memcpy_using_offset_base(BYTE * dstPtr, const BYTE * srcPtr, BYTE * dstEnd,
-			     const size_t offset)
-{
-	if (offset < 8) {
-		dstPtr[0] = srcPtr[0];
-
-		dstPtr[1] = srcPtr[1];
-		dstPtr[2] = srcPtr[2];
-		dstPtr[3] = srcPtr[3];
-		srcPtr += inc32table[offset];
-		memcpy(dstPtr + 4, srcPtr, 4);
-		srcPtr -= dec64table[offset];
-		dstPtr += 8;
-	} else {
-		memcpy(dstPtr, srcPtr, 8);
-		dstPtr += 8;
-		srcPtr += 8;
-	}
-
-	LZ4_wildCopy8(dstPtr, srcPtr, dstEnd);
-}
-
-/* customized variant of memcpy, which can overwrite up to 32 bytes beyond dstEnd
- * this version copies two times 16 bytes (instead of one time 32 bytes)
- * because it must be compatible with offsets >= 16. */
-FORCE_O2_INLINE_GCC_PPC64LE void
-LZ4_wildCopy32(void *dstPtr, const void *srcPtr, void *dstEnd)
-{
-	BYTE *d = (BYTE *) dstPtr;
-	const BYTE *s = (const BYTE *)srcPtr;
-	BYTE *const e = (BYTE *) dstEnd;
-
-	do {
-		memcpy(d, s, 16);
-		memcpy(d + 16, s + 16, 16);
-		d += 32;
-		s += 32;
-	} while (d < e);
-}
-
-FORCE_O2_INLINE_GCC_PPC64LE void
-LZ4_memcpy_using_offset(BYTE *dstPtr, const BYTE *srcPtr, BYTE *dstEnd,
-			const size_t offset)
-{
-	BYTE v[8];
-	switch (offset) {
-
-	case 1:
-		memset(v, *srcPtr, 8);
-		goto copy_loop;
-	case 2:
-		memcpy(v, srcPtr, 2);
-		memcpy(&v[2], srcPtr, 2);
-		memcpy(&v[4], &v[0], 4);
-		goto copy_loop;
-	case 4:
-		memcpy(v, srcPtr, 4);
-		memcpy(&v[4], srcPtr, 4);
-		goto copy_loop;
-	default:
-		LZ4_memcpy_using_offset_base(dstPtr, srcPtr, dstEnd, offset);
-		return;
-	}
-
-      copy_loop:
-	memcpy(dstPtr, v, 8);
-	dstPtr += 8;
-	while (dstPtr < dstEnd) {
-		memcpy(dstPtr, v, 8);
-		dstPtr += 8;
-	}
-}
-#endif
-
 /*
  * LZ4_decompress_generic() :
  * This generic decompression function covers all use cases.
@@ -149,11 +57,9 @@ LZ4_memcpy_using_offset(BYTE *dstPtr, const BYTE *srcPtr, BYTE *dstEnd,
  * Note that it is important for performance that this function really get inlined,
  * in order to remove useless branches during compilation optimization.
  */
-static FORCE_INLINE int __LZ4_decompress_generic(
+static FORCE_INLINE int LZ4_decompress_generic(
 	 const char * const src,
 	 char * const dst,
-	 const BYTE * ip,
-	 BYTE * op,
 	 int srcSize,
 		/*
 		 * If endOnInput == endOnInputSize,
@@ -174,26 +80,25 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 	 const size_t dictSize
 	 )
 {
-	const BYTE * const iend = src + srcSize;
+	const BYTE *ip = (const BYTE *) src;
+	const BYTE * const iend = ip + srcSize;
 
-	BYTE * const oend = dst + outputSize;
+	BYTE *op = (BYTE *) dst;
+	BYTE * const oend = op + outputSize;
 	BYTE *cpy;
 
-	const BYTE *const dictEnd = (const BYTE *)dictStart + dictSize;
+	const BYTE * const dictEnd = (const BYTE *)dictStart + dictSize;
+	static const unsigned int inc32table[8] = {0, 1, 2, 1, 0, 4, 4, 4};
+	static const int dec64table[8] = {0, 0, 0, -1, -4, 1, 2, 3};
 
 	const int safeDecode = (endOnInput == endOnInputSize);
 	const int checkOffset = ((safeDecode) && (dictSize < (int)(64 * KB)));
 
 	/* Set up the "end" pointers for the shortcut. */
 	const BYTE *const shortiend = iend -
-	    (endOnInput ? 14 : 8) /*maxLL*/ - 2 /*offset*/;
+		(endOnInput ? 14 : 8) /*maxLL*/ - 2 /*offset*/;
 	const BYTE *const shortoend = oend -
-	    (endOnInput ? 14 : 8) /*maxLL*/ - 18 /*maxML*/;
-
-	const BYTE *match;
-	size_t offset;
-	unsigned int token;
-	size_t length;
+		(endOnInput ? 14 : 8) /*maxLL*/ - 18 /*maxML*/;
 
 	DEBUGLOG(5, "%s (srcSize:%i, dstSize:%i)", __func__,
 		 srcSize, outputSize);
@@ -212,196 +117,15 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 	if ((endOnInput) && unlikely(srcSize == 0))
 		return -1;
 
-#if LZ4_FAST_DEC_LOOP
-	if ((oend - op) < FASTLOOP_SAFE_DISTANCE) {
-		DEBUGLOG(6, "skip fast decode loop");
-		goto safe_decode;
-	}
-
-	/* Fast loop : decode sequences as long as output < iend-FASTLOOP_SAFE_DISTANCE */
-	while (1) {
-		/* Main fastloop assertion: We can always wildcopy FASTLOOP_SAFE_DISTANCE */
-		assert(oend - op >= FASTLOOP_SAFE_DISTANCE);
-		if (endOnInput) {
-			assert(ip < iend);
-		}
-		token = *ip++;
-		length = token >> ML_BITS;	/* literal length */
-
-		assert(!endOnInput || ip <= iend);	/* ip < iend before the increment */
-
-		/* decode literal length */
-		if (length == RUN_MASK) {
-			variable_length_error error = ok;
-			length +=
-			    read_variable_length(&ip, iend - RUN_MASK,
-						 endOnInput, endOnInput,
-						 &error);
-			if (error == initial_error) {
-				goto _output_error;
-			}
-			if ((safeDecode)
-			    && unlikely((uptrval) (op) + length <
-					(uptrval) (op))) {
-				goto _output_error;
-			}	/* overflow detection */
-			if ((safeDecode)
-			    && unlikely((uptrval) (ip) + length <
-					(uptrval) (ip))) {
-				goto _output_error;
-			}
-
-			/* overflow detection */
-			/* copy literals */
-			cpy = op + length;
-			LZ4_STATIC_ASSERT(MFLIMIT >= WILDCOPYLENGTH);
-			if (endOnInput) {	/* LZ4_decompress_safe() */
-				if ((cpy > oend - 32)
-				    || (ip + length > iend - 32)) {
-					goto safe_literal_copy;
-				}
-				LZ4_wildCopy32(op, ip, cpy);
-			} else {	/* LZ4_decompress_fast() */
-				if (cpy > oend - 8) {
-					goto safe_literal_copy;
-				}
-				LZ4_wildCopy8(op, ip, cpy);
-				/* LZ4_decompress_fast() cannot copy more than 8 bytes at a time */
-				/* it doesn't know input length, and only relies on end-of-block */
-				/* properties */
-			}
-			ip += length;
-			op = cpy;
-		} else {
-			cpy = op + length;
-			if (endOnInput) {	/* LZ4_decompress_safe() */
-				DEBUGLOG(7,
-					 "copy %u bytes in a 16-bytes stripe",
-					 (unsigned)length);
-				/* We don't need to check oend */
-				/* since we check it once for each loop below */
-				if (ip > iend - (16 + 1)) {	/*max lit + offset + nextToken */
-					goto safe_literal_copy;
-				}
-				/* Literals can only be 14, but hope compilers optimize */
-				/*if we copy by a register size */
-				memcpy(op, ip, 16);
-			} else {
-				/* LZ4_decompress_fast() cannot copy more than 8 bytes at a time */
-				/* it doesn't know input length, and relies on end-of-block */
-				/* properties */
-				memcpy(op, ip, 8);
-				if (length > 8) {
-					memcpy(op + 8, ip + 8, 8);
-				}
-			}
-			ip += length;
-			op = cpy;
-		}
-
-		/* get offset */
-		offset = LZ4_readLE16(ip);
-		ip += 2;	/* end-of-block condition violated */
-		match = op - offset;
-
-		/* get matchlength */
-		length = token & ML_MASK;
-
-		if ((checkOffset) && (unlikely(match + dictSize < lowPrefix))) {
-			goto _output_error;
-		}
-		/* Error : offset outside buffers */
-		if (length == ML_MASK) {
-			variable_length_error error = ok;
-			length +=
-			    read_variable_length(&ip, iend - LASTLITERALS + 1,
-						 endOnInput, 0, &error);
-			if (error != ok) {
-				goto _output_error;
-			}
-			if ((safeDecode)
-			    && unlikely((uptrval) (op) + length < (uptrval) op)) {
-				goto _output_error;
-			}	/* overflow detection */
-			length += MINMATCH;
-			if (op + length >= oend - FASTLOOP_SAFE_DISTANCE) {
-				goto safe_match_copy;
-			}
-		} else {
-			length += MINMATCH;
-			if (op + length >= oend - FASTLOOP_SAFE_DISTANCE) {
-				goto safe_match_copy;
-			}
-
-			/* Fastpath check: Avoids a branch in LZ4_wildCopy32 if true */
-			if (!(dict == usingExtDict) || (match >= lowPrefix)) {
-				if (offset >= 8) {
-					memcpy(op, match, 8);
-					memcpy(op + 8, match + 8, 8);
-					memcpy(op + 16, match + 16, 2);
-					op += length;
-					continue;
-				}
-			}
-		}
-
-		/* match starting within external dictionary */
-		if ((dict == usingExtDict) && (match < lowPrefix)) {
-			if (unlikely(op + length > oend - LASTLITERALS)) {
-				if (partialDecoding) {
-					/* reach end of buffer */
-					length =
-					    min(length, (size_t) (oend - op));
-				} else {
-					/* end-of-block condition violated */
-					goto _output_error;
-				}
-			}
-
-			if (length <= (size_t) (lowPrefix - match)) {
-				/* match fits entirely within external dictionary : just copy */
-				memmove(op, dictEnd - (lowPrefix - match),
-					length);
-				op += length;
-			} else {
-				/* match stretches into both external dict and current block */
-				size_t const copySize =
-				    (size_t) (lowPrefix - match);
-				size_t const restSize = length - copySize;
-				memcpy(op, dictEnd - copySize, copySize);
-				op += copySize;
-				if (restSize > (size_t) (op - lowPrefix)) {	/* overlap copy */
-					BYTE *const endOfMatch = op + restSize;
-					const BYTE *copyFrom = lowPrefix;
-					while (op < endOfMatch) {
-						*op++ = *copyFrom++;
-					}
-				} else {
-					memcpy(op, lowPrefix, restSize);
-					op += restSize;
-				}
-			}
-			continue;
-		}
-
-		/* copy match within block */
-		cpy = op + length;
-
-		assert((op <= oend) && (oend - op >= 32));
-		if (unlikely(offset < 16)) {
-			LZ4_memcpy_using_offset(op, match, cpy, offset);
-		} else {
-			LZ4_wildCopy32(op, match, cpy);
-		}
-
-		op = cpy;	/* wildcopy correction */
-	}
-      safe_decode:
-#endif
 	/* Main Loop : decode sequences */
 	while (1) {
-		token = *ip++;
-		length = token >> ML_BITS;
+		size_t length;
+		const BYTE *match;
+		size_t offset;
+
+		/* get literal length */
+		unsigned int const token = *ip++;
+		length = token>>ML_BITS;
 
 		/* ip < iend before the increment */
 		assert(!endOnInput || ip <= iend);
@@ -419,12 +143,12 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 		 * combined check for both stages).
 		 */
 		if ((endOnInput ? length != RUN_MASK : length <= 8)
-		    /*
-		     * strictly "less than" on input, to re-enter
-		     * the loop with at least one byte
-		     */
-		    && likely((endOnInput ? ip < shortiend : 1) &
-			      (op <= shortoend))) {
+		   /*
+		    * strictly "less than" on input, to re-enter
+		    * the loop with at least one byte
+		    */
+		   && likely((endOnInput ? ip < shortiend : 1) &
+			     (op <= shortoend))) {
 			/* Copy the literals */
 			LZ4_memcpy(op, ip, endOnInput ? 16 : 8);
 			op += length; ip += length;
@@ -434,11 +158,11 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 			 * prepare for match copying, decode full info.
 			 * If it doesn't work out, the info won't be wasted.
 			 */
-			length = token & ML_MASK;	/* match length */
+			length = token & ML_MASK; /* match length */
 			offset = LZ4_readLE16(ip);
 			ip += 2;
 			match = op - offset;
-			assert(match <= op);	/* check overflow */
+			assert(match <= op); /* check overflow */
 
 			/* Do not deal with overlapping matches. */
 			if ((length != ML_MASK) &&
@@ -463,24 +187,28 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 
 		/* decode literal length */
 		if (length == RUN_MASK) {
+			unsigned int s;
 
-			variable_length_error error = ok;
-			length +=
-			    read_variable_length(&ip, iend - RUN_MASK,
-						 endOnInput, endOnInput,
-						 &error);
-			if (error == initial_error)
+			if (unlikely(endOnInput ? ip >= iend - RUN_MASK : 0)) {
+				/* overflow detection */
 				goto _output_error;
+			}
+			do {
+				s = *ip++;
+				length += s;
+			} while (likely(endOnInput
+				? ip < iend - RUN_MASK
+				: 1) & (s == 255));
 
 			if ((safeDecode)
-			    && unlikely((uptrval) (op) +
-					length < (uptrval) (op))) {
+			    && unlikely((uptrval)(op) +
+					length < (uptrval)(op))) {
 				/* overflow detection */
 				goto _output_error;
 			}
 			if ((safeDecode)
-			    && unlikely((uptrval) (ip) +
-					length < (uptrval) (ip))) {
+			    && unlikely((uptrval)(ip) +
+					length < (uptrval)(ip))) {
 				/* overflow detection */
 				goto _output_error;
 			}
@@ -488,15 +216,11 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 
 		/* copy literals */
 		cpy = op + length;
-#if LZ4_FAST_DEC_LOOP
-	      safe_literal_copy:
-#endif
 		LZ4_STATIC_ASSERT(MFLIMIT >= WILDCOPYLENGTH);
 
 		if (((endOnInput) && ((cpy > oend - MFLIMIT)
-				      || (ip + length >
-					  iend - (2 + 1 + LASTLITERALS))))
-		    || ((!endOnInput) && (cpy > oend - WILDCOPYLENGTH))) {
+			|| (ip + length > iend - (2 + 1 + LASTLITERALS))))
+			|| ((!endOnInput) && (cpy > oend - WILDCOPYLENGTH))) {
 			if (partialDecoding) {
 				if (cpy > oend) {
 					/*
@@ -507,7 +231,7 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 					length = oend - op;
 				}
 				if ((endOnInput)
-				    && (ip + length > iend)) {
+					&& (ip + length > iend)) {
 					/*
 					 * Error :
 					 * read attempt beyond
@@ -517,7 +241,7 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 				}
 			} else {
 				if ((!endOnInput)
-				    && (cpy != oend)) {
+					&& (cpy != oend)) {
 					/*
 					 * Error :
 					 * block decoding must
@@ -526,7 +250,7 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 					goto _output_error;
 				}
 				if ((endOnInput)
-				    && ((ip + length != iend)
+					&& ((ip + length != iend)
 					|| (cpy > oend))) {
 					/*
 					 * Error :
@@ -544,16 +268,12 @@ static FORCE_INLINE int __LZ4_decompress_generic(
 			ip += length;
 			op += length;
 
-			/* Necessarily EOF when !partialDecoding.
-			 * When partialDecoding, it is EOF if we've either
-			 * filled the output buffer or
-			 * can't proceed with reading an offset for following match.
-			 */
-			if (!partialDecoding || (cpy == oend) || (ip >= (iend - 2)))
+			/* Necessarily EOF, due to parsing restrictions */
+			if (!partialDecoding || (cpy == oend))
 				break;
 		} else {
 			/* may overwrite up to WILDCOPYLENGTH beyond cpy */
-			LZ4_wildCopy8(op, ip, cpy);
+			LZ4_wildCopy(op, ip, cpy);
 			ip += length;
 			op = cpy;
 		}
@@ -572,14 +292,29 @@ _copy_match:
 			goto _output_error;
 		}
 
-		if (length == ML_MASK) {
+		/* costs ~1%; silence an msan warning when offset == 0 */
+		/*
+		 * note : when partialDecoding, there is no guarantee that
+		 * at least 4 bytes remain available in output buffer
+		 */
+		if (!partialDecoding) {
+			assert(oend > op);
+			assert(oend - op >= 4);
 
-			variable_length_error error = ok;
-			length +=
-			    read_variable_length(&ip, iend - LASTLITERALS + 1,
-						 endOnInput, 0, &error);
-			if (error != ok)
-				goto _output_error;
+			LZ4_write32(op, (U32)offset);
+		}
+
+		if (length == ML_MASK) {
+			unsigned int s;
+
+			do {
+				s = *ip++;
+
+				if ((endOnInput) && (ip > iend - LASTLITERALS))
+					goto _output_error;
+
+				length += s;
+			} while (s == 255);
 
 			if ((safeDecode)
 				&& unlikely(
@@ -590,10 +325,6 @@ _copy_match:
 		}
 
 		length += MINMATCH;
-
-#if LZ4_FAST_DEC_LOOP
-safe_match_copy:
-#endif
 
 		/* match starting within external dictionary */
 		if ((dict == usingExtDict) && (match < lowPrefix)) {
@@ -691,7 +422,7 @@ safe_match_copy:
 			}
 
 			if (op < oCopyLimit) {
-				LZ4_wildCopy8(op, match, oCopyLimit);
+				LZ4_wildCopy(op, match, oCopyLimit);
 				match += oCopyLimit - op;
 				op = oCopyLimit;
 			}
@@ -700,7 +431,7 @@ safe_match_copy:
 		} else {
 			LZ4_copy8(op, match);
 			if (length > 16)
-				LZ4_wildCopy8(op + 8, match + 8, cpy);
+				LZ4_wildCopy(op + 8, match + 8, cpy);
 		}
 		op = cpy; /* wildcopy correction */
 	}
@@ -717,32 +448,6 @@ safe_match_copy:
 	/* Overflow error detected */
 _output_error:
 	return (int) (-(((const char *)ip) - src)) - 1;
-}
-
-static FORCE_INLINE int LZ4_decompress_generic(
-	 const char * const src,
-	 char * const dst,
-	 int srcSize,
-		/*
-		 * If endOnInput == endOnInputSize,
-		 * this value is `dstCapacity`
-		 */
-	 int outputSize,
-	 /* endOnOutputSize, endOnInputSize */
-	 endCondition_directive endOnInput,
-	 /* full, partial */
-	 earlyEnd_directive partialDecoding,
-	 /* noDict, withPrefix64k, usingExtDict */
-	 dict_directive dict,
-	 /* always <= dst, == dst when no prefix */
-	 const BYTE * const lowPrefix,
-	 /* only if dict == usingExtDict */
-	 const BYTE * const dictStart,
-	 /* note : = 0 if noDict */
-	 const size_t dictSize
-	 )
-{
-	return __LZ4_decompress_generic(src, dst, (const BYTE *)src, (BYTE *)dst, srcSize, outputSize, endOnInput, partialDecoding, dict, lowPrefix, dictStart, dictSize);
 }
 
 int LZ4_decompress_safe(const char *source, char *dest,
@@ -993,58 +698,6 @@ int LZ4_decompress_fast_usingDict(const char *source, char *dest,
 		dictStart, dictSize);
 }
 
-ssize_t LZ4_arm64_decompress_safe_partial(const void *source,
-			      void *dest,
-			      size_t inputSize,
-			      size_t outputSize,
-			      bool dip)
-{
-        uint8_t         *dstPtr = dest;
-        const uint8_t   *srcPtr = source;
-        ssize_t         ret;
-
-#ifdef __ARCH_HAS_LZ4_ACCELERATOR
-        /* Go fast if we can, keeping away from the end of buffers */
-        if (outputSize > LZ4_FAST_MARGIN && inputSize > LZ4_FAST_MARGIN && lz4_decompress_accel_enable()) {
-                ret = lz4_decompress_asm(&dstPtr, dest,
-                                         dest + outputSize - LZ4_FAST_MARGIN,
-                                         &srcPtr,
-                                         source + inputSize - LZ4_FAST_MARGIN,
-                                         dip);
-                if (ret)
-                        return -EIO;
-        }
-#endif
-        /* Finish in safe */
-	return __LZ4_decompress_generic(source, dest, srcPtr, dstPtr, inputSize, outputSize, endOnInputSize, partial_decode, noDict, (BYTE *)dest, NULL, 0);
-}
-
-ssize_t LZ4_arm64_decompress_safe(const void *source,
-			      void *dest,
-			      size_t inputSize,
-			      size_t outputSize,
-			      bool dip)
-{
-        uint8_t         *dstPtr = dest;
-        const uint8_t   *srcPtr = source;
-        ssize_t         ret;
-
-#ifdef __ARCH_HAS_LZ4_ACCELERATOR
-        /* Go fast if we can, keeping away from the end of buffers */
-        if (outputSize > LZ4_FAST_MARGIN && inputSize > LZ4_FAST_MARGIN && lz4_decompress_accel_enable()) {
-                ret = lz4_decompress_asm(&dstPtr, dest,
-                                         dest + outputSize - LZ4_FAST_MARGIN,
-                                         &srcPtr,
-                                         source + inputSize - LZ4_FAST_MARGIN,
-                                         dip);
-                if (ret)
-                        return -EIO;
-        }
-#endif
-        /* Finish in safe */
-	return __LZ4_decompress_generic(source, dest, srcPtr, dstPtr, inputSize, outputSize, endOnInputSize, decode_full_block, noDict, (BYTE *)dest, NULL, 0);
-}
-
 #ifndef STATIC
 EXPORT_SYMBOL(LZ4_decompress_safe);
 EXPORT_SYMBOL(LZ4_decompress_safe_partial);
@@ -1054,8 +707,6 @@ EXPORT_SYMBOL(LZ4_decompress_safe_continue);
 EXPORT_SYMBOL(LZ4_decompress_fast_continue);
 EXPORT_SYMBOL(LZ4_decompress_safe_usingDict);
 EXPORT_SYMBOL(LZ4_decompress_fast_usingDict);
-EXPORT_SYMBOL(LZ4_arm64_decompress_safe);
-EXPORT_SYMBOL(LZ4_arm64_decompress_safe_partial);
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_DESCRIPTION("LZ4 decompressor");
