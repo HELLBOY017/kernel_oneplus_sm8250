@@ -809,6 +809,7 @@ static int exfat_init_sb_info(struct super_block *sb)
 		return -ENOMEM;
 
 	mutex_init(&sbi->s_lock);
+	mutex_init(&sbi->bitmap_lock);
 	ratelimit_state_init(&sbi->ratelimit, DEFAULT_RATELIMIT_INTERVAL,
 			DEFAULT_RATELIMIT_BURST);
 
