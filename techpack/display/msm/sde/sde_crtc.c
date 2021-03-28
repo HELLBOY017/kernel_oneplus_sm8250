@@ -27,6 +27,8 @@
 #include <drm/drm_flip_work.h>
 #include <linux/clk/qcom.h>
 
+#include <linux/cpu_input_boost.h>
+
 #include "sde_kms.h"
 #include "sde_hw_lm.h"
 #include "sde_hw_ctl.h"
@@ -4748,6 +4750,10 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 
 	if (!is_dsi_panel(cstate->base.crtc))
 		return 0;
+
+	if (fppressed_index > 0 || fp_mode == 1) {
+		cpu_input_boost_kick_max(500);
+	}
 
 	if (oplus_dimlayer_bl_enable) {
 		int backlight = oplus_get_panel_brightness();
