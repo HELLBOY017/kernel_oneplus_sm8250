@@ -1,0 +1,6 @@
+// EMAC is only meant for AUTO platforms.
+sh_binary {
+    name: "emac_rps_settings.sh",
+    src: "emac_rps_settings.sh",
+    vendor: true,
+}
