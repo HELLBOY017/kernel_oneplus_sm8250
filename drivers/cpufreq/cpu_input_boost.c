@@ -45,8 +45,6 @@ static unsigned int cpu_freq_idle_big __read_mostly =
 static unsigned int cpu_freq_idle_prime __read_mostly =
 	CONFIG_CPU_FREQ_IDLE_PRIME;
 
-static unsigned short input_boost_duration __read_mostly =
-	CONFIG_INPUT_BOOST_DURATION_MS;
 static unsigned short wake_boost_duration __read_mostly =
 	CONFIG_WAKE_BOOST_DURATION_MS;
 
@@ -63,7 +61,6 @@ module_param(cpu_freq_idle_little, uint, 0644);
 module_param(cpu_freq_idle_big, uint, 0644);
 module_param(cpu_freq_idle_prime, uint, 0644);
 
-module_param(input_boost_duration, short, 0644);
 module_param(wake_boost_duration, short, 0644);
 
 enum {
@@ -168,12 +165,9 @@ static void __cpu_input_boost_kick(struct boost_drv *b)
 	if (!test_bit(SCREEN_ON, &b->state))
 		return;
 
-	if (!input_boost_duration)
-		return;
-
 	set_bit(INPUT_BOOST, &b->state);
 	if (!mod_delayed_work(system_unbound_wq, &b->input_unboost,
-			      msecs_to_jiffies(input_boost_duration)))
+			      msecs_to_jiffies(CONFIG_INPUT_BOOST_DURATION_MS)))
 		wake_up(&b->boost_waitq);
 }
 
