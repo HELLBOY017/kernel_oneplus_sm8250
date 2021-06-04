@@ -15,6 +15,7 @@
 #include <linux/rcupdate.h>
 #include <linux/list.h>
 
+static struct kmem_cache *peer_cache;
 static atomic64_t peer_counter = ATOMIC64_INIT(0);
 
 struct wg_peer *wg_peer_create(struct wg_device *wg,
@@ -29,14 +30,15 @@ struct wg_peer *wg_peer_create(struct wg_device *wg,
 	if (wg->num_peers >= MAX_PEERS_PER_DEVICE)
 		return ERR_PTR(ret);
 
-	peer = kzalloc(sizeof(*peer), GFP_KERNEL);
+	peer = kmem_cache_zalloc(peer_cache, GFP_KERNEL);
 	if (unlikely(!peer))
 		return ERR_PTR(ret);
+
 	peer->device = wg;
 
 	wg_noise_handshake_init(&peer->handshake, &wg->static_identity,
 				public_key, preshared_key, peer);
-	if (dst_cache_init(&peer->endpoint_cache, GFP_KERNEL))
+	if (unlikely(dst_cache_init(&peer->endpoint_cache, GFP_KERNEL)))
 		goto err_1;
 	if (wg_packet_queue_init(&peer->tx_queue, wg_packet_tx_worker, false,
 				 MAX_QUEUED_PACKETS))
@@ -73,7 +75,7 @@ err_3:
 err_2:
 	dst_cache_destroy(&peer->endpoint_cache);
 err_1:
-	kfree(peer);
+	kmem_cache_free(peer_cache, peer);
 	return ERR_PTR(ret);
 }
 
@@ -203,7 +205,8 @@ static void rcu_release(struct rcu_head *rcu)
 	/* The final zeroing takes care of clearing any remaining handshake key
 	 * material and other potentially sensitive information.
 	 */
-	kzfree(peer);
+	memzero_explicit(peer, sizeof(*peer));
+	kmem_cache_free(peer_cache, peer);
 }
 
 static void kref_release(struct kref *refcount)
@@ -234,4 +237,15 @@ void wg_peer_put(struct wg_peer *peer)
 	if (unlikely(!peer))
 		return;
 	kref_put(&peer->refcount, kref_release);
+}
+
+int __init wg_peer_init(void)
+{
+	peer_cache = KMEM_CACHE(wg_peer, 0);
+	return peer_cache ? 0 : -ENOMEM;
+}
+
+void wg_peer_uninit(void)
+{
+	kmem_cache_destroy(peer_cache);
 }
