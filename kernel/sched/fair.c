@@ -8665,8 +8665,6 @@ static int find_energy_efficient_cpu(struct task_struct *p, int prev_cpu,
 		}
 	}
 unlock:
-	rcu_read_unlock();
-
 	/*
 	 * Pick the prev CPU, if best energy CPU can't saves at least 6% of
 	 * the energy used by prev_cpu.
@@ -8684,6 +8682,9 @@ oplus_done:
 	if (set_frame_group_task_to_perfer_cpu(p, &best_energy_cpu))
 		fbt_env.fastpath = FRAME_BOOST_SELECT;
 #endif
+	rcu_read_unlock();
+
+done:
 
 #ifdef OPLUS_FEATURE_SCHED_ASSIST
 	if (!fbt_env.fastpath)
