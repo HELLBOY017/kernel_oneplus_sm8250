@@ -272,18 +272,17 @@ config DEVFREQ_WAKE_BOOST_DURATION_MS
 	help
 	  Wake boost duration in milliseconds for all boostable devices.
 
-config DEVFREQ_MSM_CPUBW_BOOST_FREQ
-	int "Boost freq for cpubw device"
+config DEVFREQ_CPU_LLCC_DDR_BW_BOOST_FREQ
+	int "Boost freq for cpu-llcc-ddr-bw device"
 	default "0"
 	help
-	  CPUBW boost frequency for the MSM DDR bus.
+	  Boost frequency for the MSM DDR bus.
 
-
-config DEVFREQ_MSM_LLCCBW_BOOST_FREQ
-	int "Boost freq for llccbw device"
+config DEVFREQ_CPU_CPU_LLCC_BW_BOOST_FREQ
+	int "Boost freq for cpu-cpu-llcc-bw device"
 	default "0"
 	help
-	  LLCCBW boost frequency for the MSM DDR bus.
+	  Boost frequency for the MSM DDR bus.
 
 endif
 
