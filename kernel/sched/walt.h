@@ -458,7 +458,7 @@ static inline bool prefer_spread_on_idle(int cpu)
 
 #else /* CONFIG_SCHED_WALT */
 
-static inline bool prefer_spread_on_idle(int cpu, bool new_ilb)
+static inline bool prefer_spread_on_idle(int cpu)
 {
 	return false;
 }
