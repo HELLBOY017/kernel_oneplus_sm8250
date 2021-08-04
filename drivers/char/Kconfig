@@ -660,6 +660,8 @@ config RANDOM_TRUST_BOOTLOADER
 	  Say Y here unless you have reason to mistrust your bootloader or
 	  believe its RNG facilities may be faulty. This may also be configured
 	  at boot time with "random.trust_bootloader=on/off".
+	  
+source "drivers/char/lrng/Kconfig"
 
 endmenu
 
