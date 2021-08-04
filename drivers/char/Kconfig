@@ -624,6 +624,8 @@ config RB5_GPIOS_ENABLE
 	  signals, GPIO 60 is default set to low to connect GPIOs
 	  140/145,116/117 to mezzanine connectors.
 
+source "drivers/char/lrng/Kconfig"
+
 endmenu
 
 config RANDOM_TRUST_CPU
