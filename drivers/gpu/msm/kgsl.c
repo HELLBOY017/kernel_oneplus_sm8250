@@ -5244,7 +5244,7 @@ int kgsl_request_irq(struct platform_device *pdev, const  char *name,
 		return num;
 
 	if (!strcmp(name, "kgsl_3d0_irq"))
-		irqflags |= IRQF_PERF_AFFINE;
+		irqflags |= IRQF_HP_AFFINE;
 
 	ret = devm_request_irq(&pdev->dev, num, handler, irqflags, name, data);
 
@@ -5461,7 +5461,7 @@ static long kgsl_run_one_worker_perf(struct kthread_worker *worker,
 		struct task_struct **thread, const char *name)
 {
 	kthread_init_worker(worker);
-	*thread = kthread_run_perf_critical(cpu_perf_mask,
+	*thread = kthread_run_perf_critical(cpu_hp_mask,
 		kthread_worker_fn, worker, name);
 	if (IS_ERR(*thread)) {
 		pr_err("unable to start %s\n", name);
@@ -5545,7 +5545,7 @@ static int __init kgsl_core_init(void)
 
 	kthread_init_worker(&kgsl_driver.worker);
 
-	kgsl_driver.worker_thread = kthread_run_perf_critical(cpu_perf_mask,
+	kgsl_driver.worker_thread = kthread_run_perf_critical(cpu_hp_mask,
 		kthread_worker_fn, &kgsl_driver.worker, "kgsl_worker_thread");
 
 	if (IS_ERR(kgsl_driver.worker_thread)) {
