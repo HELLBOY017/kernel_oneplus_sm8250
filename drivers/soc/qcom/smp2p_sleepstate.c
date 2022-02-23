@@ -52,7 +52,7 @@ static int sleepstate_pm_notifier(struct notifier_block *nb,
 
 static irqreturn_t smp2p_sleepstate_handler(int irq, void *ctxt)
 {
-	__pm_wakeup_event(notify_ws, 200);
+	__pm_wakeup_event(notify_ws, 100);
 	return IRQ_HANDLED;
 }
 
