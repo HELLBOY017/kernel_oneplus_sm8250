@@ -7031,7 +7031,7 @@ int kswapd_run(int nid)
 
 	nr_threads = kswapd_threads;
 	for (hid = 0; hid < nr_threads; hid++) {
-		pgdat->kswapd[hid] = kthread_run_perf_critical(cpu_perf_mask, kswapd, pgdat, "kswapd%d:%d",
+		pgdat->kswapd[hid] = kthread_run_perf_critical(cpu_hp_mask, kswapd, pgdat, "kswapd%d:%d",
 							nid, hid);
 		if (IS_ERR(pgdat->kswapd[hid])) {
 			/* failure at boot is fatal */
