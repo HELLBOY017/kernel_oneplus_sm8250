@@ -46,7 +46,6 @@ struct lpm_cpu {
 	uint32_t ref_premature_cnt;
 	uint32_t tmr_add;
 	bool lpm_prediction;
-	uint64_t bias;
 	struct cpuidle_driver *drv;
 	struct lpm_cluster *parent;
 };
@@ -111,7 +110,6 @@ struct lpm_cluster {
 	unsigned int psci_mode_shift;
 	unsigned int psci_mode_mask;
 	struct cluster_history history;
-	struct hrtimer histtimer;
 };
 
 struct lpm_cluster *lpm_of_parse_cluster(struct platform_device *pdev);
