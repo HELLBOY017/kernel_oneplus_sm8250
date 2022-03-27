@@ -683,7 +683,7 @@ static int lpm_cpuidle_enter(struct cpuidle_device *dev,
 		goto exit;
 
 	cpuidle_set_idle_cpu(dev->cpu);
-	cpu_do_idle();
+	wfi();
 	success = true;
 	cpuidle_clear_idle_cpu(dev->cpu);
 	success = (ret == 0);
