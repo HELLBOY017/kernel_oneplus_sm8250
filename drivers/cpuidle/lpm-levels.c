@@ -535,24 +535,10 @@ static int lpm_cpuidle_select(struct cpuidle_driver *drv,
 static int lpm_cpuidle_enter(struct cpuidle_device *dev,
 		struct cpuidle_driver *drv, int idx)
 {
-	bool success = false;
-	ktime_t start = ktime_get();
-	uint64_t start_time = ktime_to_ns(start), end_time;
-	int ret = -EBUSY;
-
-	trace_cpu_idle_enter(idx);
-	lpm_stats_cpu_enter(idx, start_time);
 
 	if (!need_resched())
 		wfi();
 
-exit:
-	end_time = ktime_to_ns(ktime_get());
-	lpm_stats_cpu_exit(idx, end_time, success);
-
-	dev->last_residency = ktime_us_delta(ktime_get(), start);
-	trace_cpu_idle_exit(idx, success);
-	local_irq_enable();
 	return idx;
 }
 
