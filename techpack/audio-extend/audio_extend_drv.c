@@ -77,13 +77,13 @@ static struct audio_extend_data *g_extend_pdata = NULL;
 //For tfa98xx default stereo
 static struct snd_soc_dai_link_component tfa98xx_dails[] = {
 	{
-		.name = "tfa98xx.0-0035",
-		.dai_name = "tfa98xx-aif-0-35",
+		.name = "tfa98xx.2-0035",
+		.dai_name = "tfa98xx-aif-2-35",
 	},
 
 	{
-		.name = "tfa98xx.0-0034",
-		.dai_name = "tfa98xx-aif-0-34",
+		.name = "tfa98xx.2-0034",
+		.dai_name = "tfa98xx-aif-2-34",
 	},
 };
 
