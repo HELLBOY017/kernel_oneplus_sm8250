@@ -453,8 +453,6 @@ static bool dsi_bridge_mode_fixup(struct drm_bridge *bridge,
 		}
 	}
 #ifdef OPLUS_BUG_STABILITY
-	if (display->is_cont_splash_enabled)
-		dsi_mode.dsi_mode_flags &= ~DSI_MODE_FLAG_DMS;
 #ifdef OPLUS_FEATURE_AOD_RAMLESS
 	if (display->panel && display->panel->oplus_priv.is_aod_ramless) {
 		if (crtc_state->active_changed && (dsi_mode.dsi_mode_flags & DSI_MODE_FLAG_DYN_CLK)) {
