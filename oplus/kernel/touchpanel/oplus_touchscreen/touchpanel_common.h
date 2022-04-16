@@ -63,6 +63,7 @@
 #define SingleTap           16
 #define Heart               17
 #define PENDETECT           18
+#define KEY_GESTURE_START 246
 #define HEALTH_REPORT_GRIP          "grip_report"
 #define HEALTH_REPORT_BASELINE_ERR  "baseline_err"
 #define HEALTH_REPORT_NOISE         "noise_count"
@@ -859,6 +860,7 @@ struct touchpanel_data {
 	uint32_t irq_flags_cover;                           /*cover irq setting flag*/
 
 	int gesture_enable;                                 /*control state of black gesture*/
+	bool double_tap_to_wake_enable;                     /*control state of dt2w*/
 #if GESTURE_RATE_MODE
 	int geature_ignore;
 #endif
