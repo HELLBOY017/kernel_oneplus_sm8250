@@ -549,14 +549,8 @@ static int lpm_cpuidle_enter(struct cpuidle_device *dev,
 	trace_cpu_idle_enter(idx);
 	lpm_stats_cpu_enter(idx, start_time);
 
-	if (need_resched())
-		goto exit;
-
-	cpuidle_set_idle_cpu(dev->cpu);
-	wfi();
-	success = true;
-	cpuidle_clear_idle_cpu(dev->cpu);
-	success = (ret == 0);
+	if (!need_resched())
+		wfi();
 
 exit:
 	end_time = ktime_to_ns(ktime_get());
