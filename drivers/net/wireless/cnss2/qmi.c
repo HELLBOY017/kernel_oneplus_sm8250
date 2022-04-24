@@ -10,6 +10,10 @@
 #include <linux/fs.h>
 #endif /* OPLUS_FEATURE_WIFI_BDF */
 
+#if IS_ENABLED(CONFIG_CNSS_UTILS)
+#include <net/cnss_utils.h>
+#endif
+
 #include "bus.h"
 #include "debug.h"
 #include "main.h"
@@ -1016,6 +1020,13 @@ static int cnss_wlfw_wlan_mac_req_send_sync(struct cnss_plat_data *plat_priv,
 		/* 0 - query status of wlfw MAC; 1 - set wlfw MAC */
 		req->mac_addr_valid = 1;
 	}
+
+#if IS_ENABLED(CONFIG_CNSS_UTILS)
+	ret = cnss_utils_set_wlan_mac_address(req->mac_addr, mac_len);
+	if (ret < 0) {
+		cnss_pr_err("Failed to set cnss utils wlan mac address (non-fatal), err: %d\n", ret);
+	}
+#endif
 
 	ret = qmi_send_request(&plat_priv->qmi_wlfw, NULL, &txn,
 			       QMI_WLFW_MAC_ADDR_REQ_V01,
