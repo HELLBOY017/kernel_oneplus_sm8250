@@ -286,6 +286,15 @@ config DEVFREQ_CPU_CPU_LLCC_BW_BOOST_FREQ
 
 endif
 
+config DEVFREQ_ADRENO_HIGHREFRESH_MULTI
+	int "Busy time multiplier for greater than 60hz (to be divided by 100)"
+	default "125"
+	help
+	  Busy time multiplier for greater than 60hz. To better hit
+	  frame time and account for higher refresh. This is not
+	  linear response as refresh increases. To be divided by 100, so 125
+	  is 1.25 multiplier.
+
 source "drivers/devfreq/event/Kconfig"
 
 endif # PM_DEVFREQ
