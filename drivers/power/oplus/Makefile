@@ -89,11 +89,7 @@ ifeq ($(CONFIG_OPLUS_CHARGER_MTK6765S),y)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 endif
 ifneq ($(CONFIG_OPLUS_CHARGER_MTK),y)
-ifeq ($(BRAND_SHOW_FLAG),oneplus)
 obj-y      += op_wlchg/
-else
-obj-y      += wireless_ic/
-endif
 endif
 
 obj-y      += charger_ic/
@@ -111,11 +107,7 @@ obj-y	+= oplus_vooc.o
 obj-y	+= oplus_adapter.o
 
 ifneq ($(CONFIG_OPLUS_CHARGER_MTK),y)
-ifeq ($(BRAND_SHOW_FLAG),oneplus)
 obj-y	+= oplus_wlchg_policy.o
-else
-obj-y	+= oplus_wireless.o
-endif # BRAND_SHOW_FLAG
 else
 obj-y	+= oplus_wireless.o
 endif # CONFIG_OPLUS_CHARGER_MTK
