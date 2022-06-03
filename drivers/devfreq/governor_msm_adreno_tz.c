@@ -12,6 +12,7 @@
 #include <linux/ftrace.h>
 #include <linux/mm.h>
 #include <linux/msm_adreno_devfreq.h>
+#include <linux/cpu_input_boost.h>
 #include <asm/cacheflush.h>
 #include <drm/drm_refresh_rate.h>
 #include <soc/qcom/scm.h>
@@ -464,7 +465,7 @@ static int tz_get_target_freq(struct devfreq *devfreq, unsigned long *freq)
 
 		scm_data[0] = level;
 		scm_data[1] = priv->bin.total_time;
-		if (refresh_rate > 60)
+		if (refresh_rate > 60 && time_before(jiffies, last_input_time + msecs_to_jiffies(2500)))
 			scm_data[2] = priv->bin.busy_time * CONFIG_DEVFREQ_ADRENO_HIGHREFRESH_MULTI / 100;
 		else
 		scm_data[2] = priv->bin.busy_time + (level * adrenoboost);
