@@ -117,8 +117,10 @@ static inline void z_erofs_pagevec_ctor_init(struct z_erofs_pagevec_ctor *ctor,
 static inline bool
 z_erofs_pagevec_ctor_enqueue(struct z_erofs_pagevec_ctor *ctor,
 			     struct page *page,
-			     enum z_erofs_page_type type)
+			     enum z_erofs_page_type type,
+			     bool *occupied)
 {
+	*occupied = false;
 	if (unlikely(ctor->next == NULL && type))
 		if (ctor->index + 1 == ctor->nr)
 			return false;
@@ -133,6 +135,7 @@ z_erofs_pagevec_ctor_enqueue(struct z_erofs_pagevec_ctor *ctor,
 	/* should remind that collector->next never equal to 1, 2 */
 	if (type == (uintptr_t)ctor->next) {
 		ctor->next = page;
+		*occupied = true;
 	}
 
 	ctor->pages[ctor->index++] =
