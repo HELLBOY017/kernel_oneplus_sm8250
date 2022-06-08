@@ -35,6 +35,7 @@ enum {
 	TDK_THERM
 };
 
+static bool ss_request;
 
 static const struct iio_chan_spec tdk_therm_channels[] = {
 	{
@@ -77,6 +78,7 @@ struct tdk_thermistor_data {
 };
 
 static bool current_state;
+static int tdk_thermistor_calibrate(struct tdk_thermistor_data *data);
 static int tdk_thermistor_read(struct tdk_thermistor_data *data,
 			       struct iio_chan_spec const *chan, int *val);
 
@@ -110,6 +112,7 @@ static enum hrtimer_restart tdk_thermistor_hrtimer_handler(struct hrtimer *t)
 {
 	struct tdk_thermistor_data *data =
 		container_of(t, struct tdk_thermistor_data, timer);
+	struct device *dev = data->dev;
 
 	if (!data)
 		return HRTIMER_NORESTART;
@@ -179,6 +182,21 @@ static int test_thread_fn(void *input_data)
 }
 #endif
 
+static int tdk_thermistor_calibrate(struct tdk_thermistor_data *data)
+{
+	int ret;
+	u8 buf[8];
+
+	pr_info(TAG "%s: Triggered calibration of TDK thermistor\n", __func__);
+
+	ret = spi_read(data->spi, (void *)buf, 8);
+
+	if (ret) {
+		pr_info(TAG "%s: Failed SPI read: %i\n", __func__, ret);
+		return ret;
+	}
+	return 0;
+}
 
 static int tdk_thermistor_read(struct tdk_thermistor_data *data,
 			       struct iio_chan_spec const *chan, int *val)
@@ -277,6 +295,7 @@ static irqreturn_t tdk_thermistor_trigger_handler(int irq, void *private)
 	struct iio_dev *indio_dev = pf->indio_dev;
 	struct tdk_thermistor_data *data = iio_priv(indio_dev);
 	int ret;
+	int val;
 
 	pr_info(TAG "%s: Triggered read TDK thermistor\n", __func__);
 
