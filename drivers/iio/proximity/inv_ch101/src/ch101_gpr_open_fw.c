@@ -10,14 +10,14 @@ char *ch101_gpr_open_version;
 
 #define RAM_INIT_WRITE_SIZE   16
 
-unsigned short get_ch101_gpr_open_fw_ram_init_addr(void)
+u16 get_ch101_gpr_open_fw_ram_init_addr(void)
 {
-	return (unsigned short)RAM_INIT_ADDRESS;
+	return (u16)RAM_INIT_ADDRESS;
 }
 
-unsigned short get_ch101_gpr_open_fw_ram_init_size(void)
+u16 get_ch101_gpr_open_fw_ram_init_size(void)
 {
-	return (unsigned short)RAM_INIT_WRITE_SIZE;
+	return (u16)RAM_INIT_WRITE_SIZE;
 }
 
 unsigned char ram_ch101_gpr_open_init[RAM_INIT_WRITE_SIZE] = {
