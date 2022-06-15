@@ -4767,7 +4767,7 @@ static long get_nr_to_scan(struct lruvec *lruvec, struct scan_control *sc, bool 
 
 	/* skip the aging path at the default priority */
 	if (priority == DEF_PRIORITY)
-		return nr_to_scan;
+		goto done;
 
 	/* leave the work to lru_gen_age_node() */
 	if (current_is_kswapd())
@@ -4775,7 +4775,7 @@ static long get_nr_to_scan(struct lruvec *lruvec, struct scan_control *sc, bool 
 
 	if (try_to_inc_max_seq(lruvec, max_seq, sc, can_swap, false))
 		return nr_to_scan;
-
+done:
 	return min_seq[!can_swap] + MIN_NR_GENS <= max_seq ? nr_to_scan : 0;
 }
 
