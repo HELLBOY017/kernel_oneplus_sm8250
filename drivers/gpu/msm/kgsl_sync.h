@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
- * Copyright (c) 2012-2014,2018-2020 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2014,2018-2020,2021 The Linux Foundation. All rights reserved.
  */
 #ifndef __KGSL_SYNC_H
 #define __KGSL_SYNC_H
@@ -10,6 +10,8 @@
 /**
  * struct kgsl_sync_timeline - A sync timeline associated with a kgsl context
  * @kref: Refcount to keep the struct alive until all its fences are released
+ * @kref: Refcount to keep the struct alive until all its fences are signaled,
+	  and as long as the context exists
  * @name: String to describe this timeline
  * @fence_context: Used by the fence driver to identify fences belonging to
  *		   this context
@@ -17,7 +19,8 @@
  * @lock: Spinlock to protect this timeline
  * @last_timestamp: Last timestamp when signaling fences
  * @device: kgsl device
- * @context: kgsl context
+ * @context_id: kgsl context id
+ * @detached: whether the context is detached
  */
 struct kgsl_sync_timeline {
 	struct kref kref;
@@ -30,7 +33,8 @@ struct kgsl_sync_timeline {
 	spinlock_t lock;
 	unsigned int last_timestamp;
 	struct kgsl_device *device;
-	struct kgsl_context *context;
+	unsigned int context_id;
+	bool detached;
 };
 
 /**
@@ -80,7 +84,7 @@ int kgsl_add_fence_event(struct kgsl_device *device,
 
 int kgsl_sync_timeline_create(struct kgsl_context *context);
 
-void kgsl_sync_timeline_destroy(struct kgsl_context *context);
+void kgsl_sync_timeline_detach(struct kgsl_sync_timeline *ktimeline);
 
 void kgsl_sync_timeline_put(struct kgsl_sync_timeline *ktimeline);
 
@@ -118,7 +122,7 @@ static inline int kgsl_sync_timeline_create(struct kgsl_context *context)
 	return 0;
 }
 
-static inline void kgsl_sync_timeline_destroy(struct kgsl_context *context)
+static inline void kgsl_sync_timeline_detach(struct kgsl_sync_timeline *ktimeline)
 {
 }
 

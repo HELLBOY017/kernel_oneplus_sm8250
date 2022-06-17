@@ -1044,6 +1044,10 @@ error_dev_ctxt:
 }
 EXPORT_SYMBOL(mhi_async_power_up);
 
+#ifdef OPLUS_BUG_STABILITY
+extern bool direct_panic;
+#endif
+
 /* Transition MHI into error state and notify critical clients */
 void mhi_control_error(struct mhi_controller *mhi_cntrl)
 {
@@ -1059,6 +1063,11 @@ void mhi_control_error(struct mhi_controller *mhi_cntrl)
 		memcpy(sfr_info->str, sfr_info->buf_addr, sfr_info->len);
 		MHI_CNTRL_ERR("mhi:%s sfr: %s\n", mhi_cntrl->name,
 				sfr_info->buf_addr);
+#ifdef OPLUS_BUG_STABILITY
+		if(strstr(sfr_info->buf_addr, "remotefs_sahara.c")) {
+			direct_panic = true;
+		}
+#endif
 	}
 
 	/* link is not down if device is in RDDM */
@@ -1141,10 +1150,18 @@ int mhi_sync_power_up(struct mhi_controller *mhi_cntrl)
 	if (ret)
 		return ret;
 
+#ifndef OPLUS_BUG_STABILITY
+	//Modify for: mhi timeout 10s to 20s
 	wait_event_timeout(mhi_cntrl->state_event,
 			   MHI_IN_MISSION_MODE(mhi_cntrl->ee) ||
 			   MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state),
 			   msecs_to_jiffies(mhi_cntrl->timeout_ms));
+#else /* OPLUS_BUG_STABILITY */
+	wait_event_timeout(mhi_cntrl->state_event,
+			   MHI_IN_MISSION_MODE(mhi_cntrl->ee) ||
+			   MHI_PM_IN_ERROR_STATE(mhi_cntrl->pm_state),
+			   msecs_to_jiffies(20000));
+#endif /* OPLUS_BUG_STABILITY */
 
 	if (MHI_IN_MISSION_MODE(mhi_cntrl->ee))
 		return 0;
@@ -1511,6 +1528,15 @@ int mhi_pm_fast_resume(struct mhi_controller *mhi_cntrl, bool notify_client)
 	}
 
 	if (mhi_cntrl->rddm_supported) {
+
+		/* check EP is in proper state */
+		if (mhi_cntrl->link_status(mhi_cntrl, mhi_cntrl->priv_data)) {
+			MHI_ERR("Unable to access EP Config space\n");
+			write_unlock_irq(&mhi_cntrl->pm_lock);
+			tasklet_enable(&mhi_cntrl->mhi_event->task);
+			return -ETIMEDOUT;
+		}
+
 		if (mhi_get_exec_env(mhi_cntrl) == MHI_EE_RDDM &&
 		    !mhi_cntrl->power_down) {
 			mhi_cntrl->ee = MHI_EE_RDDM;

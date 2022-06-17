@@ -84,6 +84,13 @@ void sdhci_dumpregs(struct sdhci_host *host)
 		sdhci_readl(host, SDHCI_INT_ENABLE),
 		sdhci_readl(host, SDHCI_SIGNAL_ENABLE));
 
+#ifdef CONFIG_EMMC_SDCARD_OPTIMIZE
+	static int flag = 0;
+	if(!flag)
+		    flag++;
+	else
+		    return;
+#endif
 	SDHCI_DUMP("============ SDHCI REGISTER DUMP ===========\n");
 
 	SDHCI_DUMP("Sys addr:  0x%08x | Version:  0x%08x\n",

@@ -322,6 +322,11 @@ struct kgsl_device {
 	unsigned int num_l3_pwrlevels;
 	/* store current L3 vote to determine if we should change our vote */
 	unsigned int cur_l3_pwrlevel;
+
+	#if defined(OPLUS_FEATURE_GPU_MINIDUMP)
+	bool snapshot_control;
+	int snapshotfault;
+	#endif /* OPLUS_FEATURE_GPU_MINIDUMP */
 };
 
 #define KGSL_MMU_DEVICE(_mmu) \
@@ -546,6 +551,10 @@ struct kgsl_snapshot {
 	bool gmu_fault;
 	bool recovered;
 	struct kgsl_device *device;
+
+	#if defined(OPLUS_FEATURE_GPU_MINIDUMP)
+	char snapshot_hashid[96];
+	#endif /* OPLUS_FEATURE_GPU_MINIDUMP */
 };
 
 /**

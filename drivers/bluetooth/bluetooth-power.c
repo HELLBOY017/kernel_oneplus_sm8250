@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2016-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  */
 
 /*
@@ -388,6 +388,7 @@ static int bt_configure_gpios(int on)
 		if (rc) {
 			BT_PWR_ERR("%s:bt_enable_bt_reset_gpios_safely failed",
 				__func__);
+			return rc;
 		}
 
 		msleep(50);
@@ -662,10 +663,13 @@ vdd_xtal_fail:
 			bt_vreg_unvote(bt_power_pdata->bt_vdd_rfa2);
 		if (bt_power_pdata->bt_vdd_rfa1)
 			bt_vreg_unvote(bt_power_pdata->bt_vdd_rfa1);
+		/*
+		 * if did't have pm8009 dig power and aon power disable enter Retention mode
 		if (bt_power_pdata->bt_vdd_dig)
 			bt_vreg_unvote(bt_power_pdata->bt_vdd_dig);
 		if (bt_power_pdata->bt_vdd_aon)
 			bt_vreg_unvote(bt_power_pdata->bt_vdd_aon);
+		*/
 	} else {
 		BT_PWR_ERR("Invalid power mode: %d", on);
 		rc = -1;
