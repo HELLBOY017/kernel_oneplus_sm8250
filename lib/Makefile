@@ -297,3 +297,6 @@ obj-$(CONFIG_GENERIC_LIB_UCMPDI2) += ucmpdi2.o
 # /* add memleak detect stack depot */
 obj-$(CONFIG_VMALLOC_DEBUG) += memleak_debug_stackdepot.o
 # endif
+
+obj-$(CONFIG_CRYPTO_LIB_SHA256) += libsha256.o
+libsha256-y := sha256.o
