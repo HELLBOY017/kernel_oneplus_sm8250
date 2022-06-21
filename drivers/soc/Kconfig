@@ -19,4 +19,9 @@ source "drivers/soc/versatile/Kconfig"
 source "drivers/soc/xilinx/Kconfig"
 source "drivers/soc/zte/Kconfig"
 
+source "drivers/soc/oplus/system/Kconfig"
+source "drivers/soc/oplus/device_info/Kconfig"
+source "drivers/soc/oplus/sensor/Kconfig"
+source "drivers/soc/oplus/misc/Kconfig"
+
 endmenu
