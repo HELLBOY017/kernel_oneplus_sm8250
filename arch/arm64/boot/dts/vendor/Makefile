@@ -7,7 +7,7 @@ vendor := $(srctree)/$(src)
 #	subdir-y += qcom
 #endif
 #else
-subdir-y += qcom
+#subdir-y += qcom
 # SM8250
 # 8
 subdir-y += 19821
