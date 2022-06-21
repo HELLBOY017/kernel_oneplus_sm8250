@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2018-2020 Oplus. All rights reserved.
+
+config OPLUS_SYSTEM_KERNEL
+  bool "config oplus system feature "
+  default y
+  help
+	define this config to add oplus sytstem kernel feature
+
+config OPLUS_BUG_STABILITY
+  tristate "Config stability bug fixing effect"
+  help
+        Define this config to fix stability bugs
+
+config OPLUS_BUG_STABILITY_EFFECTON_QGKI
+  tristate "config stability bug fixing effect on qgki"
+  help
+	define this config to fix stability bug only effect on qgki
+
+source "drivers/soc/oplus/system/feedback/Kconfig"
+source "drivers/soc/oplus/system/oplus_project/Kconfig"
+source "drivers/soc/oplus/system/project_info/Kconfig"
+source "drivers/soc/oplus/system/cmdline_parser/Kconfig"
+source "drivers/soc/oplus/system/oplus_mm_fb/Kconfig"
+source "drivers/soc/oplus/system/param/Kconfig"
