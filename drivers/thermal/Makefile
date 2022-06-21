@@ -64,4 +64,4 @@ obj-$(CONFIG_THERMAL_QPNP_ADC_TM)	+= qpnp-adc-tm.o qpnp-adc-common.o
 obj-$(CONFIG_ZX2967_THERMAL)	+= zx2967_thermal.o
 obj-$(CONFIG_UNIPHIER_THERMAL)	+= uniphier_thermal.o
 obj-$(CONFIG_THERMAL_TSENS)	+= msm-tsens.o tsens2xxx.o tsens-dbg.o tsens-mtc.o tsens1xxx.o tsens-calib.o
-
+obj-$(CONFIG_HORAE_THERMAL_SHELL) += horae_shell_temp.o
