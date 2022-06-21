@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2018-2020 Oplus. All rights reserved.
+
+config OPLUS_PARAM_READ_WRITE
+	bool "Param partition read/write support"
+	default n
+	help
+	if you want to read/write the param partition in kernel,
+	then you must say Y here.

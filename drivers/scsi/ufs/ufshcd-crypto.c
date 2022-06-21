@@ -404,6 +404,7 @@ int ufshcd_prepare_lrbp_crypto_spec(struct ufs_hba *hba,
 	} else {
 		lrbp->data_unit_num = bc->bc_dun[0];
 	}
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(ufshcd_prepare_lrbp_crypto_spec);
