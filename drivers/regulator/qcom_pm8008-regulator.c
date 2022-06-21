@@ -650,7 +650,6 @@ static int pm8008_register_ldo(struct pm8008_regulator *pm8008_reg,
 	char buff[MAX_REG_NAME];
 	const struct regulator_data *reg_data;
 	int rc, i, init_voltage;
-	u32 base = 0;
 	u8 reg;
 
 	reg_data = pm8008_reg->pmic_subtype == PM8008_SUBTYPE ? pm8008_reg_data
@@ -666,12 +665,11 @@ static int pm8008_register_ldo(struct pm8008_regulator *pm8008_reg,
 		return -EINVAL;
 	}
 
-	rc = of_property_read_u32(reg_node, "reg", &base);
+	rc = of_property_read_u16(reg_node, "reg", &pm8008_reg->base);
 	if (rc < 0) {
 		pr_err("%s: failed to get regulator base rc=%d\n", name, rc);
 		return rc;
 	}
-	pm8008_reg->base = base;
 
 	rc = pm8008_regulator_register_init(pm8008_reg, &reg_data[i]);
 	if (rc)
