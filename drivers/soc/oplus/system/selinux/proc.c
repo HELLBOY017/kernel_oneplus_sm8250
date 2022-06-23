@@ -14,7 +14,7 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 
-static int enable_audit = 0;
+static int enable_audit = 1;
 
 static struct proc_dir_entry *denied_procdir;
 
