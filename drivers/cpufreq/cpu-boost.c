@@ -18,6 +18,7 @@
 #include <linux/sysfs.h>
 #include <linux/sched/rt.h>
 #include <uapi/linux/sched/types.h>
+#include <linux/devfreq_boost.h>
 
 #define cpu_boost_attr_rw(_name)		\
 static struct kobj_attribute _name##_attr =	\
@@ -239,7 +240,7 @@ static void do_input_boost(struct kthread_work *work)
 		else
 			sched_boost_active = true;
 	}
-
+	devfreq_boost_kick(DEVFREQ_CPU_LLCC_DDR_BW);
 	schedule_delayed_work(&input_boost_rem, msecs_to_jiffies(input_boost_ms));
 }
 
