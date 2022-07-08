@@ -1,6 +1,5 @@
-$(warning, "wkj $(TARGET_PRODUCT)")
-ifeq ($(TARGET_PRODUCT), kona)
+ifeq ($(CONFIG_ARCH_KONA), y)
 obj-$(CONFIG_STMVL53L1) += kona/
-else ifeq ($(TARGET_PRODUCT), lito)
+else ifeq ($(CONFIG_ARCH_LITO), y)
 obj-$(CONFIG_STMVL53L1) += lito/
 endif
