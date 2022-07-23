@@ -43,10 +43,18 @@
 #define TX_MACRO_ADC_MUX_CFG_OFFSET 0x8
 #define TX_MACRO_ADC_MODE_CFG0_SHIFT 1
 
+#ifndef OPLUS_BUG_STABILITY
 #define TX_MACRO_DMIC_UNMUTE_DELAY_MS	40
+#else /* OPLUS_BUG_STABILITY */
+#define TX_MACRO_DMIC_UNMUTE_DELAY_MS	50
+#endif /* OPLUS_BUG_STABILITY */
 #define TX_MACRO_AMIC_UNMUTE_DELAY_MS	100
 #define TX_MACRO_DMIC_HPF_DELAY_MS	300
+#ifndef OPLUS_BUG_STABILITY
 #define TX_MACRO_AMIC_HPF_DELAY_MS	300
+#else /* OPLUS_BUG_STABILITY */
+#define TX_MACRO_AMIC_HPF_DELAY_MS	500
+#endif /* OPLUS_BUG_STABILITY */
 
 static int tx_unmute_delay = TX_MACRO_DMIC_UNMUTE_DELAY_MS;
 module_param(tx_unmute_delay, int, 0664);
@@ -501,6 +509,30 @@ static void tx_macro_tx_hpf_corner_freq_callback(struct work_struct *work)
 		snd_soc_component_update_bits(component, hpf_gate_reg,
 						0x03, 0x02);
 		/* Add delay between toggle hpf gate based on sample rate */
+#ifdef OPLUS_ARCH_EXTENDS
+		switch(tx_priv->amic_sample_rate) {
+		case 0:
+			usleep_range(125, 130);
+			break;
+		case 1:
+			usleep_range(62, 65);
+			break;
+		case 3:
+			usleep_range(31, 32);
+			break;
+		case 4:
+			usleep_range(20, 21);
+			break;
+		case 5:
+			usleep_range(10, 11);
+			break;
+		case 6:
+			usleep_range(5, 6);
+			break;
+		default:
+			usleep_range(125, 130);
+		}
+#else
 		switch(tx_priv->amic_sample_rate) {
 		case 8000:
 			usleep_range(125, 130);
@@ -523,6 +555,7 @@ static void tx_macro_tx_hpf_corner_freq_callback(struct work_struct *work)
 		default:
 			usleep_range(125, 130);
 		}
+#endif
 		snd_soc_component_update_bits(component, hpf_gate_reg,
 						0x03, 0x01);
 	} else {
