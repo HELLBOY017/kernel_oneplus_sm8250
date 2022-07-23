@@ -112,6 +112,10 @@
 #define DSI_DYN_REFRESH_PLL_UPPER_ADDR         (0x094)
 #define DSI_DYN_REFRESH_PLL_UPPER_ADDR2        (0x098)
 
+#ifdef OPLUS_BUG_STABILITY
+extern bool oplus_enhance_mipi_strength;
+#endif
+
 static int dsi_phy_hw_v4_0_is_pll_on(struct dsi_phy_hw *phy)
 {
 	u32 data = 0;
@@ -355,8 +359,18 @@ static void dsi_phy_hw_dphy_enable(struct dsi_phy_hw *phy,
 		vreg_ctrl_0 = less_than_1500_mhz ? 0x53 : 0x52;
 		glbl_rescode_top_ctrl = less_than_1500_mhz ? 0x3d :  0x00;
 		glbl_rescode_bot_ctrl = less_than_1500_mhz ? 0x39 :  0x3c;
+#ifndef OPLUS_BUG_STABILITY
 		glbl_str_swi_cal_sel_ctrl = 0x00;
 		glbl_hstx_str_ctrl_0 = 0x88;
+#else
+		if (oplus_enhance_mipi_strength) {
+			glbl_str_swi_cal_sel_ctrl = 0x01;
+			glbl_hstx_str_ctrl_0 = 0xFF;
+		} else {
+			glbl_str_swi_cal_sel_ctrl = 0x01;
+			glbl_hstx_str_ctrl_0 = 0xCC;
+		}
+#endif
 	} else {
 		vreg_ctrl_0 = less_than_1500_mhz ? 0x5B : 0x59;
 		glbl_str_swi_cal_sel_ctrl = less_than_1500_mhz ? 0x03 : 0x00;
