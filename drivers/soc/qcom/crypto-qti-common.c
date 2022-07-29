@@ -411,7 +411,8 @@ int crypto_qti_keyslot_program(void *priv_data,
 	err1 = crypto_qti_program_key(ice_entry, key, slot,
 				data_unit_mask, capid);
 	if (err1) {
-		pr_err("%s: program key failed with error %d\n", __func__, err1);
+		pr_err("%s: program key failed with error %d\n",
+			__func__, err1);
 		err2 = crypto_qti_invalidate_key(ice_entry, slot);
 		if (err2) {
 			pr_err("%s: invalidate key failed with error %d\n",
