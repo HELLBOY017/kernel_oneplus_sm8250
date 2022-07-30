@@ -299,7 +299,7 @@ static struct input_handler devfreq_boost_input_handler = {
 	.id_table	= devfreq_boost_ids
 };
 
-extern struct drm_panel *lcd_active_panel;
+extern struct drm_panel *active_panel;
 
 static int __init devfreq_boost_init(void)
 {
@@ -329,14 +329,14 @@ static int __init devfreq_boost_init(void)
 
 	d->msm_drm_notif.notifier_call = msm_drm_notifier_cb;
 	d->msm_drm_notif.priority = INT_MAX;
-	if (lcd_active_panel) {
-		ret = drm_panel_notifier_register(lcd_active_panel, &d->msm_drm_notif);
+	if (active_panel) {
+		ret = drm_panel_notifier_register(active_panel, &d->msm_drm_notif);
 		if (ret) {
 			pr_err("Unable to register msm_drm notifier: %d\n", ret);
 			goto unregister_handler;
 		}
 	} else {
-		pr_err("lcd_active_panel is null\n");
+		pr_err("active_panel is null\n");
 	}
 
 	return 0;
