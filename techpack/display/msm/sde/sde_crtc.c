@@ -27,6 +27,9 @@
 #include <drm/drm_flip_work.h>
 #include <linux/clk/qcom.h>
 
+#include <linux/cpu_input_boost.h>
+#include <linux/devfreq_boost.h>
+
 #include "sde_kms.h"
 #include "sde_hw_lm.h"
 #include "sde_hw_ctl.h"
@@ -4747,6 +4750,12 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 			aod_index = i;
 		if (pstates[i].sde_pstate)
 			pstates[i].sde_pstate->is_skip = false;
+	}
+	
+        if (fppressed_index > 0 || fp_mode == 1) {
+		cpu_input_boost_kick_max(500);
+		devfreq_boost_kick_max(DEVFREQ_CPU_LLCC_DDR_BW, 500);
+		devfreq_boost_kick_max(DEVFREQ_CPU_CPU_LLCC_BW, 500);
 	}
 
 	if (!is_dsi_panel(cstate->base.crtc))
