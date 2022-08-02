@@ -117,6 +117,17 @@ config INPUT_E3X0_BUTTON
 	  To compile this driver as a module, choose M here: the
 	  module will be called e3x0_button.
 
+config INPUT_HBTP_INPUT
+	tristate "HBTP input driver support"
+	help
+	  This option enables an input driver for the host based touch
+	  processing.
+
+	  Say Y to enable HBTP input driver.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called hbtp_input.
+
 config INPUT_PCSPKR
 	tristate "PC Speaker support"
 	depends on PCSPKR_PLATFORM
@@ -163,6 +174,24 @@ config INPUT_PMIC8XXX_PWRKEY
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called pmic8xxx-pwrkey.
+
+config INPUT_QPNP_POWER_ON
+	tristate "QPNP PMIC Power-on support"
+	depends on SPMI
+	help
+	  This option enables device driver support for the power-on
+	  functionality of Qualcomm Technologies, Inc. PNP PMICs.  It supports
+	  reporting the change in status of the KPDPWR_N line (connected to the
+	  power-key) as well as reset features.
+
+config INPUT_QTI_HAPTICS
+	tristate "Haptics support for QTI PMIC"
+	depends on MFD_SPMI_PMIC
+	help
+	  This option enables device driver support for the haptics peripheral
+	  found on Qualcomm Technologies, Inc. PMICs.  The haptics peripheral
+	  is capable of driving both LRA and ERM vibrators.  This module provides
+	  haptic feedback for user actions such as a long press on the touch screen.
 
 config INPUT_SPARCSPKR
 	tristate "SPARC Speaker support"
@@ -520,6 +549,11 @@ config INPUT_SGI_BTNS
 
 	  To compile this driver as a module, choose M here: the
 	  module will be called sgi_btns.
+
+config INPUT_GPIO
+	tristate "GPIO driver support"
+	help
+	  Say Y here if you want to support gpio based keys, wheels etc...
 
 config HP_SDC_RTC
 	tristate "HP SDC Real Time Clock"

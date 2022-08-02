@@ -395,7 +395,7 @@ static inline void *offset_to_ptr(const int *off)
 # define __compiletime_assert(condition, msg, prefix, suffix)		\
 	do {								\
 		extern void prefix ## suffix(void) __compiletime_error(msg); \
-		if (!(condition))					\
+		if (!(condition))						\
 			prefix ## suffix();				\
 	} while (0)
 #else

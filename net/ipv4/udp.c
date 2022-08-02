@@ -115,6 +115,7 @@
 #include "udp_impl.h"
 #include <net/sock_reuseport.h>
 #include <net/addrconf.h>
+#include <net/udp_tunnel.h>
 
 struct udp_table udp_table __read_mostly;
 EXPORT_SYMBOL(udp_table);
@@ -288,6 +289,11 @@ int udp_lib_get_port(struct sock *sk, unsigned short snum,
 	} else {
 		hslot = udp_hashslot(udptable, net, snum);
 		spin_lock_bh(&hslot->lock);
+
+		if (inet_is_local_reserved_port(net, snum) &&
+		    !sysctl_reserved_port_bind)
+			goto fail_unlock;
+
 		if (hslot->count > 10) {
 			int exist;
 			unsigned int slot2 = udp_sk(sk)->udp_portaddr_hash ^ snum;
@@ -1748,6 +1754,10 @@ try_again:
 			BPF_CGROUP_RUN_PROG_UDP4_RECVMSG_LOCK(sk,
 							(struct sockaddr *)sin);
 	}
+
+	if (udp_sk(sk)->gro_enabled)
+		udp_cmsg_recv(msg, sk, skb);
+
 	if (inet->cmsg_flags)
 		ip_cmsg_recv_offset(msg, sk, skb, sizeof(struct udphdr), off);
 
@@ -1912,9 +1922,11 @@ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 		int is_udplite = IS_UDPLITE(sk);
 
 		/* Note that an ENOMEM error is charged twice */
-		if (rc == -ENOMEM)
+		if (rc == -ENOMEM) {
 			UDP_INC_STATS(sock_net(sk), UDP_MIB_RCVBUFERRORS,
 					is_udplite);
+			trace_udpv4_fail_rcv_buf_errors(skb);
+		}
 		UDP_INC_STATS(sock_net(sk), UDP_MIB_INERRORS, is_udplite);
 		kfree_skb(skb);
 		trace_udp_fail_queue_rcv_skb(rc, sk);
@@ -1927,7 +1939,7 @@ static int __udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
 static DEFINE_STATIC_KEY_FALSE(udp_encap_needed_key);
 void udp_encap_enable(void)
 {
-	static_branch_enable(&udp_encap_needed_key);
+	static_branch_inc(&udp_encap_needed_key);
 }
 EXPORT_SYMBOL(udp_encap_enable);
 
@@ -1939,7 +1951,7 @@ EXPORT_SYMBOL(udp_encap_enable);
  * Note that in the success and error cases, the skb is assumed to
  * have either been requeued or freed.
  */
-static int udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+static int udp_queue_rcv_one_skb(struct sock *sk, struct sk_buff *skb)
 {
 	struct udp_sock *up = udp_sk(sk);
 	int is_udplite = IS_UDPLITE(sk);
@@ -2040,6 +2052,27 @@ drop:
 	atomic_inc(&sk->sk_drops);
 	kfree_skb(skb);
 	return -1;
+}
+
+static int udp_queue_rcv_skb(struct sock *sk, struct sk_buff *skb)
+{
+	struct sk_buff *next, *segs;
+	int ret;
+
+	if (likely(!udp_unexpected_gso(sk, skb)))
+		return udp_queue_rcv_one_skb(sk, skb);
+
+	BUILD_BUG_ON(sizeof(struct udp_skb_cb) > SKB_SGO_CB_OFFSET);
+	__skb_push(skb, -skb_mac_offset(skb));
+	segs = udp_rcv_segment(sk, skb, true);
+	for (skb = segs; skb; skb = next) {
+		next = skb->next;
+		__skb_pull(skb, skb_transport_offset(skb));
+		ret = udp_queue_rcv_one_skb(sk, skb);
+		if (ret > 0)
+			ip_protocol_deliver_rcu(dev_net(skb->dev), skb, -ret);
+	}
+	return 0;
 }
 
 /* For TCP sockets, sk_rx_dst is protected by socket lock
@@ -2437,11 +2470,15 @@ void udp_destroy_sock(struct sock *sk)
 	sock_set_flag(sk, SOCK_DEAD);
 	udp_flush_pending_frames(sk);
 	unlock_sock_fast(sk, slow);
-	if (static_branch_unlikely(&udp_encap_needed_key) && up->encap_type) {
-		void (*encap_destroy)(struct sock *sk);
-		encap_destroy = READ_ONCE(up->encap_destroy);
-		if (encap_destroy)
-			encap_destroy(sk);
+	if (static_branch_unlikely(&udp_encap_needed_key)) {
+		if (up->encap_type) {
+			void (*encap_destroy)(struct sock *sk);
+			encap_destroy = READ_ONCE(up->encap_destroy);
+			if (encap_destroy)
+				encap_destroy(sk);
+		}
+		if (up->encap_enabled)
+			static_branch_dec(&udp_encap_needed_key);
 	}
 }
 
@@ -2486,7 +2523,9 @@ int udp_lib_setsockopt(struct sock *sk, int level, int optname,
 			/* FALLTHROUGH */
 		case UDP_ENCAP_L2TPINUDP:
 			up->encap_type = val;
-			udp_encap_enable();
+			lock_sock(sk);
+			udp_tunnel_encap_enable(sk->sk_socket);
+			release_sock(sk);
 			break;
 		default:
 			err = -ENOPROTOOPT;
@@ -2506,6 +2545,14 @@ int udp_lib_setsockopt(struct sock *sk, int level, int optname,
 		if (val < 0 || val > USHRT_MAX)
 			return -EINVAL;
 		WRITE_ONCE(up->gso_size, val);
+		break;
+
+	case UDP_GRO:
+		lock_sock(sk);
+		if (valbool)
+			udp_tunnel_encap_enable(sk->sk_socket);
+		up->gro_enabled = valbool;
+		release_sock(sk);
 		break;
 
 	/*
@@ -2824,14 +2871,21 @@ static void udp4_format_sock(struct sock *sp, struct seq_file *f,
 		int bucket)
 {
 	struct inet_sock *inet = inet_sk(sp);
+	struct udp_sock *up = udp_sk(sp);
 	__be32 dest = inet->inet_daddr;
 	__be32 src  = inet->inet_rcv_saddr;
 	__u16 destp	  = ntohs(inet->inet_dport);
 	__u16 srcp	  = ntohs(inet->inet_sport);
+	__u8 state = sp->sk_state;
+
+	if (up->encap_rcv)
+		state |= 0xF0;
+	else if (inet->transparent)
+		state |= 0x80;
 
 	seq_printf(f, "%5d: %08X:%04X %08X:%04X"
 		" %02X %08X:%08X %02X:%08lX %08X %5u %8d %lu %d %pK %d",
-		bucket, src, srcp, dest, destp, sp->sk_state,
+		bucket, src, srcp, dest, destp, state,
 		sk_wmem_alloc_get(sp),
 		udp_rqueue_get(sp),
 		0, 0L, 0,

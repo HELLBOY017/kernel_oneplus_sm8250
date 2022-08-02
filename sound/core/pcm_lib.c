@@ -359,7 +359,8 @@ static int snd_pcm_update_hw_ptr0(struct snd_pcm_substream *substream,
 		 * the elapsed time to detect xruns.
 		 */
 		jdelta = curr_jiffies - runtime->hw_ptr_jiffies;
-		if (jdelta < runtime->hw_ptr_buffer_jiffies / 2)
+		if ((jdelta < runtime->hw_ptr_buffer_jiffies / 2) ||
+		    (runtime->hw_ptr_buffer_jiffies <= 0))
 			goto no_delta_check;
 		hdelta = jdelta - delta * HZ / runtime->rate;
 		xrun_threshold = runtime->hw_ptr_buffer_jiffies / 2 + 1;
@@ -1722,6 +1723,11 @@ static int snd_pcm_lib_ioctl_channel_info(struct snd_pcm_substream *substream,
 	switch (runtime->access) {
 	case SNDRV_PCM_ACCESS_MMAP_INTERLEAVED:
 	case SNDRV_PCM_ACCESS_RW_INTERLEAVED:
+		if ((UINT_MAX/width) < info->channel) {
+			snd_printd("%s: integer overflow while multiply\n",
+				   __func__);
+			return -EINVAL;
+		}
 		info->first = info->channel * width;
 		info->step = runtime->channels * width;
 		break;
@@ -1729,6 +1735,12 @@ static int snd_pcm_lib_ioctl_channel_info(struct snd_pcm_substream *substream,
 	case SNDRV_PCM_ACCESS_RW_NONINTERLEAVED:
 	{
 		size_t size = runtime->dma_bytes / runtime->channels;
+
+		if ((size > 0) && ((UINT_MAX/(size * 8)) < info->channel)) {
+			snd_printd("%s: integer overflow while multiply\n",
+				   __func__);
+			return -EINVAL;
+		}
 		info->first = info->channel * size * 8;
 		info->step = width;
 		break;
@@ -2069,6 +2081,9 @@ static int pcm_sanity_check(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime;
 	if (PCM_RUNTIME_CHECK(substream))
 		return -ENXIO;
+	/* TODO: consider and -EINVAL here */
+	if (substream->hw_no_buffer)
+		snd_printd("%s: warning this PCM is host less\n", __func__);
 	runtime = substream->runtime;
 	if (snd_BUG_ON(!substream->ops->copy_user && !runtime->dma_area))
 		return -EINVAL;

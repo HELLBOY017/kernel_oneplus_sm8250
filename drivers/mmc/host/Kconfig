@@ -120,6 +120,8 @@ config MMC_SDHCI_ACPI
 config MMC_SDHCI_PLTFM
 	tristate "SDHCI platform and OF driver helper"
 	depends on MMC_SDHCI
+	select EXTCON
+	select EXTCON_GPIO
 	help
 	  This selects the common helper functions support for Secure Digital
 	  Host Controller Interface based platform and OF drivers.
@@ -450,14 +452,15 @@ config MMC_ATMELMCI
 	  If unsure, say N.
 
 config MMC_SDHCI_MSM
-	tristate "Qualcomm SDHCI Controller Support"
+	tristate "Qualcomm Technologies, Inc. SDHCI Controller Support"
 	depends on ARCH_QCOM || (ARM && COMPILE_TEST)
 	depends on MMC_SDHCI_PLTFM
 	select MMC_SDHCI_IO_ACCESSORS
+	select MMC_CQHCI
 	help
 	  This selects the Secure Digital Host Controller Interface (SDHCI)
-	  support present in Qualcomm SOCs. The controller supports
-	  SD/MMC/SDIO devices.
+	  support present in Qualcomm Technologies, Inc. SOCs. The controller
+	  supports SD/MMC/SDIO devices.
 
 	  If you have a controller with this interface, say Y or M here.
 
@@ -945,3 +948,20 @@ config MMC_SDHCI_OMAP
 	  If you have a controller with this interface, say Y or M here.
 
 	  If unsure, say N.
+
+config MMC_CQHCI_CRYPTO
+	bool "CQHCI Crypto Engine Support"
+	depends on MMC_CQHCI && BLK_INLINE_ENCRYPTION
+	help
+	  Enable Crypto Engine Support in CQHCI.
+	  Enabling this makes it possible for the kernel to use the crypto
+	  capabilities of the CQHCI device (if present) to perform crypto
+	  operations on data being transferred to/from the device.
+
+config MMC_CQHCI_CRYPTO_QTI
+	bool "Vendor specific CQHCI Crypto Engine Support"
+	depends on MMC_CQHCI_CRYPTO
+	help
+	 Enable Vendor Crypto Engine Support in CQHCI
+	 Enabling this allows kernel to use CQHCI crypto operations defined
+	 and implemented by QTI.

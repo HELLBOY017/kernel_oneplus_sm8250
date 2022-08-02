@@ -44,14 +44,17 @@ out:
 	return irq;
 }
 
+#define NUMBER_OF_PROPS	5
 int dwc3_host_init(struct dwc3 *dwc)
 {
-	struct property_entry	props[3];
+	struct property_entry	props[NUMBER_OF_PROPS];
 	struct platform_device	*xhci;
 	int			ret, irq;
 	struct resource		*res;
 	struct platform_device	*dwc3_pdev = to_platform_device(dwc->dev);
 	int			prop_idx = 0;
+	struct property_entry	imod_prop;
+	struct property_entry	core_id_prop;
 
 	irq = dwc3_host_get_irq(dwc);
 	if (irq < 0)
@@ -93,6 +96,24 @@ int dwc3_host_init(struct dwc3 *dwc)
 	if (dwc->usb3_lpm_capable)
 		props[prop_idx++].name = "usb3-lpm-capable";
 
+	if (dwc->xhci_imod_value) {
+		imod_prop.name  = "imod-interval-ns";
+		imod_prop.length  = sizeof(u32);
+		imod_prop.is_array = false;
+		imod_prop.type = DEV_PROP_U32;
+		imod_prop.value.u32_data = dwc->xhci_imod_value;
+		props[prop_idx++] = imod_prop;
+	}
+
+	if (dwc->core_id >= 0) {
+		core_id_prop.name  = "usb-core-id";
+		core_id_prop.length  = sizeof(u32);
+		core_id_prop.is_array = false;
+		core_id_prop.type = DEV_PROP_U32;
+		core_id_prop.value.u32_data = dwc->core_id;
+		props[prop_idx++] = core_id_prop;
+	}
+
 	/**
 	 * WORKAROUND: dwc3 revisions <=3.00a have a limitation
 	 * where Port Disable command doesn't work.
@@ -104,6 +125,9 @@ int dwc3_host_init(struct dwc3 *dwc)
 	 */
 	if (dwc->revision <= DWC3_REVISION_300A)
 		props[prop_idx++].name = "quirk-broken-port-ped";
+
+	if (dwc->ignore_wakeup_src_in_hostmode)
+		props[prop_idx++].name = "ignore-wakeup-src-in-hostmode";
 
 	if (prop_idx) {
 		ret = platform_device_add_properties(xhci, props);

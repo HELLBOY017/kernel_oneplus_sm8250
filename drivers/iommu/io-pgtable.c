@@ -21,10 +21,10 @@
 #define pr_fmt(fmt)	"io-pgtable: " fmt
 
 #include <linux/bug.h>
+#include <linux/iommu.h>
 #include <linux/io-pgtable.h>
 #include <linux/kernel.h>
 #include <linux/types.h>
-#include <linux/iommu.h>
 #include <linux/debugfs.h>
 #include <linux/atomic.h>
 #include <linux/module.h>
@@ -42,6 +42,9 @@ io_pgtable_init_table[IO_PGTABLE_NUM_FMTS] = {
 #endif
 #ifdef CONFIG_IOMMU_IO_PGTABLE_FAST
 	[ARM_V8L_FAST] = &io_pgtable_av8l_fast_init_fns,
+#endif
+#ifdef CONFIG_MSM_TZ_SMMU
+	[ARM_MSM_SECURE] = &io_pgtable_arm_msm_secure_init_fns,
 #endif
 };
 
@@ -125,8 +128,15 @@ static int __init io_pgtable_init(void)
 	static const char pages_str[] __initconst = "pages";
 
 	io_pgtable_top = debugfs_create_dir(io_pgtable_str, iommu_debugfs_top);
-	debugfs_create_atomic_t(pages_str, 0600, io_pgtable_top,
-				&pages_allocated);
+	if (!io_pgtable_top)
+		return -ENODEV;
+
+	if (!debugfs_create_atomic_t(pages_str, 0600,
+				     io_pgtable_top, &pages_allocated)) {
+		debugfs_remove_recursive(io_pgtable_top);
+		return -ENODEV;
+	}
+
 	return 0;
 }
 

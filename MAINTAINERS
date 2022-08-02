@@ -326,6 +326,12 @@ F:	drivers/pci/*acpi*
 F:	drivers/pci/*/*acpi*
 F:	tools/power/acpi/
 
+commit 6f40c42105d5c913cf855320ba7cfbc418314e29
+Author: Meng Jiang <mengjian@codeaurora.org>
+Date:   Mon Jan 13 18:20:15 2020 -0400
+	MAINTAINERS: add MCP25xxFD driver to support SPI to CAN
+	Signed-off-by: Meng Jiang <mengjian@codeaurora.org>
+
 ACPI APEI
 M:	"Rafael J. Wysocki" <rjw@rjwysocki.net>
 M:	Len Brown <lenb@kernel.org>
@@ -5370,6 +5376,14 @@ L:	linux-edac@vger.kernel.org
 S:	Maintained
 F:	drivers/edac/ti_edac.c
 
+EDAC-QCOM
+M:	Channagoud Kadabi <ckadabi@codeaurora.org>
+M:	Venkata Narendra Kumar Gutta <vnkgutta@codeaurora.org>
+L:	linux-arm-msm@vger.kernel.org
+L:	linux-edac@vger.kernel.org
+S:	Maintained
+F:	drivers/edac/qcom_edac.c
+
 EDIROL UA-101/UA-1000 DRIVER
 M:	Clemens Ladisch <clemens@ladisch.de>
 L:	alsa-devel@alsa-project.org (moderated for non-subscribers)
@@ -6596,6 +6610,12 @@ S:	Maintained
 F:	drivers/hid/
 F:	include/linux/hid*
 F:	include/uapi/linux/hid*
+
+HID PLAYSTATION DRIVER
+M:	Roderick Colenbrander <roderick.colenbrander@sony.com>
+L:	linux-input@vger.kernel.org
+S:	Supported
+F:	drivers/hid/hid-playstation.c
 
 HID SENSOR HUB DRIVERS
 M:	Jiri Kosina <jikos@kernel.org>

@@ -101,6 +101,28 @@ config SCSI_UFS_QCOM
 	  Select this if you have UFS controller on QCOM chipset.
 	  If unsure, say N.
 
+config SCSI_UFS_TEST
+	tristate "Universal Flash Storage host controller driver unit-tests"
+	depends on SCSI_UFSHCD && IOSCHED_TEST
+	default m
+	help
+	  This adds UFS Host controller unit-test framework.
+	  The UFS unit-tests register as a block device test utility to
+	  the test-iosched and will be initiated when the test-iosched will
+	  be chosen to be the active I/O scheduler.
+
+config SCSI_UFSHCD_CMD_LOGGING
+	bool "Universal Flash Storage host controller driver layer command logging support"
+	depends on SCSI_UFSHCD
+	help
+	  This selects the UFS host controller driver layer command logging.
+	  UFS host controller driver layer command logging records all the
+	  command information sent from UFS host controller for debugging
+	  purpose.
+
+	  Select this if you want above mentioned debug information captured.
+	  If unsure, say N.
+
 config SCSI_UFS_HISI
 	tristate "Hisilicon specific hooks to UFS controller platform driver"
 	depends on (ARCH_HISI || COMPILE_TEST) && SCSI_UFSHCD_PLATFORM
@@ -118,3 +140,11 @@ config SCSI_UFS_CRYPTO
 	  Enabling this makes it possible for the kernel to use the crypto
 	  capabilities of the UFS device (if present) to perform crypto
 	  operations on data being transferred to/from the device.
+
+config SCSI_UFS_CRYPTO_QTI
+	tristate "Vendor specific UFS Crypto Engine Support"
+	depends on SCSI_UFS_CRYPTO
+	help
+	 Enable Vendor Crypto Engine Support in UFS
+	 Enabling this allows kernel to use UFS crypto operations defined
+	 and implemented by QTI.

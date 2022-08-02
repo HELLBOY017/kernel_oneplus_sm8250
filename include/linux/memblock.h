@@ -345,6 +345,7 @@ phys_addr_t memblock_reserved_size(void);
 phys_addr_t memblock_mem_size(unsigned long limit_pfn);
 phys_addr_t memblock_start_of_DRAM(void);
 phys_addr_t memblock_end_of_DRAM(void);
+phys_addr_t memblock_max_addr(phys_addr_t limit);
 void memblock_enforce_memory_limit(phys_addr_t memory_limit);
 void memblock_cap_memory_range(phys_addr_t base, phys_addr_t size);
 void memblock_mem_limit_remove_map(phys_addr_t limit);
@@ -435,6 +436,11 @@ static inline unsigned long memblock_region_reserved_end_pfn(const struct memblo
 	for (i = 0, rgn = &memblock_type->regions[0];			\
 	     i < memblock_type->cnt;					\
 	     i++, rgn = &memblock_type->regions[i])
+#define for_each_memblock_rev(memblock_type, region)	\
+	for (region = memblock.memblock_type.regions + \
+			memblock.memblock_type.cnt - 1;	\
+	     region >= memblock.memblock_type.regions;	\
+	     region--)
 
 #ifdef CONFIG_MEMTEST
 extern void early_memtest(phys_addr_t start, phys_addr_t end);

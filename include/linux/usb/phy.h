@@ -25,6 +25,10 @@
 #define PHY_LANE_B		BIT(7)
 #define PHY_HSFS_MODE		BIT(8)
 #define PHY_LS_MODE		BIT(9)
+#define PHY_USB_DP_CONCURRENT_MODE	BIT(10)
+#define EUD_SPOOF_DISCONNECT	BIT(11)
+#define EUD_SPOOF_CONNECT	BIT(12)
+#define PHY_SUS_OVERRIDE	BIT(13)
 
 enum usb_phy_interface {
 	USBPHY_INTERFACE_MODE_UNKNOWN,
@@ -173,6 +177,11 @@ struct usb_phy {
 	/* reset the PHY clocks */
 	int     (*reset)(struct usb_phy *x);
 	int	(*drive_dp_pulse)(struct usb_phy *x, unsigned int pulse_width);
+
+	/* for notification of usb_phy_dbg_events */
+	void    (*dbg_event)(struct usb_phy *x,
+			char *event, int msg1, int msg2);
+
 };
 
 /* for board-specific init logic */

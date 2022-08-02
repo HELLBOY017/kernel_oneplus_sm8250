@@ -10,6 +10,16 @@
 #include <linux/dma-mapping.h>
 #include <linux/idr.h>
 #include <linux/miscdevice.h>
+#include <linux/delay.h>
+#include <asm/cacheflush.h>
+#include <linux/of_address.h>
+#include <linux/amba/bus.h>
+#include <linux/usb_bam.h>
+#include <linux/msm-sps.h>
+#include <linux/usb/usb_qdss.h>
+#include <linux/coresight-cti.h>
+
+#include "coresight-byte-cntr.h"
 #include <linux/mutex.h>
 #include <linux/refcount.h>
 
@@ -69,6 +79,10 @@
 
 #define TMC_AXICTL_PROT_CTL_B0	BIT(0)
 #define TMC_AXICTL_PROT_CTL_B1	BIT(1)
+#define TMC_AXICTL_CACHE_CTL_B0	BIT(2)
+#define TMC_AXICTL_CACHE_CTL_B1	BIT(3)
+#define TMC_AXICTL_CACHE_CTL_B2	BIT(4)
+#define TMC_AXICTL_CACHE_CTL_B3	BIT(5)
 #define TMC_AXICTL_SCT_GAT_MODE	BIT(7)
 #define TMC_AXICTL_WR_BURST_16	0xF00
 /* Write-back Read and Write-allocate */
@@ -90,6 +104,8 @@
 #define TMC_DEVID_AXIAW_VALID	BIT(16)
 #define TMC_DEVID_AXIAW_SHIFT	17
 #define TMC_DEVID_AXIAW_MASK	0x7f
+#define TMC_ETR_BAM_PIPE_INDEX	0
+#define TMC_ETR_BAM_NR_PIPES	2
 
 #define TMC_AUTH_NSID_MASK	GENMASK(1, 0)
 
@@ -136,7 +152,38 @@ enum etr_mode {
 	ETR_MODE_CATU,		/* Use SG mechanism in CATU */
 };
 
+enum tmc_etr_out_mode {
+	TMC_ETR_OUT_MODE_NONE,
+	TMC_ETR_OUT_MODE_MEM,
+	TMC_ETR_OUT_MODE_USB,
+};
+
+static const char * const str_tmc_etr_out_mode[] = {
+	[TMC_ETR_OUT_MODE_NONE]		= "none",
+	[TMC_ETR_OUT_MODE_MEM]		= "mem",
+	[TMC_ETR_OUT_MODE_USB]		= "usb",
+};
+
+struct tmc_etr_bam_data {
+	struct sps_bam_props	props;
+	unsigned long		handle;
+	struct sps_pipe		*pipe;
+	struct sps_connect	connect;
+	uint32_t		src_pipe_idx;
+	unsigned long		dest;
+	uint32_t		dest_pipe_idx;
+	struct sps_mem_buffer	desc_fifo;
+	struct sps_mem_buffer	data_fifo;
+	bool			enable;
+};
 struct etr_buf_operations;
+
+struct etr_flat_buf {
+	struct device	*dev;
+	dma_addr_t	daddr;
+	void		*vaddr;
+	size_t		size;
+};
 
 /**
  * struct etr_buf - Details of the buffer used by ETR
@@ -203,12 +250,25 @@ struct tmc_drvdata {
 	u32			mode;
 	enum tmc_config_type	config_type;
 	enum tmc_mem_intf_width	memwidth;
+	struct mutex		mem_lock;
 	u32			trigger_cntr;
 	u32			etr_caps;
+	struct etr_buf		*sysfs_buf;
+	struct coresight_csr	*csr;
+	const char		*csr_name;
+	bool			enable;
+	struct usb_qdss_ch	*usbch;
+	struct tmc_etr_bam_data	*bamdata;
+	bool			enable_to_bam;
+	struct coresight_cti	*cti_flush;
+	struct coresight_cti	*cti_reset;
+	enum tmc_etr_out_mode	out_mode;
+	struct byte_cntr	*byte_cntr;
+	struct dma_iommu_mapping *iommu_mapping;
 	struct idr		idr;
 	struct mutex		idr_mutex;
-	struct etr_buf		*sysfs_buf;
 	struct etr_buf		*perf_buf;
+	bool			force_reg_dump;
 };
 
 struct etr_buf_operations {
@@ -270,10 +330,22 @@ ssize_t tmc_etb_get_sysfs_trace(struct tmc_drvdata *drvdata,
 /* ETR functions */
 int tmc_read_prepare_etr(struct tmc_drvdata *drvdata);
 int tmc_read_unprepare_etr(struct tmc_drvdata *drvdata);
+void tmc_free_etr_buf(struct etr_buf *etr_buf);
+void __tmc_etr_disable_to_bam(struct tmc_drvdata *drvdata);
+void tmc_etr_bam_disable(struct tmc_drvdata *drvdata);
+void usb_notifier(void *priv, unsigned int event, struct qdss_request *d_req,
+		  struct usb_qdss_ch *ch);
+int tmc_etr_bam_init(struct amba_device *adev,
+		     struct tmc_drvdata *drvdata);
+extern struct byte_cntr *byte_cntr_init(struct amba_device *adev,
+					struct tmc_drvdata *drvdata);
 extern const struct coresight_ops tmc_etr_cs_ops;
 ssize_t tmc_etr_get_sysfs_trace(struct tmc_drvdata *drvdata,
 				loff_t pos, size_t len, char **bufpp);
-
+ssize_t tmc_etr_buf_get_data(struct etr_buf *etr_buf,
+				u64 offset, size_t len, char **bufpp);
+int tmc_etr_switch_mode(struct tmc_drvdata *drvdata, const char *out_mode);
+long tmc_sg_get_rwp_offset(struct tmc_drvdata *drvdata);
 
 #define TMC_REG_PAIR(name, lo_off, hi_off)				\
 static inline u64							\

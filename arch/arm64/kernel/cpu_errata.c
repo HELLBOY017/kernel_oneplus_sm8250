@@ -23,6 +23,7 @@
 #include <asm/cpu.h>
 #include <asm/cputype.h>
 #include <asm/cpufeature.h>
+#include <asm/mmu_context.h>
 #include <asm/smp_plat.h>
 #include <asm/vectors.h>
 
@@ -661,6 +662,18 @@ needs_tx2_tvm_workaround(const struct arm64_cpu_capabilities *entry,
 	return false;
 }
 
+#ifdef CONFIG_ARM64_ERRATUM_1542418
+static void run_workaround_1542418_asid_rollover(const struct arm64_cpu_capabilities *c)
+{
+	/*
+	 * If this CPU is affected by the erratum, run the workaround
+	 * to protect us in case we are running on a kexec'ed kernel.
+	 */
+	if (c->matches(c, SCOPE_LOCAL_CPU))
+		arm64_workaround_1542418_asid_rollover();
+}
+#endif
+
 static bool __maybe_unused
 has_neoverse_n1_erratum_1542419(const struct arm64_cpu_capabilities *entry,
 				int scope)
@@ -678,6 +691,42 @@ has_neoverse_n1_erratum_1542419(const struct arm64_cpu_capabilities *entry,
 static const struct midr_range arm64_harden_el2_vectors[] = {
 	MIDR_ALL_VERSIONS(MIDR_CORTEX_A57),
 	MIDR_ALL_VERSIONS(MIDR_CORTEX_A72),
+	{},
+};
+
+#endif
+
+#ifdef CONFIG_ARM64_ERRATUM_858921
+
+static const struct midr_range arm64_workaround_858921_cpus[] = {
+	/* Cortex-A73 all versions */
+	MIDR_ALL_VERSIONS(MIDR_CORTEX_A73),
+	/* KRYO2XX Gold all versions */
+	MIDR_ALL_VERSIONS(MIDR_KRYO2XX_GOLD),
+	{},
+};
+
+#endif
+
+#ifdef CONFIG_ARM64_ERRATUM_1188873
+
+static const struct midr_range arm64_workaround_1188873_cpus[] = {
+	/* Cortex-A76 r0p0 to r2p0 */
+	MIDR_RANGE(MIDR_CORTEX_A76, 0, 0, 2, 0),
+	/* Kryo-4G r15p14 */
+	MIDR_RANGE(MIDR_KRYO4G, 15, 14, 15, 14),
+	{},
+};
+
+#endif
+
+#ifdef CONFIG_ARM64_ERRATUM_845719
+
+static const struct midr_range arm64_workaround_845719_cpus[] = {
+	/* Cortex-A53 r0p[01234] */
+	MIDR_RANGE(MIDR_CORTEX_A53, 0, 0, 0, 4),
+	/* Kryo2xx Silver rAp4 */
+	MIDR_RANGE(MIDR_KRYO2XX_SILVER, 0xA, 0x4, 0xA, 0x4),
 	{},
 };
 
@@ -735,10 +784,9 @@ const struct arm64_cpu_capabilities arm64_errata[] = {
 #endif
 #ifdef CONFIG_ARM64_ERRATUM_845719
 	{
-	/* Cortex-A53 r0p[01234] */
 		.desc = "ARM erratum 845719",
 		.capability = ARM64_WORKAROUND_845719,
-		ERRATA_MIDR_REV_RANGE(MIDR_CORTEX_A53, 0, 0, 4),
+		ERRATA_MIDR_RANGE_LIST(arm64_workaround_845719_cpus),
 	},
 #endif
 #ifdef CONFIG_CAVIUM_ERRATUM_23154
@@ -824,10 +872,9 @@ const struct arm64_cpu_capabilities arm64_errata[] = {
 #endif
 #ifdef CONFIG_ARM64_ERRATUM_858921
 	{
-	/* Cortex-A73 all versions */
 		.desc = "ARM erratum 858921",
 		.capability = ARM64_WORKAROUND_858921,
-		ERRATA_MIDR_ALL_VERSIONS(MIDR_CORTEX_A73),
+		ERRATA_MIDR_RANGE_LIST(arm64_workaround_858921_cpus),
 	},
 #endif
 	{
@@ -858,6 +905,13 @@ const struct arm64_cpu_capabilities arm64_errata[] = {
 		.matches = is_spectre_bhb_affected,
 		.cpu_enable = spectre_bhb_enable_mitigation,
 	},
+#ifdef CONFIG_ARM64_ERRATUM_1188873
+	{
+		.desc = "ARM erratum 1188873",
+		.capability = ARM64_WORKAROUND_1188873,
+		ERRATA_MIDR_RANGE_LIST(arm64_workaround_1188873_cpus),
+	},
+#endif
 #ifdef CONFIG_ARM64_ERRATUM_1463225
 	{
 		.desc = "ARM erratum 1463225",
@@ -872,6 +926,14 @@ const struct arm64_cpu_capabilities arm64_errata[] = {
 		.capability = ARM64_WORKAROUND_CAVIUM_TX2_219_TVM,
 		ERRATA_MIDR_RANGE_LIST(tx2_family_cpus),
 		.matches = needs_tx2_tvm_workaround,
+	},
+#endif
+#ifdef CONFIG_ARM64_ERRATUM_1542418
+	{
+		.desc = "ARM erratum 1542418",
+		.capability = ARM64_WORKAROUND_1542418,
+		ERRATA_MIDR_RANGE(MIDR_CORTEX_A77, 0, 0, 1, 0),
+		.cpu_enable = run_workaround_1542418_asid_rollover,
 	},
 #endif
 #ifdef CONFIG_ARM64_ERRATUM_1542419

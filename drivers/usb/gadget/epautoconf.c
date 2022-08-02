@@ -247,4 +247,4 @@ err:
 	pr_err("%s:error finding ep %s\n", __func__, ep_name);
 	return NULL;
 }
-EXPORT_SYMBOL_GPL(usb_ep_autoconfig_by_name);
+EXPORT_SYMBOL(usb_ep_autoconfig_by_name);

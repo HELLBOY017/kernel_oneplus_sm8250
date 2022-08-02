@@ -25,8 +25,39 @@
 #include <linux/net.h>
 #include <net/regulatory.h>
 
+/* Backport support for DFS offload */
+#define CFG80211_DFS_OFFLOAD_BACKPORT 1
+
 /* Indicate support for including KEK length in rekey data */
 #define CFG80211_REKEY_DATA_KEK_LEN 1
+
+/* Indicate backport support for FILS SK offload in cfg80211 */
+#define CFG80211_FILS_SK_OFFLOAD_SUPPORT 1
+
+/* Indicate backport support for external authentication*/
+#define CFG80211_EXTERNAL_AUTH_SUPPORT 1
+
+/* Indicate backport support for external authentication in AP mode */
+#define CFG80211_EXTERNAL_AUTH_AP_SUPPORT 1
+
+/* Indicate support for reporting rx FCS in cfg80211 */
+#define CFG80211_RX_FCS_ERROR_REPORTING_SUPPORT 1
+
+/* Indicate backport support for DH IE creation/update*/
+#define CFG80211_EXTERNAL_DH_UPDATE_SUPPORT 1
+
+/* Indicate backport support for supported AKM advertisement per interface*/
+#define CFG80211_IFTYPE_AKM_SUITES_SUPPORT 1
+
+/* Indicate backport support for key configuration for Beacon protection*/
+#define CFG80211_BIGTK_CONFIGURATION_SUPPORT 1
+
+/* Indicate support for including KEK length in rekey data */
+#define CFG80211_REKEY_DATA_KEK_LEN 1
+/* Indicate backport support for 6GHz band */
+#define CFG80211_6GHZ_BAND_SUPPORTED 1
+/* Indicate backport support for OCV feature flag*/
+#define CFG80211_OCV_CONFIGURATION_SUPPORT 1
 
 /**
  * DOC: Introduction
@@ -132,6 +163,7 @@ enum ieee80211_channel_flags {
  * with cfg80211.
  *
  * @center_freq: center frequency in MHz
+ * @freq_offset: offset from @center_freq, in KHz
  * @hw_value: hardware-specific value for the channel
  * @flags: channel flags from &enum ieee80211_channel_flags.
  * @orig_flags: channel flags at registration time, used by regulatory
@@ -152,7 +184,8 @@ enum ieee80211_channel_flags {
  */
 struct ieee80211_channel {
 	enum nl80211_band band;
-	u16 center_freq;
+	u32 center_freq;
+	u16 freq_offset;
 	u16 hw_value;
 	u32 flags;
 	int max_antenna_gain;
@@ -317,10 +350,13 @@ struct ieee80211_sta_he_cap {
  *
  * @types_mask: interface types mask
  * @he_cap: holds the HE capabilities
+ * @he_6ghz_capa: HE 6 GHz capabilities, must be filled in for a
+ *	6 GHz band channel (and 0 may be valid value).
  */
 struct ieee80211_sband_iftype_data {
 	u16 types_mask;
 	struct ieee80211_sta_he_cap he_cap;
+	struct ieee80211_he_6ghz_capa he_6ghz_capa;
 };
 
 /**
@@ -564,6 +600,7 @@ struct key_params {
  *	If edmg is requested (i.e. the .channels member is non-zero),
  *	chan will define the primary channel and all other
  *	parameters are ignored.
+ * @freq1_offset: offset from @center_freq1, in KHz
  */
 struct cfg80211_chan_def {
 	struct ieee80211_channel *chan;
@@ -571,6 +608,7 @@ struct cfg80211_chan_def {
 	u32 center_freq1;
 	u32 center_freq2;
 	struct ieee80211_edmg edmg;
+	u16 freq1_offset;
 };
 
 /**
@@ -625,6 +663,7 @@ cfg80211_chandef_identical(const struct cfg80211_chan_def *chandef1,
 	return (chandef1->chan == chandef2->chan &&
 		chandef1->width == chandef2->width &&
 		chandef1->center_freq1 == chandef2->center_freq1 &&
+		chandef1->freq1_offset == chandef2->freq1_offset &&
 		chandef1->center_freq2 == chandef2->center_freq2);
 }
 
@@ -1078,6 +1117,7 @@ enum station_parameters_apply_mask {
  * @support_p2p_ps: information if station supports P2P PS mechanism
  * @he_capa: HE capabilities of station
  * @he_capa_len: the length of the HE capabilities
+ * @he_6ghz_capa: HE 6 GHz Band capabilities of station
  */
 struct station_parameters {
 	const u8 *supported_rates;
@@ -1107,6 +1147,7 @@ struct station_parameters {
 	int support_p2p_ps;
 	const struct ieee80211_he_cap_elem *he_capa;
 	u8 he_capa_len;
+	const struct ieee80211_he_6ghz_capa *he_6ghz_capa;
 };
 
 /**
@@ -2113,15 +2154,29 @@ struct cfg80211_bss {
 };
 
 /**
- * ieee80211_bss_get_ie - find IE with given ID
+ * ieee80211_bss_get_elem - find element with given ID
  * @bss: the bss to search
- * @ie: the IE ID
+ * @id: the element ID
  *
  * Note that the return value is an RCU-protected pointer, so
  * rcu_read_lock() must be held when calling this function.
  * Return: %NULL if not found.
  */
-const u8 *ieee80211_bss_get_ie(struct cfg80211_bss *bss, u8 ie);
+const struct element *ieee80211_bss_get_elem(struct cfg80211_bss *bss, u8 id);
+
+/**
+ * ieee80211_bss_get_ie - find IE with given ID
+ * @bss: the bss to search
+ * @id: the element ID
+ *
+ * Note that the return value is an RCU-protected pointer, so
+ * rcu_read_lock() must be held when calling this function.
+ * Return: %NULL if not found.
+ */
+static inline const u8 *ieee80211_bss_get_ie(struct cfg80211_bss *bss, u8 id)
+{
+	return (void *)ieee80211_bss_get_elem(bss, id);
+}
 
 
 /**
@@ -4602,29 +4657,106 @@ static inline void *wdev_priv(struct wireless_dev *wdev)
  */
 
 /**
+ * ieee80211_channel_equal - compare two struct ieee80211_channel
+ *
+ * @a: 1st struct ieee80211_channel
+ * @b: 2nd struct ieee80211_channel
+ * Return: true if center frequency of @a == @b
+ */
+static inline bool
+ieee80211_channel_equal(struct ieee80211_channel *a,
+			struct ieee80211_channel *b)
+{
+	return (a->center_freq == b->center_freq &&
+		a->freq_offset == b->freq_offset);
+}
+
+/**
+ * ieee80211_channel_to_khz - convert ieee80211_channel to frequency in KHz
+ * @chan: struct ieee80211_channel to convert
+ * Return: The corresponding frequency (in KHz)
+ */
+static inline u32
+ieee80211_channel_to_khz(const struct ieee80211_channel *chan)
+{
+	return MHZ_TO_KHZ(chan->center_freq) + chan->freq_offset;
+}
+
+/**
+ * ieee80211_channel_to_freq_khz - convert channel number to frequency
+ * @chan: channel number
+ * @band: band, necessary due to channel number overlap
+ * Return: The corresponding frequency (in KHz), or 0 if the conversion failed.
+ */
+u32 ieee80211_channel_to_freq_khz(int chan, enum nl80211_band band);
+
+/**
  * ieee80211_channel_to_frequency - convert channel number to frequency
  * @chan: channel number
  * @band: band, necessary due to channel number overlap
  * Return: The corresponding frequency (in MHz), or 0 if the conversion failed.
  */
-int ieee80211_channel_to_frequency(int chan, enum nl80211_band band);
+static inline int
+ieee80211_channel_to_frequency(int chan, enum nl80211_band band)
+{
+	return KHZ_TO_MHZ(ieee80211_channel_to_freq_khz(chan, band));
+}
+
+/**
+ * ieee80211_freq_khz_to_channel - convert frequency to channel number
+ * @freq: center frequency in KHz
+ * Return: The corresponding channel, or 0 if the conversion failed.
+ */
+int ieee80211_freq_khz_to_channel(u32 freq);
 
 /**
  * ieee80211_frequency_to_channel - convert frequency to channel number
- * @freq: center frequency
+ * @freq: center frequency in MHz
  * Return: The corresponding channel, or 0 if the conversion failed.
  */
-int ieee80211_frequency_to_channel(int freq);
+static inline int
+ieee80211_frequency_to_channel(int freq)
+{
+	return ieee80211_freq_khz_to_channel(MHZ_TO_KHZ(freq));
+}
+
+/**
+ * ieee80211_get_channel_khz - get channel struct from wiphy for specified
+ * frequency
+ * @wiphy: the struct wiphy to get the channel for
+ * @freq: the center frequency (in KHz) of the channel
+ * Return: The channel struct from @wiphy at @freq.
+ */
+struct ieee80211_channel *
+ieee80211_get_channel_khz(struct wiphy *wiphy, u32 freq);
 
 /**
  * ieee80211_get_channel - get channel struct from wiphy for specified frequency
  *
  * @wiphy: the struct wiphy to get the channel for
- * @freq: the center frequency of the channel
- *
+ * @freq: the center frequency (in MHz) of the channel
  * Return: The channel struct from @wiphy at @freq.
  */
-struct ieee80211_channel *ieee80211_get_channel(struct wiphy *wiphy, int freq);
+static inline struct ieee80211_channel *
+ieee80211_get_channel(struct wiphy *wiphy, int freq)
+{
+	return ieee80211_get_channel_khz(wiphy, MHZ_TO_KHZ(freq));
+}
+
+/**
+ * cfg80211_channel_is_psc - Check if the channel is a 6 GHz PSC
+ * @chan: control channel to check
+ *
+ * The Preferred Scanning Channels (PSC) are defined in
+ * Draft IEEE P802.11ax/D5.0, 26.17.2.3.3
+ */
+static inline bool cfg80211_channel_is_psc(struct ieee80211_channel *chan)
+{
+	if (chan->band != NL80211_BAND_6GHZ)
+		return false;
+
+	return ieee80211_frequency_to_channel(chan->center_freq) % 16 == 5;
+}
 
 /**
  * ieee80211_get_response_rate - get basic rate for a given rate
@@ -4834,6 +4966,33 @@ unsigned int cfg80211_classify8021d(struct sk_buff *skb,
 				    struct cfg80211_qos_map *qos_map);
 
 /**
+ * cfg80211_find_elem_match - match information element and byte array in data
+ *
+ * @eid: element ID
+ * @ies: data consisting of IEs
+ * @len: length of data
+ * @match: byte array to match
+ * @match_len: number of bytes in the match array
+ * @match_offset: offset in the IE data where the byte array should match.
+ *	Note the difference to cfg80211_find_ie_match() which considers
+ *	the offset to start from the element ID byte, but here we take
+ *	the data portion instead.
+ *
+ * Return: %NULL if the element ID could not be found or if
+ * the element is invalid (claims to be longer than the given
+ * data) or if the byte array doesn't match; otherwise return the
+ * requested element struct.
+ *
+ * Note: There are no checks on the element length other than
+ * having to fit into the given data and being large enough for the
+ * byte array to match.
+ */
+const struct element *
+cfg80211_find_elem_match(u8 eid, const u8 *ies, unsigned int len,
+			 const u8 *match, unsigned int match_len,
+			 unsigned int match_offset);
+
+/**
  * cfg80211_find_ie_match - match information element and byte array in data
  *
  * @eid: element ID
@@ -4857,9 +5016,44 @@ unsigned int cfg80211_classify8021d(struct sk_buff *skb,
  * having to fit into the given data and being large enough for the
  * byte array to match.
  */
-const u8 *cfg80211_find_ie_match(u8 eid, const u8 *ies, int len,
-				 const u8 *match, int match_len,
-				 int match_offset);
+static inline const u8 *
+cfg80211_find_ie_match(u8 eid, const u8 *ies, unsigned int len,
+		       const u8 *match, unsigned int match_len,
+		       unsigned int match_offset)
+{
+	/* match_offset can't be smaller than 2, unless match_len is
+	 * zero, in which case match_offset must be zero as well.
+	 */
+	if (WARN_ON((match_len && match_offset < 2) ||
+		    (!match_len && match_offset)))
+		return NULL;
+
+	return (void *)cfg80211_find_elem_match(eid, ies, len,
+						match, match_len,
+						match_offset ?
+							match_offset - 2 : 0);
+}
+
+/**
+ * cfg80211_find_elem - find information element in data
+ *
+ * @eid: element ID
+ * @ies: data consisting of IEs
+ * @len: length of data
+ *
+ * Return: %NULL if the element ID could not be found or if
+ * the element is invalid (claims to be longer than the given
+ * data) or if the byte array doesn't match; otherwise return the
+ * requested element struct.
+ *
+ * Note: There are no checks on the element length other than
+ * having to fit into the given data.
+ */
+static inline const struct element *
+cfg80211_find_elem(u8 eid, const u8 *ies, int len)
+{
+	return cfg80211_find_elem_match(eid, ies, len, NULL, 0, 0);
+}
 
 /**
  * cfg80211_find_ie - find information element in data
@@ -4879,6 +5073,28 @@ const u8 *cfg80211_find_ie_match(u8 eid, const u8 *ies, int len,
 static inline const u8 *cfg80211_find_ie(u8 eid, const u8 *ies, int len)
 {
 	return cfg80211_find_ie_match(eid, ies, len, NULL, 0, 0);
+}
+
+/**
+ * cfg80211_find_ext_elem - find information element with EID Extension in data
+ *
+ * @ext_eid: element ID Extension
+ * @ies: data consisting of IEs
+ * @len: length of data
+ *
+ * Return: %NULL if the etended element could not be found or if
+ * the element is invalid (claims to be longer than the given
+ * data) or if the byte array doesn't match; otherwise return the
+ * requested element struct.
+ *
+ * Note: There are no checks on the element length other than
+ * having to fit into the given data.
+ */
+static inline const struct element *
+cfg80211_find_ext_elem(u8 ext_eid, const u8 *ies, int len)
+{
+	return cfg80211_find_elem_match(WLAN_EID_EXTENSION, ies, len,
+					&ext_eid, 1, 0);
 }
 
 /**
@@ -4903,6 +5119,25 @@ static inline const u8 *cfg80211_find_ext_ie(u8 ext_eid, const u8 *ies, int len)
 }
 
 /**
+ * cfg80211_find_vendor_elem - find vendor specific information element in data
+ *
+ * @oui: vendor OUI
+ * @oui_type: vendor-specific OUI type (must be < 0xff), negative means any
+ * @ies: data consisting of IEs
+ * @len: length of data
+ *
+ * Return: %NULL if the vendor specific element ID could not be found or if the
+ * element is invalid (claims to be longer than the given data); otherwise
+ * return the element structure for the requested element.
+ *
+ * Note: There are no checks on the element length other than having to fit into
+ * the given data.
+ */
+const struct element *cfg80211_find_vendor_elem(unsigned int oui, int oui_type,
+						const u8 *ies,
+						unsigned int len);
+
+/**
  * cfg80211_find_vendor_ie - find vendor specific information element in data
  *
  * @oui: vendor OUI
@@ -4918,8 +5153,12 @@ static inline const u8 *cfg80211_find_ext_ie(u8 ext_eid, const u8 *ies, int len)
  * Note: There are no checks on the element length other than having to fit into
  * the given data.
  */
-const u8 *cfg80211_find_vendor_ie(unsigned int oui, int oui_type,
-				  const u8 *ies, int len);
+static inline const u8 *
+cfg80211_find_vendor_ie(unsigned int oui, int oui_type,
+			const u8 *ies, unsigned int len)
+{
+	return (void *)cfg80211_find_vendor_elem(oui, oui_type, ies, len);
+}
 
 /**
  * cfg80211_send_layer2_update - send layer 2 update frame
@@ -4992,6 +5231,32 @@ int regulatory_set_wiphy_regd(struct wiphy *wiphy,
  */
 int regulatory_set_wiphy_regd_sync_rtnl(struct wiphy *wiphy,
 					struct ieee80211_regdomain *rd);
+
+/**
+ * regulatory_hint_user - hint to the wireless core a regulatory domain
+ * which the driver has received from an application
+ * @alpha2: the ISO/IEC 3166 alpha2 the driver claims its regulatory domain
+ *	should be in. If @rd is set this should be NULL. Note that if you
+ *	set this to NULL you should still set rd->alpha2 to some accepted
+ *	alpha2.
+ * @user_reg_hint_type: the type of user regulatory hint.
+ *
+ * Wireless drivers can use this function to hint to the wireless core
+ * the current regulatory domain as specified by trusted applications,
+ * it is the driver's responsibilty to estbalish which applications it
+ * trusts.
+ *
+ * The wiphy should be registered to cfg80211 prior to this call.
+ * For cfg80211 drivers this means you must first use wiphy_register(),
+ * for mac80211 drivers you must first use ieee80211_register_hw().
+ *
+ * Drivers should check the return value, its possible you can get
+ * an -ENOMEM or an -EINVAL.
+ *
+ * Return: 0 on success. -ENOMEM, -EINVAL.
+ */
+int regulatory_hint_user(const char *alpha2,
+			 enum nl80211_user_reg_hint_type user_reg_hint_type);
 
 /**
  * wiphy_apply_custom_regulatory - apply a custom driver regulatory domain
@@ -6424,6 +6689,19 @@ bool ieee80211_operating_class_to_band(u8 operating_class,
  */
 bool ieee80211_chandef_to_operating_class(struct cfg80211_chan_def *chandef,
 					  u8 *op_class);
+
+/**
+ * ieee80211_chandef_to_khz - convert chandef to frequency in KHz
+ *
+ * @chandef: the chandef to convert
+ *
+ * Returns the center frequency of chandef (1st segment) in KHz.
+ */
+static inline u32
+ieee80211_chandef_to_khz(const struct cfg80211_chan_def *chandef)
+{
+	return MHZ_TO_KHZ(chandef->center_freq1) + chandef->freq1_offset;
+}
 
 /*
  * cfg80211_tdls_oper_request - request userspace to perform TDLS operation

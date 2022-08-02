@@ -798,6 +798,27 @@ config HID_PLANTRONICS
 
 	  Say M here if you may ever plug in a Plantronics USB audio device.
 
+config HID_PLAYSTATION
+	tristate "PlayStation HID Driver"
+	depends on HID
+	select CRC32
+	select POWER_SUPPLY
+	---help---
+	Provides support for Sony PS5 controllers including support for
+	its special functionalities e.g. touchpad, lights and motion
+	sensors.
+
+config PLAYSTATION_FF
+	bool "PlayStation force feedback support"
+	depends on HID_PLAYSTATION
+	select INPUT_FF_MEMLESS
+	help
+	Provides the force feedback support for Playstation game
+	controllers.
+
+	Say Y here if you would like to enable force feedback support for
+	PlayStation game controllers.
+
 config HID_PRIMAX
 	tristate "Primax non-fully HID-compliant devices"
 	depends on HID
@@ -1090,6 +1111,15 @@ config HID_ALPS
 	Support for Alps I2C HID touchpads and StickPointer.
 	Say Y here if you have a Alps touchpads over i2c-hid or usbhid
 	and want support for its special functionalities.
+
+config HID_QVR
+	tristate "QVR support"
+	depends on HID
+	help
+	Support for streaming sensor data from an external device and to
+	retrieve the calibration data of the associated device.
+	Say 'Y' or 'M' if you want to connect an external device to
+	stream sensor data for QVR support.
 
 endmenu
 

@@ -256,7 +256,8 @@ static const struct drm_display_mode drm_dmt_modes[] = {
 	/* 0x05 - 640x480@72Hz */
 	{ DRM_MODE("640x480", DRM_MODE_TYPE_DRIVER, 31500, 640, 664,
 		   704, 832, 0, 480, 489, 492, 520, 0,
-		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC) },
+		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC),
+		   .vrefresh = 72, },
 	/* 0x06 - 640x480@75Hz */
 	{ DRM_MODE("640x480", DRM_MODE_TYPE_DRIVER, 31500, 640, 656,
 		   720, 840, 0, 480, 481, 484, 500, 0,
@@ -613,7 +614,8 @@ static const struct drm_display_mode edid_est_modes[] = {
 		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC) }, /* 640x480@75Hz */
 	{ DRM_MODE("640x480", DRM_MODE_TYPE_DRIVER, 31500, 640, 664,
 		   704,  832, 0, 480, 489, 492, 520, 0,
-		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC) }, /* 640x480@72Hz */
+		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC),
+		   .vrefresh = 72, }, /* 640x480@72Hz */
 	{ DRM_MODE("640x480", DRM_MODE_TYPE_DRIVER, 30240, 640, 704,
 		   768,  864, 0, 480, 483, 486, 525, 0,
 		   DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC) }, /* 640x480@67Hz */
@@ -1569,6 +1571,9 @@ static void connector_bad_edid(struct drm_connector *connector,
 			       u8 *edid, int num_blocks)
 {
 	int i;
+	u32 csum = 0x100 | drm_edid_block_checksum(edid);
+
+	connector->checksum = 0x100 - (csum - edid[EDID_LENGTH - 1]);
 
 	if (connector->bad_edid_counter++ && !(drm_debug & DRM_UT_KMS))
 		return;
@@ -1665,6 +1670,8 @@ struct edid *drm_do_get_edid(struct drm_connector *connector,
 	int i, j = 0, valid_extensions = 0;
 	u8 *edid, *new;
 	struct edid *override;
+
+	connector->checksum = 0;
 
 	override = drm_get_override_edid(connector);
 	if (override)
@@ -2911,6 +2918,10 @@ add_detailed_modes(struct drm_connector *connector, struct edid *edid,
 #define VIDEO_BLOCK     0x02
 #define VENDOR_BLOCK    0x03
 #define SPEAKER_BLOCK	0x04
+#define VENDOR_SPECIFIC_VIDEO_DATA_BLOCK 0x01
+#define VSVDB_HDR10_PLUS_IEEE_CODE 0x90848b
+#define VSVDB_HDR10_PLUS_APP_VER_MASK 0x3
+#define HDR_STATIC_METADATA_EXTENDED_DATA_BLOCK 0x08
 #define COLORIMETRY_EXTENDED_DATA_BLOCK 0x05
 #define HDR_STATIC_METADATA_BLOCK	0x6
 #define USE_EXTENDED_TAG 0x07
@@ -4154,6 +4165,7 @@ drm_hdmi_extract_extended_blk_info(struct drm_connector *connector,
 				case VENDOR_SPECIFIC_VIDEO_DATA_BLOCK:
 					drm_extract_vsvdb_info(connector, db);
 					break;
+				case HDR_STATIC_METADATA_EXTENDED_DATA_BLOCK:
 				case HDR_STATIC_METADATA_BLOCK:
 					drm_extract_hdr_db(connector, db);
 					break;
@@ -4869,7 +4881,6 @@ drm_hdmi_extract_vsdbs_info(struct drm_connector *connector,
 		}
 	}
 }
-
 
 u32 drm_add_display_info(struct drm_connector *connector, const struct edid *edid)
 {

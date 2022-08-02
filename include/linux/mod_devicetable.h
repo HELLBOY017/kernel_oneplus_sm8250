@@ -448,6 +448,23 @@ struct pci_epf_device_id {
 	kernel_ulong_t driver_data;
 };
 
+/* i3c */
+
+#define I3C_MATCH_DCR			0x1
+#define I3C_MATCH_MANUF			0x2
+#define I3C_MATCH_PART			0x4
+#define I3C_MATCH_EXTRA_INFO		0x8
+
+struct i3c_device_id {
+	__u8 match_flags;
+	__u8 dcr;
+	__u16 manuf_id;
+	__u16 part_id;
+	__u16 extra_info;
+
+	const void *data;
+};
+
 /* spi */
 
 #define SPI_NAME_SIZE	32
@@ -464,11 +481,8 @@ struct spi_device_id {
 #define SLIMBUS_MODULE_PREFIX	"slim:"
 
 struct slim_device_id {
-	__u16 manf_id, prod_code;
-	__u16 dev_index, instance;
-
-	/* Data private to the driver */
-	kernel_ulong_t driver_data;
+	char name[SLIMBUS_NAME_SIZE];
+	kernel_ulong_t driver_data;     /* Data private to the driver */
 };
 
 #define APR_NAME_SIZE	32
@@ -487,6 +501,16 @@ struct apr_device_id {
 
 struct spmi_device_id {
 	char name[SPMI_NAME_SIZE];
+	kernel_ulong_t driver_data;	/* Data private to the driver */
+};
+
+/* soundwire */
+
+#define SOUNDWIRE_NAME_SIZE	32
+#define SOUNDWIRE_MODULE_PREFIX "swr:"
+
+struct swr_device_id {
+	char name[SOUNDWIRE_NAME_SIZE];
 	kernel_ulong_t driver_data;	/* Data private to the driver */
 };
 
@@ -765,6 +789,19 @@ struct tb_service_id {
 struct typec_device_id {
 	__u16 svid;
 	__u8 mode;
+	kernel_ulong_t driver_data;
+};
+
+#define MHI_NAME_SIZE 32
+
+/**
+ * struct mhi_device_id - MHI device identification
+ * @chan: MHI channel name
+ * @driver_data: driver data;
+ */
+
+struct mhi_device_id {
+	const char chan[MHI_NAME_SIZE];
 	kernel_ulong_t driver_data;
 };
 

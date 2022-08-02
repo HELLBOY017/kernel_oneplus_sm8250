@@ -83,7 +83,7 @@ static struct usb_interface_descriptor uvc_control_intf = {
 	.bNumEndpoints		= 1,
 	.bInterfaceClass	= USB_CLASS_VIDEO,
 	.bInterfaceSubClass	= UVC_SC_VIDEOCONTROL,
-	.bInterfaceProtocol	= 0x00,
+	.bInterfaceProtocol	= 0x01,
 	.iInterface		= 0,
 };
 
@@ -423,6 +423,14 @@ static ssize_t function_name_show(struct device *dev,
 
 static DEVICE_ATTR_RO(function_name);
 
+static void uvc_video_device_release(struct video_device *vdev)
+{
+	struct uvc_device *uvc = container_of(vdev, struct uvc_device, vdev);
+
+	memset(vdev, 0, sizeof(*vdev));
+	complete(&uvc->unbind_ok);
+}
+
 static int
 uvc_register_video(struct uvc_device *uvc)
 {
@@ -433,7 +441,7 @@ uvc_register_video(struct uvc_device *uvc)
 	uvc->vdev.v4l2_dev = &uvc->v4l2_dev;
 	uvc->vdev.fops = &uvc_v4l2_fops;
 	uvc->vdev.ioctl_ops = &uvc_v4l2_ioctl_ops;
-	uvc->vdev.release = video_device_release_empty;
+	uvc->vdev.release = uvc_video_device_release;
 	uvc->vdev.vfl_dir = VFL_DIR_TX;
 	uvc->vdev.lock = &uvc->video.mutex;
 	strlcpy(uvc->vdev.name, cdev->gadget->name, sizeof(uvc->vdev.name));
@@ -488,6 +496,7 @@ uvc_copy_descriptors(struct uvc_device *uvc, enum usb_device_speed speed)
 	void *mem;
 
 	switch (speed) {
+	case USB_SPEED_SUPER_PLUS:
 	case USB_SPEED_SUPER:
 		uvc_control_desc = uvc->desc.ss_control;
 		uvc_streaming_cls = uvc->desc.ss_streaming;
@@ -531,7 +540,7 @@ uvc_copy_descriptors(struct uvc_device *uvc, enum usb_device_speed speed)
 	      + uvc_control_ep.bLength + uvc_control_cs_ep.bLength
 	      + uvc_streaming_intf_alt0.bLength;
 
-	if (speed == USB_SPEED_SUPER) {
+	if (speed >= USB_SPEED_SUPER) {
 		bytes += uvc_ss_control_comp.bLength;
 		n_desc = 6;
 	} else {
@@ -575,7 +584,7 @@ uvc_copy_descriptors(struct uvc_device *uvc, enum usb_device_speed speed)
 	uvc_control_header->baInterfaceNr[0] = uvc->streaming_intf;
 
 	UVC_COPY_DESCRIPTOR(mem, dst, &uvc_control_ep);
-	if (speed == USB_SPEED_SUPER)
+	if (speed >= USB_SPEED_SUPER)
 		UVC_COPY_DESCRIPTOR(mem, dst, &uvc_ss_control_comp);
 
 	UVC_COPY_DESCRIPTOR(mem, dst, &uvc_control_cs_ep);
@@ -734,6 +743,15 @@ uvc_function_bind(struct usb_configuration *c, struct usb_function *f)
 			goto error;
 		}
 	}
+	if (gadget_is_superspeed_plus(c->cdev->gadget)) {
+		f->ssp_descriptors = uvc_copy_descriptors(uvc,
+						USB_SPEED_SUPER_PLUS);
+		if (IS_ERR(f->ssp_descriptors)) {
+			ret = PTR_ERR(f->ssp_descriptors);
+			f->ssp_descriptors = NULL;
+			goto error;
+		}
+	}
 
 	/* Preallocate control endpoint request. */
 	uvc->control_req = usb_ep_alloc_request(cdev->gadget->ep0, GFP_KERNEL);
@@ -764,6 +782,8 @@ uvc_function_bind(struct usb_configuration *c, struct usb_function *f)
 		goto error;
 	}
 
+	reinit_completion(&uvc->unbind_ok);
+	uvc->wait_for_close = false;
 	return 0;
 
 error:
@@ -816,21 +836,23 @@ static struct usb_function_instance *uvc_alloc_inst(void)
 	cd->wObjectiveFocalLengthMax	= cpu_to_le16(0);
 	cd->wOcularFocalLength		= cpu_to_le16(0);
 	cd->bControlSize		= 3;
-	cd->bmControls[0]		= 2;
-	cd->bmControls[1]		= 0;
-	cd->bmControls[2]		= 0;
+	cd->bmControls[0]		= 62;
+	cd->bmControls[1]		= 126;
+	cd->bmControls[2]		= 10;
 
 	pd = &opts->uvc_processing;
-	pd->bLength			= UVC_DT_PROCESSING_UNIT_SIZE(2);
+	pd->bLength			= UVC_DT_PROCESSING_UNIT_SIZE(3);
 	pd->bDescriptorType		= USB_DT_CS_INTERFACE;
 	pd->bDescriptorSubType		= UVC_VC_PROCESSING_UNIT;
 	pd->bUnitID			= 2;
 	pd->bSourceID			= 1;
 	pd->wMaxMultiplier		= cpu_to_le16(16*1024);
-	pd->bControlSize		= 2;
-	pd->bmControls[0]		= 1;
-	pd->bmControls[1]		= 0;
+	pd->bControlSize		= 3;
+	pd->bmControls[0]		= 91;
+	pd->bmControls[1]		= 23;
+	pd->bmControls[2]		= 4;
 	pd->iProcessing			= 0;
+	pd->bmVideoStandards		= 0;
 
 	od = &opts->uvc_output_terminal;
 	od->bLength			= UVC_DT_OUTPUT_TERMINAL_SIZE;
@@ -890,12 +912,20 @@ static void uvc_unbind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct usb_composite_dev *cdev = c->cdev;
 	struct uvc_device *uvc = to_uvc(f);
+	struct v4l2_event v4l2_event;
 
 	INFO(cdev, "%s\n", __func__);
+
+	memset(&v4l2_event, 0, sizeof(v4l2_event));
+	v4l2_event.type = UVC_EVENT_UNBIND;
+	v4l2_event_queue(&uvc->vdev, &v4l2_event);
 
 	device_remove_file(&uvc->vdev.dev, &dev_attr_function_name);
 	video_unregister_device(&uvc->vdev);
 	v4l2_device_unregister(&uvc->v4l2_dev);
+
+	if (uvc->wait_for_close)
+		wait_for_completion(&uvc->unbind_ok);
 
 	usb_ep_free_request(cdev->gadget->ep0, uvc->control_req);
 	kfree(uvc->control_buf);
@@ -913,6 +943,7 @@ static struct usb_function *uvc_alloc(struct usb_function_instance *fi)
 	if (uvc == NULL)
 		return ERR_PTR(-ENOMEM);
 
+	init_completion(&uvc->unbind_ok);
 	mutex_init(&uvc->video.mutex);
 	uvc->state = UVC_STATE_DISCONNECTED;
 	opts = fi_to_f_uvc_opts(fi);
@@ -957,5 +988,18 @@ static struct usb_function *uvc_alloc(struct usb_function_instance *fi)
 }
 
 DECLARE_USB_FUNCTION_INIT(uvc, uvc_alloc_inst, uvc_alloc);
+
+static int uvc_init(void)
+{
+	return usb_function_register(&uvcusb_func);
+}
+module_init(uvc_init);
+
+static void __exit uvc_exit(void)
+{
+	usb_function_unregister(&uvcusb_func);
+}
+module_exit(uvc_exit);
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Laurent Pinchart");

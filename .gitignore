@@ -132,3 +132,12 @@ all.config
 
 # Kdevelop4
 *.kdev4
+
+# fetched Android config fragments
+kernel/configs/android-*.cfg
+
+# vendor device tree directories
+arch/arm64/boot/dts/vendor/
+
+# Tech package directories
+techpack/

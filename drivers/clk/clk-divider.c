@@ -282,6 +282,9 @@ static int clk_divider_bestdiv(struct clk_hw *hw, struct clk_hw *parent,
 	unsigned long parent_rate, best = 0, now, maxdiv;
 	unsigned long parent_rate_saved = *best_parent_rate;
 
+	if (!hw || !parent)
+		return -EINVAL;
+
 	if (!rate)
 		rate = 1;
 
@@ -494,6 +497,7 @@ static struct clk_hw *_register_divider(struct device *dev, const char *name,
 	/* register the clock */
 	hw = &div->hw;
 	ret = clk_hw_register(dev, hw);
+	hw->init = NULL;
 	if (ret) {
 		kfree(div);
 		hw = ERR_PTR(ret);

@@ -160,6 +160,7 @@ config MEMORY_HOTPLUG
 	bool "Allow for memory hot-add"
 	depends on SPARSEMEM || X86_64_ACPI_NUMA
 	depends on ARCH_ENABLE_MEMORY_HOTPLUG
+	depends on ARM64
 
 config MEMORY_HOTPLUG_SPARSE
 	def_bool y
@@ -180,6 +181,25 @@ config MEMORY_HOTPLUG_DEFAULT_ONLINE
 	  'online' state by default.
 	  Say N here if you want the default policy to keep all hot-plugged
 	  memory blocks in 'offline' state.
+
+config MEMORY_HOTPLUG_MOVABLE_NODE
+        bool "Add hot-added memory blocks to ZONE_MOVABLE type"
+        default n
+        depends on MEMORY_HOTPLUG
+        depends on QCOM_MEM_OFFLINE
+        help
+	  When onlining memory blocks, this option helps to add the target
+	  memory block to ZONE_MOVABLE zone type. For successful offlining,
+	  these memory blocks should belong to 'ZONE_MOVABLE' since it carries
+	  only movable pages. When this option is not set, the default zone
+	  policy is to add the blocks to 'ZONE_NORMAL' which may pin pages.
+
+	  See Documentation/memory-hotplug.txt for more information.
+
+	  Say Y here if you want all hot-added memory blocks to be added to
+	  'ZONE_MOVABLE' type.state by default.
+	  Say N here if you want the default policy to add all hot-added
+	  memory blocks in 'ZONE_NORMAL' type.
 
 config MEMORY_HOTREMOVE
 	bool "Allow for memory hot remove"
@@ -509,6 +529,15 @@ config CMA_DEBUGFS
 	help
 	  Turns on the DebugFS interface for CMA.
 
+config  CMA_ALLOW_WRITE_DEBUGFS
+	depends on CMA_DEBUGFS
+	bool "Allow CMA debugfs write"
+	help
+	  Say 'y' here to allow the CMA debugfs write.
+	  CMA debugfs write could be risky as it allows
+	  cma allocation, so it is not recommended to
+	  enable this option on any production device.
+
 config CMA_AREAS
 	int "Maximum count of the CMA areas"
 	depends on CMA
@@ -614,6 +643,15 @@ config ZSMALLOC_STAT
 	  information to userspace via debugfs.
 	  If unsure, say N.
 
+config VMAP_LAZY_PURGING_FACTOR
+	int "multiplier to the size of purged vmap areas"
+	default "8" if ARM
+	default "32"
+	help
+	  It is used as a multiplier to the max VA pages purged in a
+	  single attempt. For 32-bit in order to reduce fragmentation
+	  of vmalloc space, we decrease the default value to "8".
+
 config MM_EVENT_STAT
 	bool "Track per-process MM event"
 	depends on MMU
@@ -646,6 +684,15 @@ config MAX_STACK_SIZE_MB
 	  smaller value in which case that is used.
 
 	  A sane initial value is 80 MB.
+
+config BALANCE_ANON_FILE_RECLAIM
+	bool "During reclaim treat anon and file backed pages equally"
+	depends on SWAP
+	help
+	  When performing memory reclaim treat anonymous and file backed pages
+	  equally.
+	  Swapping anonymous pages out to memory can be efficient enough to justify
+	  treating anonymous and file backed pages equally.
 
 config DEFERRED_STRUCT_PAGE_INIT
 	bool "Defer initialisation of struct pages to kthreads"
@@ -768,6 +815,37 @@ config PERCPU_STATS
 	  information includes global and per chunk statistics, which can
 	  be used to help understand percpu memory usage.
 
+config ARCH_SUPPORTS_SPECULATIVE_PAGE_FAULT
+       def_bool n
+
+config SPECULATIVE_PAGE_FAULT
+       bool "Speculative page faults"
+       default y
+       depends on ARCH_SUPPORTS_SPECULATIVE_PAGE_FAULT
+       depends on MMU && SMP
+       help
+         Try to handle user space page faults without holding the mmap_sem.
+
+	 This should allow better concurrency for massively threaded process
+	 since the page fault handler will not wait for other threads memory
+	 layout change to be done, assuming that this change is done in another
+	 part of the process's memory space. This type of page fault is named
+	 speculative page fault.
+
+	 If the speculative page fault fails because of a concurrency is
+	 detected or because underlying PMD or PTE tables are not yet
+	 allocating, it is failing its processing and a classic page fault
+	 is then tried.
+
+config HAVE_USERSPACE_LOW_MEMORY_KILLER
+	bool "Have userspace low memory killer"
+	default n
+	help
+	  The page allocator cannot directly call into a
+	  userspace low memory killer as it can call into the OOM killer.
+	  Therefore, add a timeout mechanism to give the userspace
+	  low memory killer a chance to run.
+
 config GUP_BENCHMARK
 	bool "Enable infrastructure for get_user_pages_fast() benchmarking"
 	default n
@@ -781,3 +859,29 @@ config ARCH_HAS_PTE_SPECIAL
 	bool
 
 endmenu
+
+config PROCESS_RECLAIM
+	bool "Enable process reclaim"
+	depends on PROC_FS
+	default y
+	help
+	 It allows to reclaim pages of the process by /proc/pid/reclaim.
+
+	 (echo file > /proc/PID/reclaim) reclaims file-backed pages only.
+	 (echo anon > /proc/PID/reclaim) reclaims anonymous pages only.
+	 (echo all > /proc/PID/reclaim) reclaims all pages.
+
+	 (echo addr size-byte > /proc/PID/reclaim) reclaims pages in
+	 (addr, addr + size-bytes) of the process.
+
+	 Any other value is ignored.
+
+config FORCE_ALLOC_FROM_DMA_ZONE
+	bool "Force certain memory allocators to always return ZONE_DMA32 memory"
+	depends on ZONE_DMA32
+	help
+	  Ensure certain memory allocators always return memory from ZONE_DMA32.
+	  This option helps ensure that clients who require ZONE_DMA32 memory are
+	  always using ZONE_DMA32 memory.
+
+	  If unsure, say "n".

@@ -1,23 +1,13 @@
+/* SPDX-License-Identifier: ISC */
 /*
  * Copyright (c) 2012-2016 Qualcomm Atheros, Inc.
- * Copyright (c) 2018, The Linux Foundation. All rights reserved.
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ * Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
  */
 
 #ifndef WIL6210_TXRX_H
 #define WIL6210_TXRX_H
 
+#include <net/ieee80211_radiotap.h>
 #include "wil6210.h"
 #include "txrx_edma.h"
 
@@ -423,6 +413,46 @@ struct vring_rx_mac {
 #define RX_DMA_STATUS_PHY_INFO	BIT(6)
 #define RX_DMA_STATUS_FFM	BIT(7) /* EtherType Flex Filter Match */
 
+/* IEEE 802.11, 8.5.2 EAPOL-Key frames */
+#define WIL_KEY_INFO_KEY_TYPE BIT(3) /* val of 1 = Pairwise, 0 = Group key */
+
+#define WIL_KEY_INFO_MIC BIT(8)
+#define WIL_KEY_INFO_ENCR_KEY_DATA BIT(12) /* for rsn only */
+
+#define WIL_EAP_NONCE_LEN 32
+#define WIL_EAP_KEY_RSC_LEN 8
+#define WIL_EAP_REPLAY_COUNTER_LEN 8
+#define WIL_EAP_KEY_IV_LEN 16
+#define WIL_EAP_KEY_ID_LEN 8
+
+enum {
+	WIL_1X_TYPE_EAP_PACKET = 0,
+	WIL_1X_TYPE_EAPOL_START = 1,
+	WIL_1X_TYPE_EAPOL_LOGOFF = 2,
+	WIL_1X_TYPE_EAPOL_KEY = 3,
+};
+
+#define WIL_EAPOL_KEY_TYPE_RSN 2
+#define WIL_EAPOL_KEY_TYPE_WPA 254
+
+struct wil_1x_hdr {
+	u8 version;
+	u8 type;
+	__be16 length;
+	/* followed by data */
+} __packed;
+
+struct wil_eapol_key {
+	u8 type;
+	__be16 key_info;
+	__be16 key_length;
+	u8 replay_counter[WIL_EAP_REPLAY_COUNTER_LEN];
+	u8 key_nonce[WIL_EAP_NONCE_LEN];
+	u8 key_iv[WIL_EAP_KEY_IV_LEN];
+	u8 key_rsc[WIL_EAP_KEY_RSC_LEN];
+	u8 key_id[WIL_EAP_KEY_ID_LEN];
+} __packed;
+
 struct vring_rx_dma {
 	u32 d0;
 	struct wil_ring_dma_addr addr;
@@ -457,6 +487,32 @@ union wil_ring_desc {
 	union wil_tx_desc tx;
 	union wil_rx_desc rx;
 } __packed;
+
+struct packet_rx_info {
+	u8 cid;
+};
+
+struct wil6210_rtap {
+	struct ieee80211_radiotap_header rthdr;
+	/* fields should be in the order of bits in rthdr.it_present */
+	/* flags */
+	u8 flags;
+	/* channel */
+	__le16 chnl_freq __aligned(2);
+	__le16 chnl_flags;
+	/* MCS */
+	u8 mcs_present;
+	u8 mcs_flags;
+	u8 mcs_index;
+} __packed;
+
+/* this struct will be stored in the skb cb buffer
+ * max length of the struct is limited to 48 bytes
+ */
+struct skb_rx_info {
+	struct vring_rx_desc rx_desc;
+	struct packet_rx_info rx_info;
+};
 
 static inline int wil_rxdesc_tid(struct vring_rx_desc *d)
 {
@@ -530,11 +586,6 @@ static inline int wil_rxdesc_mcast(struct vring_rx_desc *d)
 	return WIL_GET_BITS(d->mac.d1, 13, 14);
 }
 
-static inline int wil_rxdesc_phy_length(struct vring_rx_desc *d)
-{
-	return WIL_GET_BITS(d->dma.d0, 16, 29);
-}
-
 static inline struct vring_rx_desc *wil_skb_rxdesc(struct sk_buff *skb)
 {
 	return (void *)skb->cb;
@@ -560,11 +611,32 @@ static inline int wil_ring_is_full(struct wil_ring *ring)
 	return wil_ring_next_tail(ring) == ring->swhead;
 }
 
-static inline bool wil_need_txstat(struct sk_buff *skb)
+static inline u8 *wil_skb_get_da(struct sk_buff *skb)
 {
 	struct ethhdr *eth = (void *)skb->data;
 
-	return is_unicast_ether_addr(eth->h_dest) && skb->sk &&
+	return eth->h_dest;
+}
+
+static inline u8 *wil_skb_get_sa(struct sk_buff *skb)
+{
+	struct ethhdr *eth = (void *)skb->data;
+
+	return eth->h_source;
+}
+
+static inline __be16 wil_skb_get_protocol(struct sk_buff *skb)
+{
+	struct ethhdr *eth = (void *)skb->data;
+
+	return eth->h_proto;
+}
+
+static inline bool wil_need_txstat(struct sk_buff *skb)
+{
+	const u8 *da = wil_skb_get_da(skb);
+
+	return is_unicast_ether_addr(da) && skb->sk &&
 	       (skb_shinfo(skb)->tx_flags & SKBTX_WIFI_STATUS);
 }
 
@@ -610,7 +682,29 @@ static inline bool wil_val_in_range(int val, int min, int max)
 	return val >= min && val < max;
 }
 
+static inline u8 wil_skb_get_cid(struct sk_buff *skb)
+{
+	struct skb_rx_info *skb_rx_info = (void *)skb->cb;
+
+	return skb_rx_info->rx_info.cid;
+}
+
+static inline void wil_skb_set_cid(struct sk_buff *skb, u8 cid)
+{
+	struct skb_rx_info *skb_rx_info = (void *)skb->cb;
+
+	skb_rx_info->rx_info.cid = cid;
+}
+
+static inline
+void wil_tx_desc_set_nr_frags(struct vring_tx_desc *d, int nr_frags)
+{
+	d->mac.d[2] |= (nr_frags << MAC_CFG_DESC_TX_2_NUM_OF_DESCRIPTORS_POS);
+}
+
 void wil_netif_rx_any(struct sk_buff *skb, struct net_device *ndev);
+void wil_netif_rx(struct sk_buff *skb, struct net_device *ndev, int cid,
+		  struct wil_net_stats *stats, bool gro);
 void wil_rx_reorder(struct wil6210_priv *wil, struct sk_buff *skb);
 void wil_rx_bar(struct wil6210_priv *wil, struct wil6210_vif *vif,
 		u8 cid, u8 tid, u16 seq);
@@ -618,9 +712,12 @@ struct wil_tid_ampdu_rx *wil_tid_ampdu_rx_alloc(struct wil6210_priv *wil,
 						int size, u16 ssn);
 void wil_tid_ampdu_rx_free(struct wil6210_priv *wil,
 			   struct wil_tid_ampdu_rx *r);
-void wil_tx_data_init(struct wil_ring_tx_data *txdata);
+void wil_tx_data_init(const struct wil6210_priv *wil,
+		      struct wil_ring_tx_data *txdata);
 void wil_init_txrx_ops_legacy_dma(struct wil6210_priv *wil);
-void wil_tx_latency_calc(struct wil6210_priv *wil, struct sk_buff *skb,
-			 struct wil_sta_info *sta);
+int wil_tx_latency_calc_common(struct wil6210_priv *wil, struct sk_buff *skb,
+			       struct wil_sta_info *sta);
+int wil_get_cid_by_ring(struct wil6210_priv *wil, struct wil_ring *ring);
+bool wil_is_special_packet(const struct sk_buff *skb);
 
 #endif /* WIL6210_TXRX_H */

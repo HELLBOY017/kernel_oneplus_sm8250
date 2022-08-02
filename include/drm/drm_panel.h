@@ -39,6 +39,10 @@ enum {
 	DRM_PANEL_BLANK_UNBLANK,
 	/* panel: power off */
 	DRM_PANEL_BLANK_POWERDOWN,
+	/* panel: low power mode */
+	DRM_PANEL_BLANK_LP,
+	/* fps change */
+	DRM_PANEL_BLANK_FPS_CHANGE,
 };
 
 struct drm_panel_notifier {
@@ -104,6 +108,7 @@ struct drm_panel_funcs {
  * @dev: parent device of the panel
  * @funcs: operations that can be performed on the panel
  * @list: panel entry in registry
+ * @nh: panel notifier list head
  */
 struct drm_panel {
 	struct drm_device *drm;

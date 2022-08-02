@@ -1,13 +1,6 @@
-/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+// SPDX-License-Identifier: GPL-2.0-only
+/*
+ * Copyright (c) 2015,2019  The Linux Foundation. All rights reserved.
  */
 
 #include <linux/delay.h>
@@ -25,7 +18,11 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/card.h>
 
+#include "../core/queue.h"
 #include "cqhci.h"
+#include "cqhci-crypto.h"
+
+#include "sdhci-msm.h"
 
 #define DCMD_SLOT 31
 #define NUM_SLOTS 32
@@ -109,6 +106,19 @@ static void cqhci_set_irqs(struct cqhci_host *cq_host, u32 set)
 static void cqhci_dumpregs(struct cqhci_host *cq_host)
 {
 	struct mmc_host *mmc = cq_host->mmc;
+	int offset = 0;
+
+	if (cq_host->offset_changed)
+		offset = CQE_V5_VENDOR_CFG;
+
+	mmc_log_string(mmc,
+	"CQHCI_CTL=0x%08x CQHCI_IS=0x%08x CQHCI_ISTE=0x%08x CQHCI_ISGE=0x%08x CQHCI_TDBR=0x%08x CQHCI_TCN=0x%08x CQHCI_DQS=0x%08x CQHCI_DPT=0x%08x CQHCI_TERRI=0x%08x CQHCI_CRI=0x%08x CQHCI_CRA=0x%08x CQHCI_CRDCT=0x%08x\n",
+	cqhci_readl(cq_host, CQHCI_CTL), cqhci_readl(cq_host, CQHCI_IS),
+	cqhci_readl(cq_host, CQHCI_ISTE), cqhci_readl(cq_host, CQHCI_ISGE),
+	cqhci_readl(cq_host, CQHCI_TDBR), cqhci_readl(cq_host, CQHCI_TCN),
+	cqhci_readl(cq_host, CQHCI_DQS), cqhci_readl(cq_host, CQHCI_DPT),
+	cqhci_readl(cq_host, CQHCI_TERRI), cqhci_readl(cq_host, CQHCI_CRI),
+	cqhci_readl(cq_host, CQHCI_CRA), cqhci_readl(cq_host, CQHCI_CRDCT));
 
 	CQHCI_DUMP("============ CQHCI REGISTER DUMP ===========\n");
 
@@ -145,6 +155,10 @@ static void cqhci_dumpregs(struct cqhci_host *cq_host)
 	CQHCI_DUMP("Resp idx:  0x%08x | Resp arg: 0x%08x\n",
 		   cqhci_readl(cq_host, CQHCI_CRI),
 		   cqhci_readl(cq_host, CQHCI_CRA));
+	CQHCI_DUMP("Vendor cfg 0x%08x\n",
+		   cqhci_readl(cq_host, CQHCI_VENDOR_CFG + offset));
+
+	cqhci_crypto_debug(cq_host);
 
 	if (cq_host->ops->dumpregs)
 		cq_host->ops->dumpregs(mmc);
@@ -266,6 +280,18 @@ static void __cqhci_enable(struct cqhci_host *cq_host)
 	if (cq_host->caps & CQHCI_TASK_DESC_SZ_128)
 		cqcfg |= CQHCI_TASK_DESC_SZ;
 
+	if (cqhci_host_is_crypto_supported(cq_host)) {
+		cqcfg |= CQHCI_ICE_ENABLE;
+		/* For SDHC v5.0 onwards, ICE 3.0 specific registers are added
+		 * in CQ register space, due to which few CQ registers are
+		 * shifted. Set offset_changed boolean to use updated address.
+		 */
+		 cq_host->offset_changed = true;
+	}
+
+	cqhci_writel(cq_host, cqcfg, CQHCI_CFG);
+
+	cqcfg |= CQHCI_ENABLE;
 	cqhci_writel(cq_host, cqcfg, CQHCI_CFG);
 
 	cqhci_writel(cq_host, lower_32_bits(cq_host->desc_dma_base),
@@ -275,11 +301,10 @@ static void __cqhci_enable(struct cqhci_host *cq_host)
 
 	cqhci_writel(cq_host, cq_host->rca, CQHCI_SSC2);
 
+	/* send QSR at lesser intervals than the default */
+	cqhci_writel(cq_host, SEND_QSR_INTERVAL, CQHCI_SSC1);
+
 	cqhci_set_irqs(cq_host, 0);
-
-	cqcfg |= CQHCI_ENABLE;
-
-	cqhci_writel(cq_host, cqcfg, CQHCI_CFG);
 
 	if (cqhci_readl(cq_host, CQHCI_CTL) & CQHCI_HALT)
 		cqhci_writel(cq_host, 0, CQHCI_CTL);
@@ -295,6 +320,7 @@ static void __cqhci_enable(struct cqhci_host *cq_host)
 	cqhci_set_irqs(cq_host, CQHCI_IS_MASK);
 
 	cq_host->activated = true;
+	mmc_log_string(mmc, "CQ enabled\n");
 }
 
 static void __cqhci_disable(struct cqhci_host *cq_host)
@@ -308,11 +334,15 @@ static void __cqhci_disable(struct cqhci_host *cq_host)
 	cq_host->mmc->cqe_on = false;
 
 	cq_host->activated = false;
+
+	mmc_log_string(cq_host->mmc, "CQ disabled\n");
 }
 
 int cqhci_suspend(struct mmc_host *mmc)
 {
 	struct cqhci_host *cq_host = mmc->cqe_private;
+
+	cqhci_crypto_suspend(cq_host);
 
 	if (cq_host->enabled)
 		__cqhci_disable(cq_host);
@@ -342,7 +372,13 @@ static int cqhci_enable(struct mmc_host *mmc, struct mmc_card *card)
 	if (err)
 		return err;
 
+	if (cqhci_host_is_crypto_supported(cq_host))
+		cqhci_crypto_enable(cq_host);
+
 	__cqhci_enable(cq_host);
+
+	if (cq_host->ops->enhanced_strobe_mask)
+		cq_host->ops->enhanced_strobe_mask(mmc, true);
 
 	cq_host->enabled = true;
 
@@ -366,8 +402,11 @@ static void cqhci_off(struct mmc_host *mmc)
 	u32 reg;
 	int err;
 
-	if (!cq_host->enabled || !mmc->cqe_on || cq_host->recovery_halt)
+	if (!cq_host->enabled || !mmc->cqe_on || cq_host->recovery_halt) {
+		pr_debug("%s: %s: CQE is already %s\n", mmc_hostname(mmc),
+				__func__, mmc->cqe_on ? "off" : "on");
 		return;
+	}
 
 	if (cq_host->ops->disable)
 		cq_host->ops->disable(mmc, false);
@@ -378,9 +417,10 @@ static void cqhci_off(struct mmc_host *mmc)
 				 reg & CQHCI_HALT, 0, CQHCI_OFF_TIMEOUT);
 	if (err < 0)
 		pr_err("%s: cqhci: CQE stuck on\n", mmc_hostname(mmc));
-	else
+	else {
 		pr_debug("%s: cqhci: CQE off\n", mmc_hostname(mmc));
-
+		mmc_log_string(mmc, "cqhci: CQE off\n");
+	}
 	mmc->cqe_on = false;
 }
 
@@ -393,7 +433,13 @@ static void cqhci_disable(struct mmc_host *mmc)
 
 	cqhci_off(mmc);
 
+	if (cqhci_host_is_crypto_supported(cq_host))
+		cqhci_crypto_disable(cq_host);
+
 	__cqhci_disable(cq_host);
+
+	if (cq_host->ops->enhanced_strobe_mask)
+		cq_host->ops->enhanced_strobe_mask(mmc, false);
 
 	dmam_free_coherent(mmc_dev(mmc), cq_host->data_size,
 			   cq_host->trans_desc_base,
@@ -521,7 +567,7 @@ static void cqhci_prep_dcmd_desc(struct mmc_host *mmc,
 		resp_type = 0x0;
 		timing = 0x1;
 	} else {
-		if (mrq->cmd->flags & MMC_RSP_R1B) {
+		if (mrq->cmd->flags & MMC_RSP_BUSY) {
 			resp_type = 0x3;
 			timing = 0x0;
 		} else {
@@ -548,20 +594,72 @@ static void cqhci_prep_dcmd_desc(struct mmc_host *mmc,
 
 }
 
+static void cqhci_pm_qos_vote(struct sdhci_host *host, struct mmc_request *mrq)
+{
+	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
+	struct sdhci_msm_host *msm_host = pltfm_host->priv;
+	struct mmc_queue_req *mqrq = container_of(mrq, struct mmc_queue_req,
+						  brq.mrq);
+	struct request *req = mmc_queue_req_to_req(mqrq);
+
+	sdhci_msm_pm_qos_cpu_vote(host,
+		msm_host->pdata->pm_qos_data.cmdq_latency, req->cpu);
+}
+
+static void cqhci_pm_qos_unvote(struct sdhci_host *host,
+						struct mmc_request *mrq)
+{
+	struct mmc_queue_req *mqrq = container_of(mrq, struct mmc_queue_req,
+						  brq.mrq);
+	struct request *req = mmc_queue_req_to_req(mqrq);
+
+	/* use async as we're inside an atomic context (soft-irq) */
+	sdhci_msm_pm_qos_cpu_unvote(host, req->cpu, true);
+}
+
 static void cqhci_post_req(struct mmc_host *host, struct mmc_request *mrq)
 {
 	struct mmc_data *data = mrq->data;
+	struct sdhci_host *sdhci_host = mmc_priv(host);
 
 	if (data) {
 		dma_unmap_sg(mmc_dev(host), data->sg, data->sg_len,
 			     (data->flags & MMC_DATA_READ) ?
 			     DMA_FROM_DEVICE : DMA_TO_DEVICE);
+
+		/* we're in atomic context (soft-irq) so unvote async. */
+		sdhci_msm_pm_qos_irq_unvote(sdhci_host, true);
+		cqhci_pm_qos_unvote(sdhci_host, mrq);
 	}
 }
 
 static inline int cqhci_tag(struct mmc_request *mrq)
 {
 	return mrq->cmd ? DCMD_SLOT : mrq->tag;
+}
+
+static inline
+void cqhci_prep_crypto_desc(struct cqhci_host *cq_host, u64 *task_desc,
+			u64 ice_ctx)
+{
+	u64 *ice_desc = NULL;
+
+	if (cq_host->caps & CQHCI_CAP_CRYPTO_SUPPORT) {
+		/*
+		 * Get the address of ice context for the given task descriptor.
+		 * ice context is present in the upper 64bits of task descriptor
+		 * ice_conext_base_address = task_desc + 8-bytes
+		 */
+		ice_desc = (u64 *)((u8 *)task_desc +
+					CQHCI_TASK_DESC_ICE_PARAM_OFFSET);
+		memset(ice_desc, 0, CQHCI_TASK_DESC_ICE_PARAMS_SIZE);
+
+		/*
+		 *  Assign upper 64bits data of task descritor with ice context
+		 */
+		if (ice_ctx)
+			*ice_desc = cpu_to_le64(ice_ctx);
+	}
 }
 
 static int cqhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
@@ -572,6 +670,8 @@ static int cqhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	int tag = cqhci_tag(mrq);
 	struct cqhci_host *cq_host = mmc->cqe_private;
 	unsigned long flags;
+	struct sdhci_host *host = mmc_priv(mmc);
+	u64 ice_ctx = 0;
 
 	if (!cq_host->enabled) {
 		pr_err("%s: cqhci: not enabled\n", mmc_hostname(mmc));
@@ -585,6 +685,7 @@ static int cqhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	if (!mmc->cqe_on) {
 		cqhci_writel(cq_host, 0, CQHCI_CTL);
 		mmc->cqe_on = true;
+		mmc_log_string(mmc, "cqhci: CQE on\n");
 		pr_debug("%s: cqhci: CQE on\n", mmc_hostname(mmc));
 		if (cqhci_readl(cq_host, CQHCI_CTL) && CQHCI_HALT) {
 			pr_err("%s: cqhci: CQE failed to exit halt state\n",
@@ -595,15 +696,27 @@ static int cqhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	}
 
 	if (mrq->data) {
+		err = cqhci_crypto_get_ctx(cq_host, mrq, &ice_ctx);
+		if (err) {
+			mmc->err_stats[MMC_ERR_ICE_CFG]++;
+			pr_err("%s: failed to retrieve crypto ctx for tag %d\n",
+				mmc_hostname(mmc), tag);
+			goto out;
+		}
 		task_desc = (__le64 __force *)get_desc(cq_host, tag);
 		cqhci_prep_task_desc(mrq, &data, 1);
 		*task_desc = cpu_to_le64(data);
+		cqhci_prep_crypto_desc(cq_host, task_desc, ice_ctx);
+
 		err = cqhci_prep_tran_desc(mrq, cq_host, tag);
 		if (err) {
 			pr_err("%s: cqhci: failed to setup tx desc: %d\n",
 			       mmc_hostname(mmc), err);
-			return err;
+			goto out;
 		}
+		/* PM QoS */
+		sdhci_msm_pm_qos_irq_vote(host);
+		cqhci_pm_qos_vote(host, mrq);
 	} else {
 		cqhci_prep_dcmd_desc(mmc, mrq);
 	}
@@ -619,9 +732,19 @@ static int cqhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	cq_host->slot[tag].flags = 0;
 
 	cq_host->qcnt += 1;
+
+	/* Ensure the task descriptor list is flushed before ringing doorbell */
+	wmb();
+	if (cqhci_readl(cq_host, CQHCI_TDBR) & (1 << tag)) {
+		cqhci_dumpregs(cq_host);
+		BUG();
+	}
+	mmc_log_string(mmc, "tag: %d\n", tag);
 	/* Make sure descriptors are ready before ringing the doorbell */
 	wmb();
 	cqhci_writel(cq_host, 1 << tag, CQHCI_TDBR);
+	/* Commit the doorbell write immediately */
+	wmb();
 	if (!(cqhci_readl(cq_host, CQHCI_TDBR) & (1 << tag)))
 		pr_debug("%s: cqhci: doorbell not set for tag %d\n",
 			 mmc_hostname(mmc), tag);
@@ -631,7 +754,35 @@ out_unlock:
 	if (err)
 		cqhci_post_req(mmc, mrq);
 
+	if (mrq->data)
+		cqhci_complete_crypto_desc(cq_host, mrq, NULL);
+out:
 	return err;
+}
+
+static void cqhci_crypto_update_queue(struct mmc_host *mmc,
+					struct request_queue *queue)
+{
+	struct cqhci_host *cq_host;
+
+	if (!mmc) {
+		pr_err("%s mmc host is NULL\n", __func__);
+		return;
+	}
+
+	cq_host = mmc->cqe_private;
+	if (!cq_host) {
+		pr_err("%s cq host is NULL\n", __func__);
+		return;
+	}
+
+	if (cq_host->caps & CQHCI_CAP_CRYPTO_SUPPORT) {
+		if (queue)
+			cqhci_crypto_setup_rq_keyslot_manager(cq_host, queue);
+		else
+			pr_err("%s can not register keyslot manager\n",
+				mmc_hostname(mmc));
+	}
 }
 
 static void cqhci_recovery_needed(struct mmc_host *mmc, struct mmc_request *mrq,
@@ -674,8 +825,10 @@ static void cqhci_error_irq(struct mmc_host *mmc, u32 status, int cmd_error,
 
 	terri = cqhci_readl(cq_host, CQHCI_TERRI);
 
-	pr_debug("%s: cqhci: error IRQ status: 0x%08x cmd error %d data error %d TERRI: 0x%08x\n",
+	pr_err("%s: cqhci: error IRQ status: 0x%08x cmd error %d data error %d TERRI: 0x%08x\n",
 		 mmc_hostname(mmc), status, cmd_error, data_error, terri);
+	mmc_log_string(mmc, "%s: cqhci: status:0x%08x TERRI:0x%08x\n",
+		 mmc_hostname(mmc), status, terri);
 
 	/* Forget about errors when recovery has already been triggered */
 	if (cq_host->recovery_halt)
@@ -731,7 +884,10 @@ static void cqhci_finish_mrq(struct mmc_host *mmc, unsigned int tag)
 	struct cqhci_slot *slot = &cq_host->slot[tag];
 	struct mmc_request *mrq = slot->mrq;
 	struct mmc_data *data;
+	int offset = 0;
 
+	if (cq_host->offset_changed)
+		offset = CQE_V5_VENDOR_CFG;
 	if (!mrq) {
 		WARN_ONCE(1, "%s: cqhci: spurious TCN for tag %d\n",
 			  mmc_hostname(mmc), tag);
@@ -750,10 +906,17 @@ static void cqhci_finish_mrq(struct mmc_host *mmc, unsigned int tag)
 
 	data = mrq->data;
 	if (data) {
+		cqhci_complete_crypto_desc(cq_host, mrq, NULL);
+
 		if (data->error)
 			data->bytes_xfered = 0;
 		else
 			data->bytes_xfered = data->blksz * data->blocks;
+	} else {
+		cqhci_writel(cq_host, cqhci_readl(cq_host,
+				CQHCI_VENDOR_CFG + offset) |
+				CMDQ_SEND_STATUS_TRIGGER,
+				CQHCI_VENDOR_CFG + offset);
 	}
 
 	mmc_cqe_request_done(mmc, mrq);
@@ -762,17 +925,28 @@ static void cqhci_finish_mrq(struct mmc_host *mmc, unsigned int tag)
 irqreturn_t cqhci_irq(struct mmc_host *mmc, u32 intmask, int cmd_error,
 		      int data_error)
 {
-	u32 status;
+	u32 status, ice_err;
 	unsigned long tag = 0, comp_status;
 	struct cqhci_host *cq_host = mmc->cqe_private;
 
 	status = cqhci_readl(cq_host, CQHCI_IS);
-	cqhci_writel(cq_host, status, CQHCI_IS);
+	ice_err = status & (CQHCI_IS_GCE | CQHCI_IS_ICCE);
 
 	pr_debug("%s: cqhci: IRQ status: 0x%08x\n", mmc_hostname(mmc), status);
+	mmc_log_string(mmc, "CQIS: 0x%x cmd_error : %d data_err: %d\n",
+		status, cmd_error, data_error);
 
-	if ((status & CQHCI_IS_RED) || cmd_error || data_error)
+	if ((status & CQHCI_IS_RED) || cmd_error || data_error || ice_err) {
+		pr_err("%s: cqhci: error IRQ status: 0x%08x cmd error %d data error %d\n",
+			mmc_hostname(mmc), status, cmd_error, data_error);
+		cqhci_dumpregs(cq_host);
+		mmc->need_hw_reset = true;
+		cqhci_writel(cq_host, status, CQHCI_IS);
 		cqhci_error_irq(mmc, status, cmd_error, data_error);
+	} else {
+		/* Clear interrupt */
+		cqhci_writel(cq_host, status, CQHCI_IS);
+	}
 
 	if (status & CQHCI_IS_TCC) {
 		/* read TCN and complete the request */
@@ -787,6 +961,7 @@ irqreturn_t cqhci_irq(struct mmc_host *mmc, u32 intmask, int cmd_error,
 			/* complete the corresponding mrq */
 			pr_debug("%s: cqhci: completing tag %lu\n",
 				 mmc_hostname(mmc), tag);
+			mmc_log_string(mmc, "completing tag -> %lu\n", tag);
 			cqhci_finish_mrq(mmc, tag);
 		}
 
@@ -901,8 +1076,10 @@ static bool cqhci_halt(struct mmc_host *mmc, unsigned int timeout)
 	bool ret;
 	u32 ctl;
 
-	if (cqhci_halted(cq_host))
+	if (cqhci_halted(cq_host)) {
+		pr_debug("%s: CQE is already halted.\n", mmc_hostname(mmc));
 		return true;
+	}
 
 	cqhci_set_irqs(cq_host, CQHCI_IS_HAC);
 
@@ -918,8 +1095,9 @@ static bool cqhci_halt(struct mmc_host *mmc, unsigned int timeout)
 	ret = cqhci_halted(cq_host);
 
 	if (!ret)
-		pr_debug("%s: cqhci: Failed to halt\n", mmc_hostname(mmc));
+		pr_err("%s: cqhci: Failed to halt\n", mmc_hostname(mmc));
 
+	mmc_log_string(mmc, "halt done with ret %d\n", ret);
 	return ret;
 }
 
@@ -929,13 +1107,15 @@ static bool cqhci_halt(struct mmc_host *mmc, unsigned int timeout)
  * layers will need to send a STOP command), so we set the timeout based on a
  * generous command timeout.
  */
-#define CQHCI_START_HALT_TIMEOUT	5
+#define CQHCI_START_HALT_TIMEOUT	5000
 
 static void cqhci_recovery_start(struct mmc_host *mmc)
 {
 	struct cqhci_host *cq_host = mmc->cqe_private;
 
 	pr_debug("%s: cqhci: %s\n", mmc_hostname(mmc), __func__);
+
+	cqhci_crypto_reset(cq_host);
 
 	WARN_ON(!cq_host->recovery_halt);
 
@@ -1057,7 +1237,10 @@ static void cqhci_recovery_finish(struct mmc_host *mmc)
 
 	cqhci_set_irqs(cq_host, CQHCI_IS_MASK);
 
+	cqhci_crypto_recovery_finish(cq_host);
+
 	pr_debug("%s: cqhci: recovery done\n", mmc_hostname(mmc));
+	mmc_log_string(mmc, "recovery done\n");
 }
 
 static const struct mmc_cqe_ops cqhci_cqe_ops = {
@@ -1070,6 +1253,7 @@ static const struct mmc_cqe_ops cqhci_cqe_ops = {
 	.cqe_timeout = cqhci_timeout,
 	.cqe_recovery_start = cqhci_recovery_start,
 	.cqe_recovery_finish = cqhci_recovery_finish,
+	.cqe_crypto_update_queue = cqhci_crypto_update_queue,
 };
 
 struct cqhci_host *cqhci_pltfm_init(struct platform_device *pdev)
@@ -1117,6 +1301,7 @@ int cqhci_init(struct cqhci_host *cq_host, struct mmc_host *mmc,
 	      bool dma64)
 {
 	int err;
+	u32 cqcap = 0;
 
 	cq_host->dma64 = dma64;
 	cq_host->mmc = mmc;
@@ -1131,6 +1316,8 @@ int cqhci_init(struct cqhci_host *cq_host, struct mmc_host *mmc,
 	if (mmc->caps2 & MMC_CAP2_CQE_DCMD)
 		mmc->cqe_qdepth -= 1;
 
+	cqcap = cqhci_readl(cq_host, CQHCI_CAP);
+
 	cq_host->slot = devm_kcalloc(mmc_dev(mmc), cq_host->num_slots,
 				     sizeof(*cq_host->slot), GFP_KERNEL);
 	if (!cq_host->slot) {
@@ -1139,6 +1326,13 @@ int cqhci_init(struct cqhci_host *cq_host, struct mmc_host *mmc,
 	}
 
 	spin_lock_init(&cq_host->lock);
+
+	err = cqhci_host_init_crypto(cq_host);
+	if (err) {
+		pr_err("%s: CQHCI version %u.%02u Crypto init failed err %d\n",
+		       mmc_hostname(mmc), cqhci_ver_major(cq_host),
+		       cqhci_ver_minor(cq_host), err);
+	}
 
 	init_completion(&cq_host->halt_comp);
 	init_waitqueue_head(&cq_host->wait_queue);

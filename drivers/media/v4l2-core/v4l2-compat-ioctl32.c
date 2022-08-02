@@ -493,7 +493,11 @@ static int get_v4l2_plane32(struct v4l2_plane __user *p64,
 
 	if (copy_in_user(p64, p32, 2 * sizeof(__u32)) ||
 	    copy_in_user(&p64->data_offset, &p32->data_offset,
-			 sizeof(p64->data_offset)))
+			 sizeof(p64->data_offset)) ||
+	    copy_in_user(p64->reserved, p32->reserved,
+			 sizeof(p64->reserved)) ||
+	    copy_in_user(&p64->length, &p32->length,
+			 sizeof(p64->length)))
 		return -EFAULT;
 
 	switch (memory) {
@@ -525,7 +529,9 @@ static int put_v4l2_plane32(struct v4l2_plane __user *p64,
 
 	if (copy_in_user(p32, p64, 2 * sizeof(__u32)) ||
 	    copy_in_user(&p32->data_offset, &p64->data_offset,
-			 sizeof(p64->data_offset)))
+			 sizeof(p64->data_offset)) ||
+	    copy_in_user(p32->reserved, p64->reserved,
+			 sizeof(p64->reserved)))
 		return -EFAULT;
 
 	switch (memory) {
@@ -1450,7 +1456,8 @@ long v4l2_compat_ioctl32(struct file *file, unsigned int cmd, unsigned long arg)
 	if (!file->f_op->unlocked_ioctl)
 		return ret;
 
-	if (_IOC_TYPE(cmd) == 'V' && _IOC_NR(cmd) < BASE_VIDIOC_PRIVATE)
+	if (((_IOC_TYPE(cmd) == 'V') || (_IOC_TYPE(cmd) == 'U')) &&
+		_IOC_NR(cmd) < BASE_VIDIOC_PRIVATE)
 		ret = do_video_ioctl(file, cmd, arg);
 	else if (vdev->fops->compat_ioctl32)
 		ret = vdev->fops->compat_ioctl32(file, cmd, arg);

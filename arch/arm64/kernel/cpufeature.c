@@ -614,7 +614,7 @@ static int check_update_ftr_reg(u32 sys_id, int cpu, u64 val, u64 boot)
 	update_cpu_ftr_reg(regp, val);
 	if ((boot & regp->strict_mask) == (val & regp->strict_mask))
 		return 0;
-	pr_warn("SANITY CHECK: Unexpected variation in %s. Boot CPU: %#016llx, CPU%d: %#016llx\n",
+	pr_debug("SANITY CHECK: Unexpected variation in %s. Boot CPU: %#016llx, CPU%d: %#016llx\n",
 			regp->name, boot, cpu, val);
 	return 1;
 }
@@ -914,6 +914,7 @@ static bool unmap_kernel_at_el0(const struct arm64_cpu_capabilities *entry,
 		MIDR_ALL_VERSIONS(MIDR_CORTEX_A57),
 		MIDR_ALL_VERSIONS(MIDR_CORTEX_A72),
 		MIDR_ALL_VERSIONS(MIDR_CORTEX_A73),
+		MIDR_ALL_VERSIONS(MIDR_KRYO5S),
 		MIDR_ALL_VERSIONS(MIDR_HISI_TSV110),
 		{ /* sentinel */ }
 	};
@@ -1033,6 +1034,7 @@ static bool cpu_has_broken_dbm(void)
 	static const struct midr_range cpus[] = {
 #ifdef CONFIG_ARM64_ERRATUM_1024718
 		MIDR_ALL_VERSIONS(MIDR_CORTEX_A55),
+		MIDR_RANGE(MIDR_KRYO5S, 13, 14, 13, 14),
 #endif
 		{},
 	};

@@ -26,6 +26,9 @@
 /* No upper/lower limit requirement */
 #define THERMAL_NO_LIMIT	((u32)~0)
 
+/* upper limit requirement */
+#define THERMAL_MAX_LIMIT	(THERMAL_NO_LIMIT - 1)
+
 /* Default weight of a bound cooling device */
 #define THERMAL_WEIGHT_DEFAULT 0
 
@@ -385,8 +388,8 @@ struct thermal_zone_of_device_ops {
 	int (*get_trend)(void *, int, enum thermal_trend *);
 	int (*set_trips)(void *, int, int);
 	int (*set_emul_temp)(void *, int);
-	int (*set_trip_temp)(void *, int, int);
-	int (*get_trip_temp)(void *, int, int *);
+	int (*set_trip_temp)(void *data, int trip, int temp);
+	int (*get_trip_temp)(void *data, int trip, int *temp);
 };
 
 /**
@@ -409,7 +412,6 @@ enum aggregation_logic {
 	VIRT_WEIGHTED_AVG,
 	VIRT_MAXIMUM,
 	VIRT_MINIMUM,
-	VIRT_COUNT_THRESHOLD,
 	VIRT_AGGREGATION_NR,
 };
 

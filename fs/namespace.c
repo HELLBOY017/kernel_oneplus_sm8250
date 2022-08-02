@@ -1689,6 +1689,7 @@ dput_and_out:
 	/* we mustn't call path_put() as that would clear mnt_expiry_mark */
 	dput(path.dentry);
 	mntput_no_expire(mnt);
+
 out:
 	return retval;
 }

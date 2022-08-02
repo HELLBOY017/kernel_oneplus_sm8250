@@ -2265,8 +2265,17 @@ static int ipv6_generate_eui64(u8 *eui, struct net_device *dev)
 		return addrconf_ifid_ieee1394(eui, dev);
 	case ARPHRD_TUNNEL6:
 	case ARPHRD_IP6GRE:
-	case ARPHRD_RAWIP:
 		return addrconf_ifid_ip6tnl(eui, dev);
+	case ARPHRD_RAWIP: {
+		struct in6_addr lladdr;
+
+		if (ipv6_get_lladdr(dev, &lladdr, IFA_F_TENTATIVE))
+			get_random_bytes(eui, 8);
+		else
+			memcpy(eui, lladdr.s6_addr + 8, 8);
+
+		return 0;
+	}
 	}
 	return -1;
 }
@@ -5255,6 +5264,7 @@ static inline void ipv6_store_devconf(struct ipv6_devconf *cnf,
 	array[DEVCONF_ACCEPT_RA_RT_INFO_MAX_PLEN] = cnf->accept_ra_rt_info_max_plen;
 #endif
 #endif
+	array[DEVCONF_ACCEPT_RA_RT_TABLE] = cnf->accept_ra_rt_table;
 	array[DEVCONF_PROXY_NDP] = cnf->proxy_ndp;
 	array[DEVCONF_ACCEPT_SOURCE_ROUTE] = cnf->accept_source_route;
 #ifdef CONFIG_IPV6_OPTIMISTIC_DAD

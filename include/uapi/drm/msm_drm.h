@@ -26,6 +26,7 @@
 #define __MSM_DRM_H__
 
 #include "drm.h"
+#include "sde_drm.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -65,6 +66,72 @@ extern "C" {
 struct drm_msm_timespec {
 	__s64 tv_sec;          /* seconds */
 	__s64 tv_nsec;         /* nanoseconds */
+};
+
+/*
+ * Colorimetry Data Block values
+ * These bit nums are defined as per the CTA spec
+ * and indicate the colorspaces supported by the sink
+ */
+#define DRM_EDID_CLRMETRY_xvYCC_601   (1 << 0)
+#define DRM_EDID_CLRMETRY_xvYCC_709   (1 << 1)
+#define DRM_EDID_CLRMETRY_sYCC_601    (1 << 2)
+#define DRM_EDID_CLRMETRY_ADOBE_YCC_601  (1 << 3)
+#define DRM_EDID_CLRMETRY_ADOBE_RGB     (1 << 4)
+#define DRM_EDID_CLRMETRY_BT2020_CYCC (1 << 5)
+#define DRM_EDID_CLRMETRY_BT2020_YCC  (1 << 6)
+#define DRM_EDID_CLRMETRY_BT2020_RGB  (1 << 7)
+#define DRM_EDID_CLRMETRY_DCI_P3      (1 << 15)
+
+/*
+ * HDR Metadata
+ * These are defined as per EDID spec and shall be used by the sink
+ * to set the HDR metadata for playback from userspace.
+ */
+
+#define HDR_PRIMARIES_COUNT   3
+
+/* HDR EOTF */
+#define HDR_EOTF_SDR_LUM_RANGE	0x0
+#define HDR_EOTF_HDR_LUM_RANGE	0x1
+#define HDR_EOTF_SMTPE_ST2084	0x2
+#define HDR_EOTF_HLG		0x3
+
+#define DRM_MSM_EXT_HDR_METADATA
+#define DRM_MSM_EXT_HDR_PLUS_METADATA
+struct drm_msm_ext_hdr_metadata {
+	__u32 hdr_state;        /* HDR state */
+	__u32 eotf;             /* electro optical transfer function */
+	__u32 hdr_supported;    /* HDR supported */
+	__u32 display_primaries_x[HDR_PRIMARIES_COUNT]; /* Primaries x */
+	__u32 display_primaries_y[HDR_PRIMARIES_COUNT]; /* Primaries y */
+	__u32 white_point_x;    /* white_point_x */
+	__u32 white_point_y;    /* white_point_y */
+	__u32 max_luminance;    /* Max luminance */
+	__u32 min_luminance;    /* Min Luminance */
+	__u32 max_content_light_level; /* max content light level */
+	__u32 max_average_light_level; /* max average light level */
+
+	__u64 hdr_plus_payload;     /* user pointer to dynamic HDR payload */
+	__u32 hdr_plus_payload_size;/* size of dynamic HDR payload data */
+};
+
+/**
+ * HDR sink properties
+ * These are defined as per EDID spec and shall be used by the userspace
+ * to determine the HDR properties to be set to the sink.
+ */
+#define DRM_MSM_EXT_HDR_PROPERTIES
+#define DRM_MSM_EXT_HDR_PLUS_PROPERTIES
+struct drm_msm_ext_hdr_properties {
+	__u8 hdr_metadata_type_one;   /* static metadata type one */
+	__u32 hdr_supported;          /* HDR supported */
+	__u32 hdr_eotf;               /* electro optical transfer function */
+	__u32 hdr_max_luminance;      /* Max luminance */
+	__u32 hdr_avg_luminance;      /* Avg luminance */
+	__u32 hdr_min_luminance;      /* Min Luminance */
+
+	__u32 hdr_plus_supported;     /* HDR10+ supported */
 };
 
 #define MSM_PARAM_GPU_ID     0x01
@@ -148,7 +215,11 @@ struct drm_msm_gem_cpu_fini {
  */
 struct drm_msm_gem_submit_reloc {
 	__u32 submit_offset;  /* in, offset from submit_bo */
+#ifdef __cplusplus
+	__u32 or_val;
+#else
 	__u32 or;             /* in, value OR'd with result */
+#endif
 	__s32 shift;          /* in, amount of left shift (can be negative) */
 	__u32 reloc_idx;      /* in, index of reloc_bo buffer */
 	__u64 reloc_offset;   /* in, offset from start of reloc_bo */
@@ -259,6 +330,63 @@ struct drm_msm_gem_madvise {
 	__u32 retained;       /* out, whether backing store still exists */
 };
 
+/* HDR WRGB x and y index */
+#define DISPLAY_PRIMARIES_WX 0
+#define DISPLAY_PRIMARIES_WY 1
+#define DISPLAY_PRIMARIES_RX 2
+#define DISPLAY_PRIMARIES_RY 3
+#define DISPLAY_PRIMARIES_GX 4
+#define DISPLAY_PRIMARIES_GY 5
+#define DISPLAY_PRIMARIES_BX 6
+#define DISPLAY_PRIMARIES_BY 7
+#define DISPLAY_PRIMARIES_MAX 8
+
+struct drm_panel_hdr_properties {
+	__u32 hdr_enabled;
+
+	/* WRGB X and y values arrayed in format */
+	/* [WX, WY, RX, RY, GX, GY, BX, BY] */
+	__u32 display_primaries[DISPLAY_PRIMARIES_MAX];
+
+	/* peak brightness supported by panel */
+	__u32 peak_brightness;
+	/* Blackness level supported by panel */
+	__u32 blackness_level;
+};
+
+/**
+ * struct drm_msm_event_req - Payload to event enable/disable ioctls.
+ * @object_id: DRM object id. e.g.: for crtc pass crtc id.
+ * @object_type: DRM object type. e.g.: for crtc set it to DRM_MODE_OBJECT_CRTC.
+ * @event: Event for which notification is being enabled/disabled.
+ *         e.g.: for Histogram set - DRM_EVENT_HISTOGRAM.
+ * @client_context: Opaque pointer that will be returned during event response
+ *                  notification.
+ * @index: Object index(e.g.: crtc index), optional for user-space to set.
+ *         Driver will override value based on object_id and object_type.
+ */
+struct drm_msm_event_req {
+	__u32 object_id;
+	__u32 object_type;
+	__u32 event;
+	__u64 client_context;
+	__u32 index;
+};
+
+/**
+ * struct drm_msm_event_resp - payload returned when read is called for
+ *                            custom notifications.
+ * @base: Event type and length of complete notification payload.
+ * @info: Contains information about DRM that which raised this event.
+ * @data: Custom payload that driver returns for event type.
+ *        size of data = base.length - (sizeof(base) + sizeof(info))
+ */
+struct drm_msm_event_resp {
+	struct drm_event base;
+	struct drm_msm_event_req info;
+	__u8 data[];
+};
+
 /*
  * Draw queues allow the user to set specific submission parameter. Command
  * submissions specify a specific submitqueue to use.  ID 0 is reserved for
@@ -271,6 +399,16 @@ struct drm_msm_submitqueue {
 	__u32 flags;   /* in, MSM_SUBMITQUEUE_x */
 	__u32 prio;    /* in, Priority level */
 	__u32 id;      /* out, identifier */
+};
+
+/**
+ * struct drm_msm_power_ctrl: Payload to enable/disable the power vote
+ * @enable: enable/disable the power vote
+ * @flags:  operation control flags, for future use
+ */
+struct drm_msm_power_ctrl {
+	__u32 enable;
+	__u32 flags;
 };
 
 #define DRM_MSM_GET_PARAM              0x00
@@ -289,6 +427,24 @@ struct drm_msm_submitqueue {
  */
 #define DRM_MSM_SUBMITQUEUE_NEW        0x0A
 #define DRM_MSM_SUBMITQUEUE_CLOSE      0x0B
+#define DRM_SDE_WB_CONFIG              0x40
+#define DRM_MSM_REGISTER_EVENT         0x41
+#define DRM_MSM_DEREGISTER_EVENT       0x42
+#define DRM_MSM_RMFB2                  0x43
+#define DRM_MSM_POWER_CTRL             0x44
+
+/* sde custom events */
+#define DRM_EVENT_HISTOGRAM 0x80000000
+#define DRM_EVENT_AD_BACKLIGHT 0x80000001
+#define DRM_EVENT_CRTC_POWER 0x80000002
+#define DRM_EVENT_SYS_BACKLIGHT 0x80000003
+#define DRM_EVENT_SDE_POWER 0x80000004
+#define DRM_EVENT_IDLE_NOTIFY 0x80000005
+#define DRM_EVENT_PANEL_DEAD 0x80000006 /* ESD event */
+#define DRM_EVENT_SDE_HW_RECOVERY 0X80000007
+#define DRM_EVENT_LTM_HIST 0X80000008
+#define DRM_EVENT_LTM_WB_PB 0X80000009
+#define DRM_EVENT_LTM_OFF 0X8000000A
 
 #define DRM_IOCTL_MSM_GET_PARAM        DRM_IOWR(DRM_COMMAND_BASE + DRM_MSM_GET_PARAM, struct drm_msm_param)
 #define DRM_IOCTL_MSM_GEM_NEW          DRM_IOWR(DRM_COMMAND_BASE + DRM_MSM_GEM_NEW, struct drm_msm_gem_new)
@@ -298,8 +454,18 @@ struct drm_msm_submitqueue {
 #define DRM_IOCTL_MSM_GEM_SUBMIT       DRM_IOWR(DRM_COMMAND_BASE + DRM_MSM_GEM_SUBMIT, struct drm_msm_gem_submit)
 #define DRM_IOCTL_MSM_WAIT_FENCE       DRM_IOW (DRM_COMMAND_BASE + DRM_MSM_WAIT_FENCE, struct drm_msm_wait_fence)
 #define DRM_IOCTL_MSM_GEM_MADVISE      DRM_IOWR(DRM_COMMAND_BASE + DRM_MSM_GEM_MADVISE, struct drm_msm_gem_madvise)
+#define DRM_IOCTL_SDE_WB_CONFIG \
+	DRM_IOW((DRM_COMMAND_BASE + DRM_SDE_WB_CONFIG), struct sde_drm_wb_cfg)
+#define DRM_IOCTL_MSM_REGISTER_EVENT   DRM_IOW((DRM_COMMAND_BASE + \
+			DRM_MSM_REGISTER_EVENT), struct drm_msm_event_req)
+#define DRM_IOCTL_MSM_DEREGISTER_EVENT DRM_IOW((DRM_COMMAND_BASE + \
+			DRM_MSM_DEREGISTER_EVENT), struct drm_msm_event_req)
+#define DRM_IOCTL_MSM_RMFB2 DRM_IOW((DRM_COMMAND_BASE + \
+			DRM_MSM_RMFB2), unsigned int)
 #define DRM_IOCTL_MSM_SUBMITQUEUE_NEW    DRM_IOWR(DRM_COMMAND_BASE + DRM_MSM_SUBMITQUEUE_NEW, struct drm_msm_submitqueue)
 #define DRM_IOCTL_MSM_SUBMITQUEUE_CLOSE  DRM_IOW (DRM_COMMAND_BASE + DRM_MSM_SUBMITQUEUE_CLOSE, __u32)
+#define DRM_IOCTL_MSM_POWER_CTRL DRM_IOW((DRM_COMMAND_BASE + \
+			DRM_MSM_POWER_CTRL), struct drm_msm_power_ctrl)
 
 #if defined(__cplusplus)
 }

@@ -484,8 +484,8 @@ int ext4_bio_write_page(struct ext4_io_submit *io,
 		if (io->io_bio)
 			gfp_flags = GFP_NOWAIT | __GFP_NOWARN;
 	retry_encrypt:
-		bounce_page = fscrypt_encrypt_pagecache_blocks(page, PAGE_SIZE,
-							       0, gfp_flags);
+		bounce_page = fscrypt_encrypt_pagecache_blocks(page,
+					PAGE_SIZE,0, gfp_flags);
 		if (IS_ERR(bounce_page)) {
 			ret = PTR_ERR(bounce_page);
 			if (ret == -ENOMEM &&

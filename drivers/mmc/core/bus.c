@@ -134,6 +134,16 @@ static void mmc_bus_shutdown(struct device *dev)
 	struct mmc_host *host = card->host;
 	int ret;
 
+	if (!drv) {
+		pr_debug("%s: %s: drv is NULL\n", dev_name(dev), __func__);
+		return;
+	}
+
+	if (!card) {
+		pr_debug("%s: %s: card is NULL\n", dev_name(dev), __func__);
+		return;
+	}
+
 	if (dev->driver && drv->shutdown)
 		drv->shutdown(card);
 
@@ -156,6 +166,8 @@ static int mmc_bus_suspend(struct device *dev)
 	if (ret)
 		return ret;
 
+	if (mmc_bus_needs_resume(host))
+		return 0;
 	ret = host->bus_ops->suspend(host);
 	if (ret)
 		pm_generic_resume(dev);
@@ -169,11 +181,17 @@ static int mmc_bus_resume(struct device *dev)
 	struct mmc_host *host = card->host;
 	int ret;
 
+	if (mmc_bus_manual_resume(host)) {
+		host->bus_resume_flags |= MMC_BUSRESUME_NEEDS_RESUME;
+		goto skip_full_resume;
+	}
+
 	ret = host->bus_ops->resume(host);
 	if (ret)
 		pr_warn("%s: error %d during resume (card was removed?)\n",
 			mmc_hostname(host), ret);
 
+skip_full_resume:
 	ret = pm_generic_resume(dev);
 	return ret;
 }
@@ -185,6 +203,9 @@ static int mmc_runtime_suspend(struct device *dev)
 	struct mmc_card *card = mmc_dev_to_card(dev);
 	struct mmc_host *host = card->host;
 
+	if (mmc_bus_needs_resume(host))
+		return 0;
+
 	return host->bus_ops->runtime_suspend(host);
 }
 
@@ -192,6 +213,9 @@ static int mmc_runtime_resume(struct device *dev)
 {
 	struct mmc_card *card = mmc_dev_to_card(dev);
 	struct mmc_host *host = card->host;
+
+	if (mmc_bus_needs_resume(host))
+		host->bus_resume_flags &= ~MMC_BUSRESUME_NEEDS_RESUME;
 
 	return host->bus_ops->runtime_resume(host);
 }
@@ -250,12 +274,15 @@ EXPORT_SYMBOL(mmc_unregister_driver);
 static void mmc_release_card(struct device *dev)
 {
 	struct mmc_card *card = mmc_dev_to_card(dev);
+	struct mmc_host *host = card->host;
 
 	sdio_free_common_cis(card);
 
 	kfree(card->info);
 
 	kfree(card);
+	if (host)
+		host->card = NULL;
 }
 
 /*
@@ -353,6 +380,13 @@ int mmc_add_card(struct mmc_card *card)
 #endif
 	card->dev.of_node = mmc_of_find_child_device(card->host, 0);
 
+	if (mmc_card_sdio(card)) {
+		ret = device_init_wakeup(&card->dev, true);
+		if (ret)
+			pr_err("%s: %s: failed to init wakeup: %d\n",
+				mmc_hostname(card->host), __func__, ret);
+	}
+
 	device_enable_async_suspend(&card->dev);
 
 	ret = device_add(&card->dev);
@@ -387,6 +421,8 @@ void mmc_remove_card(struct mmc_card *card)
 		device_del(&card->dev);
 		of_node_put(card->dev.of_node);
 	}
+	if (host->ops->exit_dbg_mode)
+		host->ops->exit_dbg_mode(host);
 
 	if (host->cqe_enabled) {
 		host->cqe_ops->cqe_disable(host);

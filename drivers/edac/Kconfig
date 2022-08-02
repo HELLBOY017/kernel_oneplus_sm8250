@@ -446,6 +446,47 @@ config EDAC_SYNOPSYS
 	  Support for error detection and correction on the Synopsys DDR
 	  memory controller.
 
+config EDAC_KRYO_ARM64
+	depends on ARM64
+	tristate "ARM KRYO Gold and Silver L1/L2/L3/SCU Caches"
+	help
+	  Support for error detection and correction on the
+	  Kryo3xx Gold and Silver CPUs. Reports errors caught by Kryo3xx
+	  ECC mechanism.
+	  For debugging issues having to do with stability and overall system
+	  health, you should probably say 'Y' here.
+
+config EDAC_KRYO_ARM64_POLL
+	depends on EDAC_KRYO_ARM64
+	bool "Poll on kryo ECC registers - kryo"
+	help
+	  This option chooses whether or not you want to poll on the Kryo3xx
+	  ECC registers. When this is enabled, the polling rate can be set as
+	  a module parameter. By default, it will call the polling function
+	  every second.
+	  This option should only be used if the associated interrupt lines
+	  are not enabled.
+
+config EDAC_KRYO_ARM64_PANIC_ON_CE
+	depends on EDAC_KRYO_ARM64
+	bool "Panic on correctable errors - kryo"
+	help
+	  Forcibly cause a kernel panic if an correctable error (CE) is
+	  detected, even though the error is (by definition) correctable and
+	  would otherwise result in no adverse system effects. This can reduce
+	  debugging times on hardware which may be operating at voltages or
+	  frequencies outside normal specification.
+	  For production builds, you should definitely say 'N' here.
+
+config EDAC_KRYO_ARM64_PANIC_ON_UE
+	depends on EDAC_KRYO_ARM64
+	bool "Panic on uncorrectable errors - kryo"
+	help
+	  Forcibly cause a kernel panic if an uncorrectable error (UE) is
+	  detected. This can reduce debugging times on hardware which may be
+	  operating at voltages or frequencies outside normal specification.
+	  For production builds, you should probably say 'N' here.
+
 config EDAC_XGENE
 	tristate "APM X-Gene SoC"
 	depends on (ARM64 || COMPILE_TEST)
@@ -459,5 +500,81 @@ config EDAC_TI
 	help
 	  Support for error detection and correction on the
           TI SoCs.
+
+config EDAC_CORTEX_ARM64
+	depends on ARM64
+	bool "ARM Cortex A CPUs L1/L2 Caches"
+	help
+	  Support for error detection and correction on the
+	  ARM Cortex A53 and A57 CPUs. For debugging issues having to do with
+	  stability and overall system health, you should probably say 'Y'
+	  here.
+
+config EDAC_CORTEX_ARM64_PANIC_ON_CE
+	depends on EDAC_CORTEX_ARM64
+	bool "Panic on correctable errors"
+	help
+	  Forcibly cause a kernel panic if an correctable error (CE) is
+	  detected, even though the error is (by definition) correctable and
+	  would otherwise result in no adverse system effects. This can reduce
+	  debugging times on hardware which may be operating at voltages or
+	  frequencies outside normal specification.
+
+	  For production builds, you should definitely say 'N' here.
+
+config EDAC_CORTEX_ARM64_DBE_IRQ_ONLY
+	depends on EDAC_CORTEX_ARM64
+	bool "Only check for parity errors when an irq is generated"
+	help
+	  In ARM64, parity errors will cause an interrupt
+	  to be triggered but may also cause a data abort to
+	  occur. Only check for EDAC errors for the interrupt.
+	  If unsure, say no.
+
+config EDAC_CORTEX_ARM64_PANIC_ON_UE
+	depends on EDAC_CORTEX_ARM64
+	bool "Panic on uncorrectable errors"
+	help
+	  Forcibly cause a kernel panic if an uncorrectable error (UE) is
+	  detected. This can reduce debugging times on hardware which may be
+	  operating at voltages or frequencies outside normal specification.
+
+	  For production builds, you should probably say 'N' here.
+
+config EDAC_QCOM
+	tristate "QCOM EDAC Controller"
+	depends on ARCH_QCOM && QCOM_LLCC
+	help
+	  Support for error detection and correction on the
+	  Qualcomm Technologies, Inc. SoCs.
+
+	  This driver reports Single Bit Errors (SBEs) and Double Bit Errors (DBEs).
+	  As of now, it supports error reporting for Last Level Cache Controller (LLCC)
+	  of Tag RAM and Data RAM.
+
+	  For debugging issues having to do with stability and overall system
+	  health, you should probably say 'Y' here.
+
+config EDAC_QCOM_LLCC_PANIC_ON_CE
+        depends on EDAC_QCOM
+        bool "panic on correctable errors - qcom llcc"
+        help
+          Forcibly cause kernel panic if a correctable error (CE) is
+          detected, even though the error is (by definition) correctable and
+          would otherwise result in no adverse system effects. This can reduce
+          debugging times on hardware which my be operating at voltages or
+          frequencies outside normal specifications.
+
+          For production builds, you should definitely say 'N' here.
+
+config EDAC_QCOM_LLCC_PANIC_ON_UE
+        depends on EDAC_QCOM
+        bool "Panic on uncorrectable errors - qcom llcc"
+        help
+          Forcibly cause a kernel panic if an uncorrectable error (UE) is
+          detected. This can reduce debugging times on hardware which may be
+          operating at voltages or frequencies outside normal specification.
+
+          For production builds, you should probably say 'N' here.
 
 endif # EDAC

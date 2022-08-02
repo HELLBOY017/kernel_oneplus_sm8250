@@ -114,7 +114,7 @@ static unsigned long get_memory_block_size(void)
  * uses.
  */
 
-static ssize_t show_mem_start_phys_index(struct device *dev,
+static ssize_t phys_index_show(struct device *dev,
 			struct device_attribute *attr, char *buf)
 {
 	struct memory_block *mem = to_memory_block(dev);
@@ -444,10 +444,62 @@ out:
 static DEVICE_ATTR(valid_zones, 0444, show_valid_zones, NULL);
 #endif
 
-static DEVICE_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
+#ifdef CONFIG_MEMORY_HOTPLUG
+static int count_num_free_block_pages(struct zone *zone, int bid)
+{
+	int order, type;
+	unsigned long freecount = 0;
+	unsigned long flags;
+
+	spin_lock_irqsave(&zone->lock, flags);
+	for (type = 0; type < MIGRATE_TYPES; type++) {
+		for (order = 0; order < MAX_ORDER; ++order) {
+			struct free_area *area;
+			struct page *page;
+
+			area = &(zone->free_area[order]);
+			list_for_each_entry(page, &area->free_list[type], lru) {
+				unsigned long pfn = page_to_pfn(page);
+				int section_nr = pfn_to_section_nr(pfn);
+
+				if (bid == base_memory_block_id(section_nr))
+					freecount += (1 << order);
+			}
+
+		}
+	}
+	spin_unlock_irqrestore(&zone->lock, flags);
+
+	return freecount;
+}
+
+static ssize_t allocated_bytes_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	struct memory_block *mem = to_memory_block(dev);
+	int block_id, free_pages;
+	struct zone *movable_zone =
+		&NODE_DATA(numa_node_id())->node_zones[ZONE_MOVABLE];
+	unsigned long used, block_sz = get_memory_block_size();
+
+	if (!populated_zone(movable_zone) || mem->state != MEM_ONLINE)
+		return snprintf(buf, 100, "0\n");
+
+	block_id = base_memory_block_id(mem->start_section_nr);
+	free_pages = count_num_free_block_pages(movable_zone, block_id);
+	used =  block_sz - (free_pages * PAGE_SIZE);
+
+	return snprintf(buf, 100, "%lu\n", used);
+}
+#endif
+
+static DEVICE_ATTR(phys_index, 0444, phys_index_show, NULL);
 static DEVICE_ATTR(state, 0644, show_mem_state, store_mem_state);
 static DEVICE_ATTR(phys_device, 0444, show_phys_device, NULL);
 static DEVICE_ATTR(removable, 0444, show_mem_removable, NULL);
+#ifdef CONFIG_MEMORY_HOTPLUG
+static DEVICE_ATTR(allocated_bytes, 0444, allocated_bytes_show, NULL);
+#endif
 
 /*
  * Block size attribute stuff
@@ -532,7 +584,36 @@ out:
 }
 
 static DEVICE_ATTR(probe, S_IWUSR, NULL, memory_probe_store);
-#endif
+
+#ifdef CONFIG_MEMORY_HOTREMOVE
+static ssize_t
+memory_remove_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	u64 phys_addr;
+	int nid, ret;
+	unsigned long pages_per_block = PAGES_PER_SECTION * sections_per_block;
+
+	ret = kstrtoull(buf, 0, &phys_addr);
+	if (ret)
+		return ret;
+
+	if (phys_addr & ((pages_per_block << PAGE_SHIFT) - 1))
+		return -EINVAL;
+
+	nid = memory_add_physaddr_to_nid(phys_addr);
+	ret = lock_device_hotplug_sysfs();
+	if (ret)
+		return ret;
+
+	remove_memory(nid, phys_addr,
+			 MIN_MEMORY_BLOCK_SIZE * sections_per_block);
+	unlock_device_hotplug();
+	return count;
+}
+static DEVICE_ATTR(remove, S_IWUSR, NULL, memory_remove_store);
+#endif /* CONFIG_MEMORY_HOTREMOVE */
+#endif /* CONFIG_ARCH_MEMORY_PROBE */
 
 #ifdef CONFIG_MEMORY_FAILURE
 /*
@@ -638,6 +719,9 @@ static struct attribute *memory_memblk_attrs[] = {
 	&dev_attr_removable.attr,
 #ifdef CONFIG_MEMORY_HOTREMOVE
 	&dev_attr_valid_zones.attr,
+#endif
+#ifdef CONFIG_MEMORY_HOTPLUG
+	&dev_attr_allocated_bytes.attr,
 #endif
 	NULL
 };
@@ -761,6 +845,8 @@ int create_memory_block_devices(unsigned long start, unsigned long size)
 		for (block_id = start_block_id; block_id != end_block_id;
 		     block_id++) {
 			mem = find_memory_block_by_id(block_id, NULL);
+			if (WARN_ON_ONCE(!mem))
+				continue;
 			mem->section_count = 0;
 			unregister_memory(mem);
 		}
@@ -806,6 +892,9 @@ bool is_memblock_offlined(struct memory_block *mem)
 static struct attribute *memory_root_attrs[] = {
 #ifdef CONFIG_ARCH_MEMORY_PROBE
 	&dev_attr_probe.attr,
+#ifdef CONFIG_MEMORY_HOTREMOVE
+	&dev_attr_remove.attr,
+#endif
 #endif
 
 #ifdef CONFIG_MEMORY_FAILURE

@@ -20,6 +20,7 @@
 #include <linux/export.h>
 #include <linux/rbtree_latch.h>
 #include <linux/error-injection.h>
+#include <linux/cfi.h>
 #include <linux/tracepoint-defs.h>
 #include <linux/cfi.h>
 #include <linux/android_kabi.h>

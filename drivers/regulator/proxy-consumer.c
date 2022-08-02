@@ -50,7 +50,6 @@ struct proxy_consumer *regulator_proxy_consumer_register(struct device *reg_dev,
 	const char *reg_name = "";
 	u32 voltage[2] = {0};
 	int rc;
-	bool no_sync_state = !reg_dev->driver->sync_state;
 
 	/* Return immediately if no proxy consumer properties are specified. */
 	if (!of_find_property(reg_node, "qcom,proxy-consumer-enable", NULL)
@@ -61,7 +60,7 @@ struct proxy_consumer *regulator_proxy_consumer_register(struct device *reg_dev,
 	mutex_lock(&proxy_consumer_list_mutex);
 
 	/* Do not register new consumers if they cannot be removed later. */
-	if (proxy_consumers_removed && no_sync_state) {
+	if (proxy_consumers_removed) {
 		rc = -EPERM;
 		goto unlock;
 	}
@@ -75,7 +74,6 @@ struct proxy_consumer *regulator_proxy_consumer_register(struct device *reg_dev,
 		goto unlock;
 	}
 
-	INIT_LIST_HEAD(&consumer->list);
 	consumer->enable
 		= of_property_read_bool(reg_node, "qcom,proxy-consumer-enable");
 	of_property_read_u32(reg_node, "qcom,proxy-consumer-current",
@@ -127,8 +125,7 @@ struct proxy_consumer *regulator_proxy_consumer_register(struct device *reg_dev,
 		}
 	}
 
-	if (no_sync_state)
-		list_add(&consumer->list, &proxy_consumer_list);
+	list_add(&consumer->list, &proxy_consumer_list);
 	mutex_unlock(&proxy_consumer_list_mutex);
 
 	return consumer;
@@ -193,7 +190,8 @@ int regulator_proxy_consumer_unregister(struct proxy_consumer *consumer)
 		return 0;
 
 	mutex_lock(&proxy_consumer_list_mutex);
-	rc = regulator_proxy_consumer_remove(consumer);
+	if (!proxy_consumers_removed)
+		rc = regulator_proxy_consumer_remove(consumer);
 	mutex_unlock(&proxy_consumer_list_mutex);
 
 	return rc;
@@ -212,7 +210,7 @@ static int __init regulator_proxy_consumer_remove_all(void)
 	proxy_consumers_removed = true;
 
 	if (!list_empty(&proxy_consumer_list))
-		pr_info("removing legacy regulator proxy consumer requests\n");
+		pr_info("removing regulator proxy consumer requests\n");
 
 	list_for_each_entry_safe(consumer, temp, &proxy_consumer_list, list) {
 		regulator_proxy_consumer_remove(consumer);

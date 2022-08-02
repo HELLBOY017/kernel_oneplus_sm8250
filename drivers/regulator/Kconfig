@@ -724,6 +724,44 @@ config REGULATOR_QCOM_SPMI
 	  Qualcomm SPMI PMICs as a module. The module will be named
 	  "qcom_spmi-regulator".
 
+config REGULATOR_QPNP_AMOLED
+        tristate "Qualcomm Technologies, Inc. QPNP AMOLED support"
+        depends on SPMI
+        help
+          Supports the OLEDB/AB/IBB module in the Qualcomm Technologies, Inc.
+          QPNP PMICs. Exposes regulators to control the triple power supply
+          positive, negative and bias for the AMOLED display panel. It also
+          allows configurability for the various bias-voltage parameters.
+
+config REGULATOR_QPNP_LABIBB
+        tristate "Qualcomm Technologies, Inc. QPNP LAB/IBB regulator support"
+        depends on SPMI
+        help
+          This driver supports voltage regulators in Qualcomm Technologies, Inc.
+          PMIC chips which comply with QPNP LAB/IBB regulators. QPNP LAB and IBB
+          are SPMI based PMIC implementations. LAB regulator can be used as a
+          regular positive boost regulator. IBB can be used as a regular
+          negative boost regulator. LAB/IBB regulators can also be used
+          together for LCD or AMOLED on QTI PMICs like PMI8998.
+
+config REGULATOR_QPNP_LCDB
+        tristate "Qualcomm Technologies, Inc. QPNP LCDB support"
+        depends on SPMI
+        help
+          Supports the LCDB module in the Qualcomm Technologies, Inc.
+          QPNP PMICs. Exposes regulators to control the positive and
+          negative voltage bias for the LCD display panel. It also
+          allows configurability for the various bias-voltage parameters.
+
+config REGULATOR_QPNP_OLEDB
+        tristate "Qualcomm Technologies, Inc. QPNP OLEDB regulator support"
+        depends on SPMI
+        help
+          This driver supports the OLEDB (AVDD bias) signal for AMOLED panel in
+          Qualcomm Technologies, Inc. QPNP PMICs. It exposes the OLED voltage
+          configuration via the regulator framework. The configurable range of
+          this bias is 5 V to 8.1 V.
+
 config REGULATOR_RC5T583
 	tristate "RICOH RC5T583 Power regulators"
 	depends on MFD_RC5T583
@@ -1019,5 +1057,125 @@ config REGULATOR_WM8994
 	  This driver provides support for the voltage regulators on the
 	  WM8994 CODEC.
 
+config REGULATOR_MEM_ACC
+	tristate "QTI Memory accelerator regulator driver"
+	help
+	  Say y here to enable the memory accelerator driver for
+	  Qualcomm Technologies, Inc. (QTI) chips. The accelerator
+	  controls delays applied for memory accesses.  This driver
+	  configures the power-mode(corner) for the memory accelerator.
+
+config REGULATOR_CPR
+	bool "RBCPR regulator driver for APC"
+	depends on OF
+	help
+	  Compile in RBCPR (RapidBridge Core Power Reduction) driver to support
+	  corner vote for APC power rail. The driver takes PTE process voltage
+	  suggestions in efuse as initial settings. It converts corner vote
+	  to voltage value before writing to a voltage regulator API, such as
+	  that provided by spm-regulator driver.
+
+config REGULATOR_CPR3
+	bool "CPR3 regulator core support"
+	help
+	  This driver supports Core Power Reduction (CPR) version 3 controllers
+	  which are used by some Qualcomm Technologies, Inc. (QTI) SoCs to
+	  manage important voltage regulators.  CPR3 controllers are capable of
+	  monitoring several ring oscillator sensing loops simultaneously.  The
+	  CPR3 controller informs software when the silicon conditions require
+	  the supply voltage to be increased or decreased.  On certain supply
+	  rails, the CPR3 controller is able to propagate the voltage increase
+	  or decrease requests all the way to the PMIC without software
+	  involvement.
+
+config REGULATOR_CPR4_MMSS_LDO
+	bool "RBCPR3 regulator for MMSS LDO"
+	depends on OF
+	select REGULATOR_CPR3
+	help
+	  This driver supports Qualcomm Technologies, Inc. MMSS graphics
+	  processor specific features.  The MMSS CPR3 controller only uses one
+	  thread to monitor the MMSS LDO voltage requirements. This driver reads
+	  initial voltage values out of hardware fuses and CPR target quotient
+	  values out of device tree.
+
+config REGULATOR_CPRH_KBSS
+	bool "CPRH regulator for KBSS"
+	depends on OF
+	select REGULATOR_CPR3
+	help
+	  This driver supports Qualcomm Technologies, Inc. KBSS application
+	  processor specific features including CPR hardening (CPRh) and two
+	  CPRh controllers which monitor the two KBSS clusters each powered by
+	  independent voltage supplies. This driver reads both initial voltage
+	  and CPR target quotient values out of hardware fuses.
+
+config REGULATOR_REFGEN
+	tristate "Qualcomm Technologies, Inc. REFGEN regulator driver"
+	depends on OF
+	help
+	  This driver supports control of the REFGEN reference bias generator
+	  block found on some Qualcomm Technologies Inc. SoCs.  A REFGEN
+	  it used by various PHY blocks found inside of the SoC.  It supports
+	  enable/disable control.
+
+config REGULATOR_MSM_GFX_LDO
+	tristate "MSM GFX LDO Regulator"
+	depends on OF
+	help
+	  This driver supports the MSM GFX (Graphics) LDO regulator. The
+	  GFU core is either powered by an internal MSM LDO or by BHS.
+	  Typically the lower voltage corners are powered by LDO and
+	  the higher ones by BHS. This driver allows for configuration of
+	  the rail between the LDO/BHS as well as the LDO voltage.
+
+config REGULATOR_RPMH
+	tristate "Qualcomm Technologies, Inc. Legacy RPMh regulator driver"
+	depends on QCOM_RPMH
+	help
+	  This driver supports control of PMIC regulators via the RPMh hardware
+	  block found on Qualcomm Technologies Inc. SoCs.  RPMh regulator
+	  control allows for voting on regulator state between multiple
+	  processors within the SoC.
+
+config REGULATOR_RPM_SMD
+	bool "RPM SMD regulator driver"
+	depends on OF
+	depends on MSM_RPM_SMD
+	help
+	  Compile in support for the RPM SMD regulator driver which is used for
+	  setting voltages and other parameters of the various power rails
+	  supplied by some Qualcomm Technologies Inc. PMICs. The RPM SMD regulator driver should
+	  be used on systems which contain an RPM which communicates with the
+	  application processor over SMD.
+
+config REGULATOR_SPM
+	bool "SPM regulator driver"
+	depends on SPMI
+	help
+	  Enable support for the SPM regulator driver which is used for
+	  setting voltages of processor supply regulators via the SPM module
+	  found inside chips of Qualcomm Technologies Inc. The SPM regulator
+	  driver can be used on QTI SoCs where the APSS processor cores are
+	  supplied by their own PMIC regulator.
+
+config REGULATOR_STUB
+	tristate "Stub Regulator"
+	help
+	  This driver adds stub regulator support. It allows for consumers to
+	  request their regulator devices and to use all of the standard
+	  regulator functions. It is useful for bringing up new platforms when
+	  the real hardware based regulator implementation is not yet available.
+	  Consumers can use stub regulator device with proper constraint
+	  checking while the real regulator driver is being developed.
+
+config REGULATOR_PM8008
+	bool "Qualcomm Technologies Inc. PM8008 regulator driver"
+	depends on MFD_I2C_PMIC
+	help
+	  Say Y here to support the PM8008 PMIC chip.
+	  This driver controls PM8008 PMIC chip and the voltage
+	  regulators found in Qualcomm Technologies Inc. PM8008
+	  PMIC.
 endif
 

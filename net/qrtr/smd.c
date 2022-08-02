@@ -1,20 +1,12 @@
-/*
- * Copyright (c) 2015, Sony Mobile Communications Inc.
- * Copyright (c) 2013, The Linux Foundation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+// SPDX-License-Identifier: GPL-2.0-only
+/* Copyright (c) 2015, Sony Mobile Communications Inc.
+ * Copyright (c) 2013, 2018 The Linux Foundation. All rights reserved.
  */
 
 #include <linux/module.h>
 #include <linux/skbuff.h>
 #include <linux/rpmsg.h>
+#include <linux/of.h>
 
 #include "qrtr.h"
 
@@ -31,8 +23,10 @@ static int qcom_smd_qrtr_callback(struct rpmsg_device *rpdev,
 	struct qrtr_smd_dev *qdev = dev_get_drvdata(&rpdev->dev);
 	int rc;
 
-	if (!qdev)
+	if (!qdev) {
+		pr_err_ratelimited("%s:Not ready\n", __func__);
 		return -EAGAIN;
+	}
 
 	rc = qrtr_endpoint_post(&qdev->ep, data, len);
 	if (rc == -EINVAL) {
@@ -67,7 +61,10 @@ out:
 static int qcom_smd_qrtr_probe(struct rpmsg_device *rpdev)
 {
 	struct qrtr_smd_dev *qdev;
+	u32 net_id;
+	bool rt;
 	int rc;
+	pr_info("%s:Entered\n", __func__);
 
 	qdev = devm_kzalloc(&rpdev->dev, sizeof(*qdev), GFP_KERNEL);
 	if (!qdev)
@@ -77,13 +74,19 @@ static int qcom_smd_qrtr_probe(struct rpmsg_device *rpdev)
 	qdev->dev = &rpdev->dev;
 	qdev->ep.xmit = qcom_smd_qrtr_send;
 
-	rc = qrtr_endpoint_register(&qdev->ep, QRTR_EP_NID_AUTO);
+	rc = of_property_read_u32(rpdev->dev.of_node, "qcom,net-id", &net_id);
+	if (rc < 0)
+		net_id = QRTR_EP_NET_ID_AUTO;
+
+	rt = of_property_read_bool(rpdev->dev.of_node, "qcom,low-latency");
+
+	rc = qrtr_endpoint_register(&qdev->ep, net_id, rt);
 	if (rc)
 		return rc;
 
 	dev_set_drvdata(&rpdev->dev, qdev);
 
-	dev_dbg(&rpdev->dev, "Qualcomm SMD QRTR driver probed\n");
+	pr_info("%s:SMD QRTR driver probed\n", __func__);
 
 	return 0;
 }

@@ -515,12 +515,12 @@ EXPORT_SYMBOL_GPL(usb_gadget_wakeup);
 int usb_gsi_ep_op(struct usb_ep *ep,
 		struct usb_gsi_request *req, enum gsi_ep_op op)
 {
-	if (ep && ep->ops && ep->ops->gsi_ep_op)
+	if (ep->ops->gsi_ep_op)
 		return ep->ops->gsi_ep_op(ep, req, op);
 
 	return -EOPNOTSUPP;
 }
-EXPORT_SYMBOL_GPL(usb_gsi_ep_op);
+EXPORT_SYMBOL(usb_gsi_ep_op);
 
 /**
  * usb_gadget_func_wakeup - send a function remote wakeup up notification
@@ -533,15 +533,15 @@ EXPORT_SYMBOL_GPL(usb_gsi_ep_op);
 int usb_gadget_func_wakeup(struct usb_gadget *gadget,
 	int interface_id)
 {
-	if (!gadget || (gadget->speed != USB_SPEED_SUPER))
+	if (gadget->speed != USB_SPEED_SUPER)
 		return -EOPNOTSUPP;
 
-	if (!gadget->ops || !gadget->ops->func_wakeup)
+	if (!gadget->ops->func_wakeup)
 		return -EOPNOTSUPP;
 
 	return gadget->ops->func_wakeup(gadget, interface_id);
 }
-EXPORT_SYMBOL_GPL(usb_gadget_func_wakeup);
+EXPORT_SYMBOL(usb_gadget_func_wakeup);
 
 /**
  * usb_gadget_set_selfpowered - sets the device selfpowered feature.
@@ -1212,6 +1212,10 @@ int usb_add_gadget_udc_release(struct device *parent, struct usb_gadget *gadget,
 	dev_set_name(&gadget->dev, "gadget");
 	INIT_WORK(&gadget->work, usb_gadget_state_work);
 	gadget->dev.parent = parent;
+
+	dma_set_coherent_mask(&gadget->dev, parent->coherent_dma_mask);
+	gadget->dev.dma_parms = parent->dma_parms;
+	gadget->dev.dma_mask = parent->dma_mask;
 
 	if (release)
 		gadget->dev.release = release;

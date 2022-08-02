@@ -1761,7 +1761,6 @@ int ptr_to_hashval(const void *ptr, unsigned long *hashval_out)
 {
 	return __ptr_to_hashval(ptr, hashval_out);
 }
-EXPORT_SYMBOL_GPL(ptr_to_hashval);
 
 /* Maps a pointer to a 32 bit unique identifier. */
 static char *ptr_to_id(char *buf, char *end, void *ptr, struct printf_spec spec)
@@ -1987,7 +1986,8 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
 			return buf;
 		}
 	case 'K':
-		if (!kptr_restrict)
+		if (!kptr_restrict ||
+		    IS_ENABLED(CONFIG_DEBUG_CONSOLE_UNHASHED_POINTERS))
 			break;
 		return restricted_pointer(buf, end, ptr, spec);
 	case 'N':
@@ -2018,6 +2018,9 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
 	case 'x':
 		return pointer_string(buf, end, ptr, spec);
 	}
+
+	if (IS_ENABLED(CONFIG_DEBUG_CONSOLE_UNHASHED_POINTERS))
+		return pointer_string(buf, end, ptr, spec);
 
 	/* default is to _not_ leak addresses, hash before printing */
 	return ptr_to_id(buf, end, ptr, spec);

@@ -40,6 +40,9 @@
 #include <linux/mm.h>
 #include <linux/kexec.h>
 #include <linux/crash_dump.h>
+#include <linux/memory.h>
+#include <linux/libfdt.h>
+#include <linux/memblock.h>
 
 #include <asm/boot.h>
 #include <asm/fixmap.h>
@@ -318,6 +321,104 @@ static void __init arm64_memory_present(void)
 #endif
 
 static phys_addr_t memory_limit = PHYS_ADDR_MAX;
+phys_addr_t bootloader_memory_limit;
+
+#ifdef CONFIG_OVERRIDE_MEMORY_LIMIT
+static void __init update_memory_limit(void)
+{
+	unsigned long dt_root = of_get_flat_dt_root();
+	unsigned long node;
+	unsigned long long ram_sz, sz;
+	phys_addr_t end_addr, addr_aligned, offset;
+	int len;
+	const __be32 *prop;
+	char *status;
+	phys_addr_t min_ddr_sz = 0, offline_sz = 0;
+	int t_len = (2 * dt_root_size_cells) * sizeof(__be32);
+
+	if (memory_limit == PHYS_ADDR_MAX)
+		ram_sz = memblock_phys_mem_size();
+	else if (IS_ALIGNED(memory_limit, MIN_MEMORY_BLOCK_SIZE))
+		ram_sz = memory_limit;
+	else {
+		WARN(1, "mem-offline is not supported for DDR size %lld\n",
+				memory_limit);
+		return;
+	}
+
+	node = of_get_flat_dt_subnode_by_name(dt_root, "mem-offline");
+	if (node == -FDT_ERR_NOTFOUND) {
+		pr_err("mem-offine node not found in FDT\n");
+		return;
+	}
+
+	status = (char *)fdt_getprop(initial_boot_params, node, "status", NULL);
+	if (status && !strcmp(status, "disabled")) {
+		pr_info("mem-offline device is disabled\n");
+		return;
+	}
+
+	prop = of_get_flat_dt_prop(node, "offline-sizes", &len);
+	if (prop) {
+		if (len % t_len != 0) {
+			pr_err("mem-offline: invalid offline-sizes property\n");
+			return;
+		}
+
+		while (len > 0) {
+			phys_addr_t tmp_min_ddr_sz = dt_mem_next_cell(
+							dt_root_addr_cells,
+							&prop);
+			phys_addr_t tmp_offline_sz = dt_mem_next_cell(
+							dt_root_size_cells,
+							&prop);
+
+			if (tmp_min_ddr_sz < ram_sz &&
+			    tmp_min_ddr_sz > min_ddr_sz) {
+				if (tmp_offline_sz < ram_sz) {
+					min_ddr_sz = tmp_min_ddr_sz;
+					offline_sz = tmp_offline_sz;
+				} else {
+					pr_info("mem-offline: invalid offline size:%pa\n",
+						 &tmp_offline_sz);
+				}
+			}
+			len -= t_len;
+		}
+	} else {
+		pr_err("mem-offine: offline-sizes property not found in DT\n");
+		return;
+	}
+
+	if (offline_sz == 0) {
+		pr_info("mem-offline: no memory to offline for DDR size:%llu\n",
+			ram_sz);
+		return;
+	}
+
+	sz = ram_sz - offline_sz;
+	memory_limit = (phys_addr_t)sz;
+	end_addr = memblock_max_addr(memory_limit);
+	addr_aligned = ALIGN(end_addr, MIN_MEMORY_BLOCK_SIZE);
+	offset = addr_aligned - end_addr;
+
+	if (offset > MIN_MEMORY_BLOCK_SIZE / 2) {
+		addr_aligned = ALIGN_DOWN(end_addr, MIN_MEMORY_BLOCK_SIZE);
+		offset = end_addr - addr_aligned;
+		memory_limit -= offset;
+	} else {
+		memory_limit += offset;
+	}
+
+	pr_notice("Memory limit set/overridden to %lldMB\n",
+							memory_limit >> 20);
+}
+#else
+static void __init update_memory_limit(void)
+{
+
+}
+#endif
 
 /*
  * Limit the memory size that was specified via FDT.
@@ -404,6 +505,16 @@ void __init arm64_memblock_init(void)
 	}
 
 	/*
+	 * Save bootloader imposed memory limit before we overwirte
+	 * memblock.
+	 */
+	bootloader_memory_limit = memblock_max_addr(memory_limit);
+	if (bootloader_memory_limit > memblock_end_of_DRAM())
+		bootloader_memory_limit = memblock_end_of_DRAM();
+
+	update_memory_limit();
+
+	/*
 	 * Apply the memory limit if it was set. Since the kernel may be loaded
 	 * high up in memory, add back the kernel region that must be accessible
 	 * via the linear mapping.
@@ -445,7 +556,7 @@ void __init arm64_memblock_init(void)
 	if (IS_ENABLED(CONFIG_RANDOMIZE_BASE)) {
 		extern u16 memstart_offset_seed;
 		u64 range = linear_region_size -
-			    (memblock_end_of_DRAM() - memblock_start_of_DRAM());
+			   (bootloader_memory_limit - memblock_start_of_DRAM());
 
 		/*
 		 * If the size of the linear region exceeds, by a sufficient
@@ -694,3 +805,128 @@ static int __init register_mem_limit_dumper(void)
 	return 0;
 }
 __initcall(register_mem_limit_dumper);
+
+#ifdef CONFIG_MEMORY_HOTPLUG
+int arch_add_memory(int nid, u64 start, u64 size, struct vmem_altmap *altmap,
+		bool want_memblock)
+{
+	pg_data_t *pgdat;
+	unsigned long start_pfn = start >> PAGE_SHIFT;
+	unsigned long nr_pages = size >> PAGE_SHIFT;
+	unsigned long end_pfn = start_pfn + nr_pages;
+	unsigned long max_sparsemem_pfn = 1UL << (MAX_PHYSMEM_BITS-PAGE_SHIFT);
+	int ret;
+
+	if (end_pfn > max_sparsemem_pfn) {
+		pr_err("end_pfn too big");
+		return -1;
+	}
+	hotplug_paging(start, size);
+
+	/*
+	 * Mark the first page in the range as unusable. This is needed
+	 * because __add_section (within __add_pages) wants pfn_valid
+	 * of it to be false, and in arm64 pfn falid is implemented by
+	 * just checking at the nomap flag for existing blocks.
+	 *
+	 * A small trick here is that __add_section() requires only
+	 * phys_start_pfn (that is the first pfn of a section) to be
+	 * invalid. Regardless of whether it was assumed (by the function
+	 * author) that all pfns within a section are either all valid
+	 * or all invalid, it allows to avoid looping twice (once here,
+	 * second when memblock_clear_nomap() is called) through all
+	 * pfns of the section and modify only one pfn. Thanks to that,
+	 * further, in __add_zone() only this very first pfn is skipped
+	 * and corresponding page is not flagged reserved. Therefore it
+	 * is enough to correct this setup only for it.
+	 *
+	 * When arch_add_memory() returns the walk_memory_range() function
+	 * is called and passed with online_memory_block() callback,
+	 * which execution finally reaches the memory_block_action()
+	 * function, where also only the first pfn of a memory block is
+	 * checked to be reserved. Above, it was first pfn of a section,
+	 * here it is a block but
+	 * (drivers/base/memory.c):
+	 *     sections_per_block = block_sz / MIN_MEMORY_BLOCK_SIZE;
+	 * (include/linux/memory.h):
+	 *     #define MIN_MEMORY_BLOCK_SIZE     (1UL << SECTION_SIZE_BITS)
+	 * so we can consider block and section equivalently
+	 */
+	memblock_mark_nomap(start, 1<<PAGE_SHIFT);
+
+	pgdat = NODE_DATA(nid);
+
+	ret = __add_pages(nid, start_pfn, nr_pages, altmap, want_memblock);
+
+	/*
+	 * Make the pages usable after they have been added.
+	 * This will make pfn_valid return true
+	 */
+	memblock_clear_nomap(start, 1<<PAGE_SHIFT);
+
+	/*
+	 * This is a hack to avoid having to mix arch specific code
+	 * into arch independent code. SetPageReserved is supposed
+	 * to be called by __add_zone (within __add_section, within
+	 * __add_pages). However, when it is called there, it assumes that
+	 * pfn_valid returns true.  For the way pfn_valid is implemented
+	 * in arm64 (a check on the nomap flag), the only way to make
+	 * this evaluate true inside __add_zone is to clear the nomap
+	 * flags of blocks in architecture independent code.
+	 *
+	 * To avoid this, we set the Reserved flag here after we cleared
+	 * the nomap flag in the line above.
+	 */
+	SetPageReserved(pfn_to_page(start_pfn));
+
+	if (ret)
+		pr_warn("%s: Problem encountered in __add_pages() ret=%d\n",
+			__func__, ret);
+
+	return ret;
+}
+
+#ifdef CONFIG_MEMORY_HOTREMOVE
+static void kernel_physical_mapping_remove(unsigned long start,
+	unsigned long end)
+{
+	start = (unsigned long)__va(start);
+	end = (unsigned long)__va(end);
+
+	remove_pagetable(start, end, true);
+
+}
+
+void arch_remove_memory(int nid, u64 start, u64 size,
+			struct vmem_altmap *altmap)
+{
+	unsigned long start_pfn = start >> PAGE_SHIFT;
+	unsigned long nr_pages = size >> PAGE_SHIFT;
+
+	__remove_pages(start_pfn, nr_pages, altmap);
+
+	kernel_physical_mapping_remove(start, start + size);
+}
+
+#endif /* CONFIG_MEMORY_HOTREMOVE */
+static int arm64_online_page(struct page *page)
+{
+	unsigned long phy_addr = page_to_phys(page);
+
+	if (phy_addr + PAGE_SIZE > bootloader_memory_limit)
+		return -EINVAL;
+
+	__online_page_set_limits(page);
+	__online_page_increment_counters(page);
+	__online_page_free(page);
+
+	return 0;
+}
+
+static int __init arm64_memory_hotplug_init(void)
+{
+	set_online_page_callback(&arm64_online_page);
+	return 0;
+}
+core_initcall(arm64_memory_hotplug_init);
+#endif /* CONFIG_MEMORY_HOTPLUG */

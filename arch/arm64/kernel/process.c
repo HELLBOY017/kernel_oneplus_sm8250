@@ -92,6 +92,16 @@ void arch_cpu_idle(void)
 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
 }
 
+void arch_cpu_idle_enter(void)
+{
+	idle_notifier_call_chain(IDLE_START);
+}
+
+void arch_cpu_idle_exit(void)
+{
+	idle_notifier_call_chain(IDLE_END);
+}
+
 #ifdef CONFIG_HOTPLUG_CPU
 void arch_cpu_idle_dead(void)
 {
@@ -207,6 +217,64 @@ static void print_pstate(struct pt_regs *regs)
 	}
 }
 
+/*
+ * dump a block of kernel memory from around the given address
+ */
+static void show_data(unsigned long addr, int nbytes, const char *name)
+{
+	int	i, j;
+	int	nlines;
+	u32	*p;
+
+	/*
+	 * don't attempt to dump non-kernel addresses or
+	 * values that are probably just small negative numbers
+	 */
+	if (addr < PAGE_OFFSET || addr > -256UL)
+		return;
+
+	printk(KERN_DEBUG "\n%s: %#lx:\n", name, addr);
+
+	/*
+	 * round address down to a 32 bit boundary
+	 * and always dump a multiple of 32 bytes
+	 */
+	p = (u32 *)(addr & ~(sizeof(u32) - 1));
+	nbytes += (addr & (sizeof(u32) - 1));
+	nlines = (nbytes + 31) / 32;
+
+
+	for (i = 0; i < nlines; i++) {
+		/*
+		 * just display low 16 bits of address to keep
+		 * each line of the dump < 80 characters
+		 */
+		printk(KERN_DEBUG "%04lx ", (unsigned long)p & 0xffff);
+		for (j = 0; j < 8; j++) {
+			u32	data;
+
+			if (probe_kernel_address(p, data))
+				pr_cont(" ********");
+			else
+				pr_cont(" %08x", data);
+			++p;
+		}
+		pr_cont("\n");
+	}
+}
+
+static void show_extra_register_data(struct pt_regs *regs, int nbytes)
+{
+	mm_segment_t fs;
+
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+	show_data(regs->pc - nbytes, nbytes * 2, "PC");
+	show_data(regs->regs[30] - nbytes, nbytes * 2, "LR");
+	show_data(regs->sp - nbytes, nbytes * 2, "SP");
+	set_fs(fs);
+}
+
 void __show_regs(struct pt_regs *regs)
 {
 	int i, top_reg;
@@ -248,6 +316,10 @@ void __show_regs(struct pt_regs *regs)
 
 		pr_cont("\n");
 	}
+
+	if (!user_mode(regs))
+		show_extra_register_data(regs, 128);
+
 }
 
 void show_regs(struct pt_regs * regs)
