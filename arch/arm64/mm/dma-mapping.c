@@ -39,6 +39,7 @@
 #include <asm/dma-iommu.h>
 #include <linux/of_address.h>
 #include <linux/dma-mapping-fast.h>
+#include <linux/msm_dma_iommu_mapping.h>
 
 static int swiotlb __ro_after_init;
 
@@ -348,9 +349,9 @@ static int __swiotlb_mmap_pfn(struct vm_area_struct *vma,
 
 	if (off < nr_pages && nr_vma_pages <= (nr_pages - off)) {
 		ret = remap_pfn_range(vma, vma->vm_start,
-				      pfn + off,
-				      vma->vm_end - vma->vm_start,
-				      vma->vm_page_prot);
+				pfn + off,
+				vma->vm_end - vma->vm_start,
+				vma->vm_page_prot);
 	}
 
 	return ret;

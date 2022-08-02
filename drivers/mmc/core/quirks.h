@@ -69,6 +69,20 @@ static const struct mmc_fixup mmc_blk_fixups[] = {
 		  MMC_QUIRK_LONG_READ_TIME),
 
 	/*
+	 * Some Samsung MMC cards need longer data read timeout than
+	 * indicated in CSD.
+	 */
+	MMC_FIXUP("Q7XSAB", CID_MANFID_SAMSUNG, 0x100, add_quirk_mmc,
+		  MMC_QUIRK_LONG_READ_TIME),
+
+	/*
+	 * Hynix eMMC cards need longer data read timeout than
+	 * indicated in CSD.
+	 */
+	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_HYNIX, CID_OEMID_ANY, add_quirk_mmc,
+		  MMC_QUIRK_LONG_READ_TIME),
+
+	/*
 	 * On these Samsung MoviNAND parts, performing secure erase or
 	 * secure trim can result in unrecoverable corruption due to a
 	 * firmware bug.
@@ -99,6 +113,14 @@ static const struct mmc_fixup mmc_blk_fixups[] = {
 	MMC_FIXUP("V10016", CID_MANFID_KINGSTON, CID_OEMID_ANY, add_quirk_mmc,
 		  MMC_QUIRK_TRIM_BROKEN),
 
+	/* Some INAND MCP devices advertise incorrect timeout values */
+	MMC_FIXUP("SEM04G", 0x45, CID_OEMID_ANY, add_quirk_mmc,
+		  MMC_QUIRK_INAND_DATA_TIMEOUT),
+
+	/* Disable cache for specific cards */
+	MMC_FIXUP("MMC16G", CID_MANFID_KINGSTON, CID_OEMID_ANY, add_quirk_mmc,
+		  MMC_QUIRK_CACHE_DISABLE),
+
 	END_FIXUP
 };
 
@@ -116,6 +138,10 @@ static const struct mmc_fixup mmc_ext_csd_fixups[] = {
 	MMC_FIXUP_EXT_CSD_REV(CID_NAME_ANY, CID_MANFID_NUMONYX,
 			      0x014e, add_quirk, MMC_QUIRK_BROKEN_HPI, 6),
 
+	/* avoid HPI for specific cards */
+	MMC_FIXUP_EXT_CSD_REV("MMC16G", CID_MANFID_KINGSTON, CID_OEMID_ANY,
+			add_quirk, MMC_QUIRK_BROKEN_HPI, MMC_V4_41),
+
 	END_FIXUP
 };
 
@@ -126,6 +152,21 @@ static const struct mmc_fixup sdio_fixup_methods[] = {
 
 	SDIO_FIXUP(SDIO_VENDOR_ID_TI_WL1251, SDIO_DEVICE_ID_TI_WL1251,
 		   add_quirk, MMC_QUIRK_DISABLE_CD),
+
+	SDIO_FIXUP(SDIO_VENDOR_ID_MSM_QCA, SDIO_DEVICE_ID_MSM_QCA_AR6003_1,
+		   remove_quirk, MMC_QUIRK_BROKEN_CLK_GATING),
+
+	SDIO_FIXUP(SDIO_VENDOR_ID_MSM_QCA, SDIO_DEVICE_ID_MSM_QCA_AR6003_2,
+		   remove_quirk, MMC_QUIRK_BROKEN_CLK_GATING),
+
+	SDIO_FIXUP(SDIO_VENDOR_ID_MSM_QCA, SDIO_DEVICE_ID_MSM_QCA_AR6004_1,
+		   remove_quirk, MMC_QUIRK_BROKEN_CLK_GATING),
+
+	SDIO_FIXUP(SDIO_VENDOR_ID_MSM_QCA, SDIO_DEVICE_ID_MSM_QCA_AR6004_2,
+		   remove_quirk, MMC_QUIRK_BROKEN_CLK_GATING),
+
+	SDIO_FIXUP(SDIO_VENDOR_ID_MSM, SDIO_DEVICE_ID_MSM_WCN1314,
+		   remove_quirk, MMC_QUIRK_BROKEN_CLK_GATING),
 
 	SDIO_FIXUP(SDIO_VENDOR_ID_TI, SDIO_DEVICE_ID_TI_WL1271,
 		   add_quirk, MMC_QUIRK_NONSTD_FUNC_IF),
@@ -142,6 +183,14 @@ static const struct mmc_fixup sdio_fixup_methods[] = {
 	SDIO_FIXUP(SDIO_VENDOR_ID_MARVELL, SDIO_DEVICE_ID_MARVELL_8887WLAN,
 		   add_limit_rate_quirk, 150000000),
 
+	SDIO_FIXUP(SDIO_VENDOR_ID_QCA6574, SDIO_DEVICE_ID_QCA6574,
+		   add_quirk, MMC_QUIRK_QCA6574_SETTINGS),
+
+	SDIO_FIXUP(SDIO_VENDOR_ID_QCA9377, SDIO_DEVICE_ID_QCA9377,
+		add_quirk, MMC_QUIRK_QCA9377_SETTINGS),
+
+	SDIO_FIXUP(SDIO_VENDOR_ID_QCA9379, SDIO_DEVICE_ID_QCA9379,
+		add_quirk, MMC_QUIRK_QCA9379_SETTINGS),
 	END_FIXUP
 };
 

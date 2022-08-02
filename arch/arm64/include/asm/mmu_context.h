@@ -34,14 +34,20 @@
 #include <asm/pgtable.h>
 #include <asm/sysreg.h>
 #include <asm/tlbflush.h>
+#include <linux/msm_rtb.h>
 
 static inline void contextidr_thread_switch(struct task_struct *next)
 {
+	pid_t pid = task_pid_nr(next);
+
 	if (!IS_ENABLED(CONFIG_PID_IN_CONTEXTIDR))
 		return;
 
-	write_sysreg(task_pid_nr(next), contextidr_el1);
+	write_sysreg(pid, contextidr_el1);
 	isb();
+
+	uncached_logk(LOGK_CTXID, (void *)(u64)pid);
+
 }
 
 /*
@@ -240,6 +246,7 @@ switch_mm(struct mm_struct *prev, struct mm_struct *next,
 
 void verify_cpu_asid_bits(void);
 void post_ttbr_update_workaround(void);
+void arm64_workaround_1542418_asid_rollover(void);
 
 #endif /* !__ASSEMBLY__ */
 

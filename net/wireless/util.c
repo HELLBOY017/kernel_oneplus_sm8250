@@ -68,7 +68,7 @@ u32 ieee80211_mandatory_rates(struct ieee80211_supported_band *sband,
 }
 EXPORT_SYMBOL(ieee80211_mandatory_rates);
 
-int ieee80211_channel_to_frequency(int chan, enum nl80211_band band)
+u32 ieee80211_channel_to_freq_khz(int chan, enum nl80211_band band)
 {
 	/* see 802.11 17.3.8.3.2 and Annex J
 	 * there are overlapping channel numbers in 5GHz and 2GHz bands */
@@ -77,29 +77,39 @@ int ieee80211_channel_to_frequency(int chan, enum nl80211_band band)
 	switch (band) {
 	case NL80211_BAND_2GHZ:
 		if (chan == 14)
-			return 2484;
+			return MHZ_TO_KHZ(2484);
 		else if (chan < 14)
-			return 2407 + chan * 5;
+			return MHZ_TO_KHZ(2407 + chan * 5);
 		break;
 	case NL80211_BAND_5GHZ:
 		if (chan >= 182 && chan <= 196)
-			return 4000 + chan * 5;
+			return MHZ_TO_KHZ(4000 + chan * 5);
 		else
-			return 5000 + chan * 5;
+			return MHZ_TO_KHZ(5000 + chan * 5);
+		break;
+	case NL80211_BAND_6GHZ:
+		/* see 802.11ax D6.1 27.3.23.2 */
+		if (chan == 2)
+			return MHZ_TO_KHZ(5935);
+		if (chan <= 253)
+			return MHZ_TO_KHZ(5950 + chan * 5);
 		break;
 	case NL80211_BAND_60GHZ:
-		if (chan < 5)
-			return 56160 + chan * 2160;
+		if (chan < 7)
+			return MHZ_TO_KHZ(56160 + chan * 2160);
 		break;
 	default:
 		;
 	}
 	return 0; /* not supported */
 }
-EXPORT_SYMBOL(ieee80211_channel_to_frequency);
+EXPORT_SYMBOL(ieee80211_channel_to_freq_khz);
 
-int ieee80211_frequency_to_channel(int freq)
+int ieee80211_freq_khz_to_channel(u32 freq)
 {
+	/* TODO: just handle MHz for now */
+	freq = KHZ_TO_MHZ(freq);
+
 	/* see 802.11 17.3.8.3.2 and Annex J */
 	if (freq == 2484)
 		return 14;
@@ -107,16 +117,22 @@ int ieee80211_frequency_to_channel(int freq)
 		return (freq - 2407) / 5;
 	else if (freq >= 4910 && freq <= 4980)
 		return (freq - 4000) / 5;
-	else if (freq <= 45000) /* DMG band lower limit */
+	else if (freq < 5925)
 		return (freq - 5000) / 5;
-	else if (freq >= 58320 && freq <= 64800)
+	else if (freq == 5935)
+		return 2;
+	else if (freq <= 45000) /* DMG band lower limit */
+		/* see 802.11ax D6.1 27.3.23.2 */
+		return (freq - 5950) / 5;
+	else if (freq >= 58320 && freq <= 70200)
 		return (freq - 56160) / 2160;
 	else
 		return 0;
 }
-EXPORT_SYMBOL(ieee80211_frequency_to_channel);
+EXPORT_SYMBOL(ieee80211_freq_khz_to_channel);
 
-struct ieee80211_channel *ieee80211_get_channel(struct wiphy *wiphy, int freq)
+struct ieee80211_channel *ieee80211_get_channel_khz(struct wiphy *wiphy,
+						    u32 freq)
 {
 	enum nl80211_band band;
 	struct ieee80211_supported_band *sband;
@@ -129,14 +145,16 @@ struct ieee80211_channel *ieee80211_get_channel(struct wiphy *wiphy, int freq)
 			continue;
 
 		for (i = 0; i < sband->n_channels; i++) {
-			if (sband->channels[i].center_freq == freq)
-				return &sband->channels[i];
+			struct ieee80211_channel *chan = &sband->channels[i];
+
+			if (ieee80211_channel_to_khz(chan) == freq)
+				return chan;
 		}
 	}
 
 	return NULL;
 }
-EXPORT_SYMBOL(ieee80211_get_channel);
+EXPORT_SYMBOL(ieee80211_get_channel_khz);
 
 static void set_mandatory_flags_band(struct ieee80211_supported_band *sband)
 {
@@ -144,6 +162,7 @@ static void set_mandatory_flags_band(struct ieee80211_supported_band *sband)
 
 	switch (sband->band) {
 	case NL80211_BAND_5GHZ:
+	case NL80211_BAND_6GHZ:
 		want = 3;
 		for (i = 0; i < sband->n_bitrates; i++) {
 			if (sband->bitrates[i].bitrate == 60 ||
@@ -816,7 +835,7 @@ unsigned int cfg80211_classify8021d(struct sk_buff *skb,
 }
 EXPORT_SYMBOL(cfg80211_classify8021d);
 
-const u8 *ieee80211_bss_get_ie(struct cfg80211_bss *bss, u8 ie)
+const struct element *ieee80211_bss_get_elem(struct cfg80211_bss *bss, u8 id)
 {
 	const struct cfg80211_bss_ies *ies;
 
@@ -824,9 +843,9 @@ const u8 *ieee80211_bss_get_ie(struct cfg80211_bss *bss, u8 ie)
 	if (!ies)
 		return NULL;
 
-	return cfg80211_find_ie(ie, ies->data, ies->len);
+	return cfg80211_find_elem(id, ies->data, ies->len);
 }
-EXPORT_SYMBOL(ieee80211_bss_get_ie);
+EXPORT_SYMBOL(ieee80211_bss_get_elem);
 
 void cfg80211_upload_connect_keys(struct wireless_dev *wdev)
 {
@@ -1523,6 +1542,9 @@ bool ieee80211_operating_class_to_band(u8 operating_class,
 	case 128 ... 130:
 		*band = NL80211_BAND_5GHZ;
 		return true;
+	case 131 ... 135:
+		*band = NL80211_BAND_6GHZ;
+		return true;
 	case 81:
 	case 82:
 	case 83:
@@ -1654,7 +1676,7 @@ bool ieee80211_chandef_to_operating_class(struct cfg80211_chan_def *chandef,
 	}
 
 	/* 56.16 GHz, channel 1..4 */
-	if (freq >= 56160 + 2160 * 1 && freq <= 56160 + 2160 * 4) {
+	if (freq >= 56160 + 2160 * 1 && freq <= 56160 + 2160 * 6) {
 		if (chandef->width >= NL80211_CHAN_WIDTH_40)
 			return false;
 

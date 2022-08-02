@@ -49,7 +49,12 @@ $(warning Detected assembler with broken .inst; disassembly will be unreliable)
   endif
 endif
 
-KBUILD_CFLAGS	+= -mgeneral-regs-only $(lseinstr) $(brokengasinst) $(compat_vdso)
+ifeq ($(cc-name),clang)
+KBUILD_CFLAGS	+= -mno-implicit-float
+else
+KBUILD_CFLAGS	+= -mgeneral-regs-only
+endif
+KBUILD_CFLAGS	+= $(lseinstr) $(brokengasinst) $(compat_vdso)
 KBUILD_CFLAGS	+= -fno-asynchronous-unwind-tables
 KBUILD_CFLAGS	+= $(call cc-disable-warning, psabi)
 KBUILD_AFLAGS	+= $(lseinstr) $(brokengasinst) $(compat_vdso)
@@ -124,13 +129,30 @@ core-$(CONFIG_CRYPTO) += arch/arm64/crypto/
 libs-y		:= arch/arm64/lib/ $(libs-y)
 core-$(CONFIG_EFI_STUB) += $(objtree)/drivers/firmware/efi/libstub/lib.a
 
+ifeq ($(CONFIG_BUILD_ARM64_KERNEL_COMPRESSION_GZIP),y)
+KBUILD_IMAGE   := Image.gz
+else
+KBUILD_IMAGE   := Image
+endif
+
 # Default target when executing plain make
 boot		:= arch/arm64/boot
-KBUILD_IMAGE	:= $(boot)/Image.gz
+
+ifeq ($(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE),y)
+KBUILD_TARGET  := $(addsuffix -dtb,$(KBUILD_IMAGE))
+KBUILD_IMAGE	:= $(boot)/$(addsuffix -dtb,$(KBUILD_IMAGE))
+else
+KBUILD_TARGET := $(KBUILD_IMAGE)
+KBUILD_IMAGE  := $(boot)/$(KBUILD_IMAGE)
+endif
+
 KBUILD_DTBS	:= dtbs
 
-all:	Image.gz $(KBUILD_DTBS)
+ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
+export DTC_FLAGS := -@
+endif
 
+all:	$(KBUILD_DTBS) $(KBUILD_TARGET)
 
 Image: vmlinux
 	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
@@ -151,6 +173,12 @@ dtbs: prepare scripts
 
 dtbs_install:
 	$(Q)$(MAKE) $(dtbinst)=$(boot)/dts
+
+Image-dtb: vmlinux scripts dtbs
+	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
+
+Image.gz-dtb: vmlinux scripts dtbs Image.gz
+	$(Q)$(MAKE) $(build)=$(boot) $(boot)/$@
 
 PHONY += vdso_install
 vdso_install:

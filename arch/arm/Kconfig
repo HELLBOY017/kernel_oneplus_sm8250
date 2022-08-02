@@ -25,6 +25,7 @@ config ARM
 	select ARCH_USE_BUILTIN_BSWAP
 	select ARCH_USE_CMPXCHG_LOCKREF
 	select ARCH_WANT_IPC_PARSE_VERSION
+	select ARM_PSCI_FW if PM
 	select BUILDTIME_EXTABLE_SORT if MMU
 	select CLONE_BACKWARDS
 	select CPU_PM if (SUSPEND || CPU_IDLE)
@@ -98,6 +99,7 @@ config ARM
 	select HAVE_SYSCALL_TRACEPOINTS
 	select HAVE_UID16
 	select HAVE_VIRT_CPU_ACCOUNTING_GEN
+	select IOMMU_DMA if IOMMU_SUPPORT
 	select IRQ_FORCED_THREADING
 	select MODULES_USE_ELF_REL
 	select NEED_DMA_MAP_STATE
@@ -134,7 +136,7 @@ if ARM_DMA_USE_IOMMU
 config ARM_DMA_IOMMU_ALIGNMENT
 	int "Maximum PAGE_SIZE order of alignment for DMA IOMMU buffers"
 	range 4 9
-	default 8
+	default 9
 	help
 	  DMA mapping framework by default aligns all buffers to the smallest
 	  PAGE_SIZE order which is greater than or equal to the requested buffer
@@ -539,6 +541,34 @@ config ARCH_PXA
 	select SPARSE_IRQ
 	help
 	  Support for Intel/Marvell's PXA2xx/PXA3xx processor line.
+
+config ARCH_QCOM
+       bool "Qualcomm MSM (non-multiplatform)"
+       select ARCH_REQUIRE_GPIOLIB
+       select CPU_V7
+       select AUTO_ZRELADDR
+       select HAVE_SMP
+       select CLKDEV_LOOKUP
+       select GENERIC_CLOCKEVENTS
+       select GENERIC_ALLOCATOR
+       select ARM_PATCH_PHYS_VIRT
+       select ARM_HAS_SG_CHAIN
+       select ARCH_HAS_OPP
+       select SOC_BUS
+       select MULTI_IRQ_HANDLER
+       select PM_OPP
+       select SPARSE_IRQ
+       select USE_OF
+       select PINCTRL
+       select MFD_CORE
+       select SND_SOC_COMPRESS
+       select SND_HWDEP
+       help
+         Support for Qualcomm MSM/QSD based systems.  This runs on the
+         apps processor of the MSM/QSD and depends on a shared memory
+         interface to the modem processor which runs the baseband
+         stack and controls some vital subsystems
+         (clock and power control, etc).
 
 config ARCH_RPC
 	bool "RiscPC"
@@ -1471,7 +1501,7 @@ config ARCH_NR_GPIO
 	int
 	default 2048 if ARCH_SOCFPGA
 	default 1024 if ARCH_BRCMSTB || ARCH_RENESAS || ARCH_TEGRA || \
-		ARCH_ZYNQ
+		ARCH_ZYNQ || ARCH_QCOM
 	default 512 if ARCH_EXYNOS || ARCH_KEYSTONE || SOC_OMAP5 || \
 		SOC_DRA7XX || ARCH_S3C24XX || ARCH_S3C64XX || ARCH_S5PV210
 	default 416 if ARCH_SUNXI
@@ -1720,6 +1750,35 @@ config ARM_MODULE_PLTS
 	  Disabling this is usually safe for small single-platform
 	  configurations. If unsure, say y.
 
+choice
+	prompt "Virtual Memory Reclaim"
+	default ENABLE_VMALLOC_SAVING
+	help
+	  Select the method of reclaiming virtual memory. Two values
+	  are allowed to choose, one is NO_VM_RECLAIM, the other is
+	  ENABLE_VMALLOC_SAVING.
+
+	  If you are not absolutely sure what you are doing, leave this
+	  option alone.
+
+config ENABLE_VMALLOC_SAVING
+	bool "Reclaim memory for each subsystem"
+	help
+	  Enable this config to reclaim the virtual space belonging
+	  to any subsystem which is expected to have a lifetime of
+	  the entire system. This feature allows lowmem to be non-
+	  contiguous.
+
+config NO_VM_RECLAIM
+	bool "Do not reclaim memory"
+	help
+	  Do not reclaim any memory. This might result in less lowmem
+	  and wasting some virtual memory space which could otherwise
+	  be reclaimed by using any of the other two config options as
+	  above.
+
+endchoice
+
 config FORCE_MAX_ZONEORDER
 	int "Maximum zone order"
 	default "12" if SOC_AM33XX
@@ -1844,6 +1903,21 @@ config DEPRECATED_PARAM_STRUCT
 	help
 	  This was deprecated in 2001 and announced to live on for 5 years.
 	  Some old boot loaders still use this way.
+
+config BUILD_ARM_APPENDED_DTB_IMAGE
+	bool "Build a concatenated zImage/dtb by default"
+	depends on OF
+	help
+	  Enabling this option will cause a concatenated zImage and list of
+	  DTBs to be built by default (instead of a standalone zImage.)
+	  The image will built in arch/arm/boot/zImage-dtb
+
+config BUILD_ARM_APPENDED_DTB_IMAGE_NAMES
+	string "Default dtb names"
+	depends on BUILD_ARM_APPENDED_DTB_IMAGE
+	help
+	  Space separated list of names of dtbs to append when
+	  building a concatenated zImage-dtb.
 
 # Compressed boot loader in ROM.  Yes, we really want to ask about
 # TEXT and BSS so we preserve their values in the config files.
@@ -2054,6 +2128,17 @@ config AUTO_ZRELADDR
 
 config EFI_STUB
 	bool
+
+config ARM_DECOMPRESSOR_LIMIT
+        hex "Limit the decompressor memory area"
+        default 0x3200000
+        help
+          Allows overriding of the memory size that decompressor maps with
+          read, write and execute permissions to avoid speculative prefetch.
+
+          By default ARM_DECOMPRESSOR_LIMIT maps first 1GB of memory
+          with read, write and execute permissions and reset of the memory
+          as strongly ordered.
 
 config EFI
 	bool "UEFI runtime support"

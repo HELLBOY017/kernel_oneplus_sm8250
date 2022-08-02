@@ -384,12 +384,24 @@ static void edac_device_workq_setup(struct edac_device_ctl_info *edac_dev,
 
 	/* take the arg 'msec' and set it into the control structure
 	 * to used in the time period calculation
-	 * then calc the number of jiffies that represents
+	 * then calc the number of jiffies that represents. Also, force
+	 * polling period to 1 second if it is smaller than that, as
+	 * anything less than 1 second does not make sense.
 	 */
+	if (msec <= 1000) {
+		edac_device_printk(edac_dev, KERN_WARNING,
+				   "Forcing polling period to 1 second\n");
+		msec = 1000;
+	}
+
 	edac_dev->poll_msec = msec;
 	edac_dev->delay = msecs_to_jiffies(msec);
 
-	INIT_DELAYED_WORK(&edac_dev->work, edac_device_workq_function);
+	if (edac_dev->defer_work)
+		INIT_DEFERRABLE_WORK(&edac_dev->work,
+					edac_device_workq_function);
+	else
+		INIT_DELAYED_WORK(&edac_dev->work, edac_device_workq_function);
 
 	/* optimize here for the 1 second case, which will be normal value, to
 	 * fire ON the 1 second time event. This helps reduce all sorts of
@@ -477,7 +489,7 @@ int edac_device_add_device(struct edac_device_ctl_info *edac_dev)
 		 * enable workq processing on this instance,
 		 * default = 1000 msec
 		 */
-		edac_device_workq_setup(edac_dev, 1000);
+		edac_device_workq_setup(edac_dev, edac_dev->poll_msec);
 	} else {
 		edac_dev->op_state = OP_RUNNING_INTERRUPT;
 	}
@@ -549,6 +561,12 @@ static inline int edac_device_get_log_ue(struct edac_device_ctl_info *edac_dev)
 	return edac_dev->log_ue;
 }
 
+static inline int edac_device_get_panic_on_ce(struct edac_device_ctl_info
+					*edac_dev)
+{
+	return edac_dev->panic_on_ce;
+}
+
 static inline int edac_device_get_panic_on_ue(struct edac_device_ctl_info
 					*edac_dev)
 {
@@ -594,6 +612,11 @@ void edac_device_handle_ce(struct edac_device_ctl_info *edac_dev,
 				"CE: %s instance: %s block: %s '%s'\n",
 				edac_dev->ctl_name, instance->name,
 				block ? block->name : "N/A", msg);
+
+	if (edac_device_get_panic_on_ce(edac_dev))
+		panic("EDAC %s: CE instance: %s block %s '%s'\n",
+			edac_dev->ctl_name, instance->name,
+			block ? block->name : "N/A", msg);
 }
 EXPORT_SYMBOL_GPL(edac_device_handle_ce);
 

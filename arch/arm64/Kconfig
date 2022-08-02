@@ -175,6 +175,7 @@ config ARM64
 	select SWIOTLB
 	select SYSCTL_EXCEPTION_TRACE
 	select THREAD_INFO_IN_TASK
+	select ARCH_SUPPORTS_SPECULATIVE_PAGE_FAULT
 	help
 	  ARM 64-bit (AArch64) Linux support.
 
@@ -268,6 +269,17 @@ config HAVE_GENERIC_GUP
 
 config SMP
 	def_bool y
+
+config HOTPLUG_SIZE_BITS
+	int "Memory hotplug block size(29 => 512MB 30 => 1GB)"
+	depends on SPARSEMEM
+	depends on MEMORY_HOTPLUG
+	default 30
+	help
+	 Selects granularity of hotplug memory. Block
+	 size for memory hotplug is represent as a power
+	 of 2.
+	 If unsure, stick with default value.
 
 config KERNEL_MODE_NEON
 	def_bool y
@@ -489,6 +501,18 @@ config ARM64_ERRATUM_1024718
 
 	  If unsure, say Y.
 
+config ARM64_ERRATUM_1188873
+	bool "Cortex-A76: MRC read following MRRC read of specific Generic Timer in AArch32 might give incorrect result"
+	default y
+	help
+	  This option adds work arounds for ARM Cortex-A76 erratum 1188873
+
+	  Affected Cortex-A76 cores (r0p0, r1p0, r2p0) could cause
+	  register corruption when accessing the timer registers from
+	  AArch32 userspace.
+
+	  If unsure, say Y.
+
 config ARM64_ERRATUM_1463225
 	bool "Cortex-A76: Software Step might prevent interrupt recognition"
 	default y
@@ -504,6 +528,22 @@ config ARM64_ERRATUM_1463225
 	  Work around the erratum by triggering a dummy step exception
 	  when handling a system call from a task that is being stepped
 	  in a VHE configuration of the kernel.
+
+	  If unsure, say Y.
+
+config ARM64_ERRATUM_1542418
+	bool "Cortex-A77: The core might fetch a stale instuction, violating the ordering of instruction fetches"
+	default y
+	help
+	  This option adds a workaround for Arm Cortex-A77 erratum 1542418.
+
+	  On the affected Cortex-A77 cores (r0p0 and r1p0), software relying
+	  on the prefetch-speculation-protection instead of explicit
+	  synchronisation may fetch a stale instruction from a CPU-specific
+	  cache. This violates the ordering rules for instruction fetches.
+
+	  Work around the erratum by ensuring that 60 ASIDs are selected
+	  before any ASID is reused.
 
 	  If unsure, say Y.
 
@@ -772,6 +812,13 @@ config HOTPLUG_CPU
 	  Say Y here to experiment with turning CPUs off and on.  CPUs
 	  can be controlled through /sys/devices/system/cpu.
 
+config ARCH_ENABLE_MEMORY_HOTPLUG
+    depends on !NUMA
+	def_bool y
+
+config ARCH_ENABLE_MEMORY_HOTREMOVE
+	def_bool y
+
 # The GPIO number here must be sorted by descending number. In case of
 # a multiplatform kernel, we just want the highest value required by the
 # selected platforms.
@@ -857,6 +904,40 @@ config ARCH_WANT_HUGE_PMD_SHARE
 config ARCH_HAS_CACHE_LINE_SIZE
 	def_bool y
 
+config ARM64_DMA_USE_IOMMU
+	bool "ARM64 DMA iommu integration"
+	select ARM_HAS_SG_CHAIN
+	select NEED_SG_DMA_LENGTH
+	help
+	  Enable using iommu through the standard dma apis.
+	  dma_alloc_coherent() will allocate scatter-gather memory
+	  which is made virtually contiguous via iommu.
+	  Enable if system contains IOMMU hardware.
+
+if ARM64_DMA_USE_IOMMU
+
+config ARM64_DMA_IOMMU_ALIGNMENT
+	int "Maximum PAGE_SIZE order of alignment for DMA IOMMU buffers"
+	range 4 9
+	default 9
+	help
+	  DMA mapping framework by default aligns all buffers to the smallest
+	  PAGE_SIZE order which is greater than or equal to the requested buffer
+	  size. This works well for buffers up to a few hundreds kilobytes, but
+	  for larger buffers it just a waste of address space. Drivers which has
+	  relatively small addressing window (like 64Mib) might run out of
+	  virtual space with just a few allocations.
+
+	  With this parameter you can specify the maximum PAGE_SIZE order for
+	  DMA IOMMU buffers. Larger buffers will be aligned only to this
+	  specified order. The order is expressed as a power of two multiplied
+	  by the PAGE_SIZE.
+
+endif
+
+config ARCH_MEMORY_PROBE
+	def_bool y
+	depends on MEMORY_HOTPLUG
 
 # Supported by clang >= 7.0
 config CC_HAVE_SHADOW_CALL_STACK
@@ -958,6 +1039,13 @@ config XEN
 	help
 	  Say Y if you want to run Linux in a Virtual Machine on Xen on ARM64.
 
+config OKL4_GUEST
+	bool "OKL4 Hypervisor guest support"
+	depends on ARM64 && OF
+	default n
+	help
+	  Say Y if you want to run Linux as a guest of the OKL4 hypervisor
+
 config FORCE_MAX_ZONEORDER
 	int
 	default "14" if (ARM64_64K_PAGES && TRANSPARENT_HUGEPAGE)
@@ -995,7 +1083,6 @@ config UNMAP_KERNEL_AT_EL0
 
 config HARDEN_BRANCH_PREDICTOR
 	bool "Harden the branch predictor against aliasing attacks" if EXPERT
-	default y
 	help
 	  Speculation attacks against some high-performance processors rely on
 	  being able to manipulate the branch predictor for a victim context by
@@ -1028,7 +1115,6 @@ config HARDEN_EL2_VECTORS
 
 config ARM64_SSBD
 	bool "Speculative Store Bypass Disable" if EXPERT
-	default y
 	help
 	  This enables mitigation of the bypassing of previous stores
 	  by speculative loads.
@@ -1043,6 +1129,15 @@ config MITIGATE_SPECTRE_BRANCH_HISTORY
 	  make use of branch history to influence future speculation.
 	  When taking an exception from user-space, a sequence of branches
 	  or a firmware call overwrites the branch history.
+
+config PRINT_VMEMLAYOUT
+	bool "Enable debug option to print kernel virtual memory layout"
+	help
+	  Enable support for printing kernel virtual memory layout for debugging
+	  purpose. If disabled kernel would not show any information about
+	  virtual memory layout during boot up.
+
+	  If unsure, say N.
 
 config ARM64_TAGGED_ADDR_ABI
 	bool "Enable the tagged user addresses syscall ABI"
@@ -1177,7 +1272,6 @@ config ARM64_PAN
 
 config ARM64_LSE_ATOMICS
 	bool "Atomic instructions"
-	default y
 	help
 	  As part of the Large System Extensions, ARMv8.1 introduces new
 	  atomic instructions that are designed specifically to scale in
@@ -1422,6 +1516,82 @@ config DMI
 	  However, even with this option, the resultant kernel should
 	  continue to boot on existing non-UEFI platforms.
 
+config BUILD_ARM64_APPENDED_DTB_IMAGE
+	bool "Build a concatenated Image.gz/dtb by default"
+	depends on OF
+	help
+	  Enabling this option will cause a concatenated Image.gz and list of
+	  DTBs to be built by default (instead of a standalone Image.gz.)
+	  The image will built in arch/arm64/boot/Image.gz-dtb
+
+choice
+	prompt "Appended DTB Kernel Image name"
+	depends on BUILD_ARM64_APPENDED_DTB_IMAGE
+	help
+	  Enabling this option will cause a specific kernel image Image or
+	  Image.gz to be used for final image creation.
+	  The image will built in arch/arm64/boot/IMAGE-NAME-dtb
+
+	config IMG_GZ_DTB
+		bool "Image.gz-dtb"
+	config IMG_DTB
+		bool "Image-dtb"
+endchoice
+
+config BUILD_ARM64_APPENDED_KERNEL_IMAGE_NAME
+	string
+	depends on BUILD_ARM64_APPENDED_DTB_IMAGE
+	default "Image.gz-dtb" if IMG_GZ_DTB
+	default "Image-dtb" if IMG_DTB
+
+config BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES
+	string "Default dtb names"
+	depends on BUILD_ARM64_APPENDED_DTB_IMAGE
+	help
+	  Space separated list of names of dtbs to append when
+	  building a concatenated Image.gz-dtb.
+
+choice
+	prompt "Kernel compression method"
+	default BUILD_ARM64_KERNEL_COMPRESSION_GZIP
+	help
+	  Allows choice between gzip compressed or uncompressed
+	  kernel image
+
+config BUILD_ARM64_KERNEL_COMPRESSION_GZIP
+	bool "Build compressed kernel image"
+	help
+	  Build a kernel image using gzip
+	  compression with concatenated dtb.
+	  gzip is based on the DEFLATE
+	  algorithm.
+
+config BUILD_ARM64_UNCOMPRESSED_KERNEL
+	bool "Build uncompressed kernel image"
+	help
+	  Build a kernel image without
+	  compression and with
+	  concatenated dtb.
+endchoice
+
+config KRYO_PMU_WORKAROUND
+	bool "Workaround for PMU IRQ burst"
+	default n
+	depends on ARM_PMU
+	help
+	  Disable Performance Monitor overflow interrupts
+	  when handling an monitor IRQ, to avoid simultaneous
+	  overflow interrupts from multiple monitors.
+
+	  Enable this flag for effect SoCs.
+
+config BUILD_ARM64_DT_OVERLAY
+	bool "enable DT overlay compilation support"
+	depends on OF
+	help
+	  This option enables support for DT overlay compilation.
+	  Enabling this option sets required flags to add DT
+	  overlay in the compilation.
 endmenu
 
 config COMPAT

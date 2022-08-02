@@ -1568,7 +1568,6 @@ int f2fs_map_blocks(struct inode *inode, struct f2fs_map_blocks *map,
 		if (map->m_next_extent)
 			*map->m_next_extent = pgofs + map->m_len;
 
-		/* for hardware encryption, but to avoid potential issue in future */
 		if (flag == F2FS_GET_BLOCK_DIO)
 			f2fs_wait_on_block_writeback_range(inode,
 						map->m_pblk, map->m_len);
@@ -1733,7 +1732,6 @@ skip:
 
 sync_out:
 
-	/* for hardware encryption, but to avoid potential issue in future */
 	if (flag == F2FS_GET_BLOCK_DIO && map->m_flags & F2FS_MAP_MAPPED)
 		f2fs_wait_on_block_writeback_range(inode,
 						map->m_pblk, map->m_len);
@@ -2166,6 +2164,7 @@ submit_and_realloc:
 		__f2fs_submit_read_bio(F2FS_I_SB(inode), bio, DATA);
 		bio = NULL;
 	}
+
 	if (bio == NULL) {
 		bio = f2fs_grab_read_bio(inode, block_nr, nr_pages,
 				is_readahead ? REQ_RAHEAD : 0, page->index,
@@ -2442,6 +2441,7 @@ set_error_page:
 			zero_user_segment(page, 0, PAGE_SIZE);
 			unlock_page(page);
 		}
+
 next_page:
 		if (pages)
 			put_page(page);

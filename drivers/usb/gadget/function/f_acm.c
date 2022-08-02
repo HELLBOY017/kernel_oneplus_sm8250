@@ -664,7 +664,7 @@ acm_bind(struct usb_configuration *c, struct usb_function *f)
 	/* allocate notification */
 	acm->notify_req = gs_alloc_req(ep,
 			sizeof(struct usb_cdc_notification) + 2,
-			GFP_KERNEL);
+			cdev->gadget->extra_buf_alloc, GFP_KERNEL);
 	if (!acm->notify_req)
 		goto fail;
 
@@ -701,7 +701,7 @@ fail:
 	if (acm->notify_req)
 		gs_free_req(acm->notify, acm->notify_req);
 
-	ERROR(cdev, "%s/%p: can't bind, err %d\n", f->name, f, status);
+	ERROR(cdev, "%s/%pK: can't bind, err %d\n", f->name, f, status);
 
 	return status;
 }

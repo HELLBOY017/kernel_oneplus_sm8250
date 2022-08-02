@@ -296,6 +296,11 @@ EXPORT_SYMBOL(tcp_memory_allocated);
 DEFINE_STATIC_KEY_FALSE(tcp_have_smc);
 EXPORT_SYMBOL(tcp_have_smc);
 #endif
+int sysctl_tcp_delack_seg __read_mostly = TCP_DELACK_SEG;
+EXPORT_SYMBOL(sysctl_tcp_delack_seg);
+
+int sysctl_tcp_use_userconfig __read_mostly;
+EXPORT_SYMBOL(sysctl_tcp_use_userconfig);
 
 /*
  * Current number of TCP sockets.
@@ -1563,8 +1568,11 @@ static void tcp_cleanup_rbuf(struct sock *sk, int copied)
 		   /* Delayed ACKs frequently hit locked sockets during bulk
 		    * receive. */
 		if (icsk->icsk_ack.blocked ||
-		    /* Once-per-two-segments ACK was not sent by tcp_input.c */
-		    tp->rcv_nxt - tp->rcv_wup > icsk->icsk_ack.rcv_mss ||
+		/* Once-per-sysctl_tcp_delack_seg segments
+		 * ACK was not sent by tcp_input.c
+		 */
+		    tp->rcv_nxt - tp->rcv_wup > (icsk->icsk_ack.rcv_mss) *
+						sysctl_tcp_delack_seg ||
 		    /*
 		     * If this read emptied read buffer, we send ACK, if
 		     * connection is not bidirectional, user drained
@@ -2516,7 +2524,7 @@ static inline bool tcp_need_reset(int state)
 {
 	return (1 << state) &
 	       (TCPF_ESTABLISHED | TCPF_CLOSE_WAIT | TCPF_FIN_WAIT1 |
-		TCPF_FIN_WAIT2 | TCPF_SYN_RECV);
+		TCPF_FIN_WAIT2 | TCPF_SYN_RECV | TCPF_SYN_SENT);
 }
 
 static void tcp_rtx_queue_purge(struct sock *sk)
@@ -2549,6 +2557,9 @@ void tcp_write_queue_purge(struct sock *sk)
 	INIT_LIST_HEAD(&tcp_sk(sk)->tsorted_sent_queue);
 	sk_mem_reclaim(sk);
 	tcp_clear_all_retrans_hints(tcp_sk(sk));
+	tcp_sk(sk)->highest_sack = NULL;
+	tcp_sk(sk)->sacked_out = 0;
+	tcp_sk(sk)->wqp_called = 1;
 	tcp_sk(sk)->packets_out = 0;
 	inet_csk(sk)->icsk_backoff = 0;
 }
@@ -2577,8 +2588,7 @@ int tcp_disconnect(struct sock *sk, int flags)
 		 */
 		tcp_send_active_reset(sk, gfp_any());
 		sk->sk_err = ECONNRESET;
-	} else if (old_state == TCP_SYN_SENT)
-		sk->sk_err = ECONNRESET;
+	}
 
 	tcp_clear_xmit_timers(sk);
 	__skb_queue_purge(&sk->sk_receive_queue);

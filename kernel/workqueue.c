@@ -50,6 +50,8 @@
 #include <linux/sched/isolation.h>
 #include <linux/nmi.h>
 #include <linux/kvm_para.h>
+#include <linux/bug.h>
+#include <linux/delay.h>
 
 #include "workqueue_internal.h"
 
@@ -919,6 +921,16 @@ struct task_struct *wq_worker_sleeping(struct task_struct *task)
  * CONTEXT:
  * spin_lock_irq(rq->lock)
  *
+ * This function is called during schedule() when a kworker is going
+ * to sleep. It's used by psi to identify aggregation workers during
+ * dequeuing, to allow periodic aggregation to shut-off when that
+ * worker is the last task in the system or cgroup to go to sleep.
+ *
+ * As this function doesn't involve any workqueue-related locking, it
+ * only returns stable values when called from inside the scheduler's
+ * queuing and dequeuing paths, when @task, which must be a kworker,
+ * is guaranteed to not be processing any works.
+ *
  * Return:
  * The last work function %current executed as a worker, NULL if it
  * hasn't executed any work yet.
@@ -1295,6 +1307,12 @@ fail:
 	if (work_is_canceling(work))
 		return -ENOENT;
 	cpu_relax();
+	/*
+	 * The queueing is in progress in another context. If we keep
+	 * taking the pool->lock in a busy loop, the other context may
+	 * never get the lock. Give 1 usec delay to avoid this contention.
+	 */
+	udelay(1);
 	return -EAGAIN;
 }
 

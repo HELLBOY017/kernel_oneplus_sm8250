@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
+ * Copyright (c) 2016-2017, 2020, The Linux Foundation. All rights reserved.
  * Copyright (c) 2016-2017, The Linux Foundation. All rights reserved.
  */
 
@@ -738,7 +739,7 @@ static int __init av8l_fast_positive_testing(void)
 	}
 
 	/* sweep up TLB proving PTEs */
-	av8l_fast_clear_stale_ptes(pmds, base, base, max, false);
+	av8l_fast_clear_stale_ptes(ops, base, base, max, false);
 
 	/* map the entire 4GB VA space with 8K map calls */
 	for (iova = base; iova < max; iova += SZ_8K) {
@@ -759,7 +760,7 @@ static int __init av8l_fast_positive_testing(void)
 	}
 
 	/* sweep up TLB proving PTEs */
-	av8l_fast_clear_stale_ptes(pmds, base, base, max, false);
+	av8l_fast_clear_stale_ptes(ops, base, base, max, false);
 
 	/* map the entire 4GB VA space with 16K map calls */
 	for (iova = base; iova < max; iova += SZ_16K) {
@@ -780,7 +781,7 @@ static int __init av8l_fast_positive_testing(void)
 	}
 
 	/* sweep up TLB proving PTEs */
-	av8l_fast_clear_stale_ptes(pmds, base, base, max, false);
+	av8l_fast_clear_stale_ptes(ops, base, base, max, false);
 
 	/* map the entire 4GB VA space with 64K map calls */
 	for (iova = base; iova < max; iova += SZ_64K) {

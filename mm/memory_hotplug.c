@@ -35,6 +35,7 @@
 #include <linux/memblock.h>
 #include <linux/bootmem.h>
 #include <linux/compaction.h>
+#include <linux/device.h>
 #include <linux/rmap.h>
 
 #include <asm/tlbflush.h>
@@ -48,7 +49,7 @@
  * and restore_online_page_callback() for generic callback restore.
  */
 
-static void generic_online_page(struct page *page);
+static int generic_online_page(struct page *page);
 
 static online_page_callback_t online_page_callback = generic_online_page;
 static DEFINE_MUTEX(online_page_callback_lock);
@@ -65,7 +66,11 @@ void put_online_mems(void)
 	percpu_up_read(&mem_hotplug_lock);
 }
 
+#ifndef CONFIG_MEMORY_HOTPLUG_MOVABLE_NODE
 bool movable_node_enabled = false;
+#else
+bool movable_node_enabled = true;
+#endif
 
 #ifndef CONFIG_MEMORY_HOTPLUG_DEFAULT_ONLINE
 bool memhp_auto_online;
@@ -583,30 +588,69 @@ void __online_page_free(struct page *page)
 }
 EXPORT_SYMBOL_GPL(__online_page_free);
 
-static void generic_online_page(struct page *page)
+static int generic_online_page(struct page *page)
 {
 	__online_page_set_limits(page);
 	__online_page_increment_counters(page);
 	__online_page_free(page);
+	return 0;
+}
+
+static void __free_pages_hotplug(struct page *page, unsigned int order)
+{
+	unsigned int nr_pages = 1 << order;
+	struct page *p = page;
+	unsigned int loop;
+
+	adjust_managed_page_count(page, nr_pages);
+	for (loop = 0; loop < nr_pages; loop++, p++) {
+		__online_page_set_limits(p);
+		ClearPageReserved(p);
+		set_page_count(p, 0);
+	}
+
+	set_page_refcounted(page);
+	__free_pages(page, order);
+}
+
+static void  __free_pages_memory(unsigned long start,
+			unsigned long nr_pages, void *arg)
+{
+	unsigned long order;
+	unsigned long onlined_pages = *(unsigned long *)arg;
+	struct page *page;
+	unsigned long i;
+	unsigned long phy_addr;
+
+	for (i = 0; i < nr_pages; i += (1UL << order)) {
+		order = min(MAX_ORDER - 1UL, __ffs(start + i));
+		page = pfn_to_page(start + i);
+		phy_addr = page_to_phys(page);
+
+		if (phy_addr >= bootloader_memory_limit)
+			break;
+
+		while ((1UL << order) > nr_pages - i ||
+			phy_addr + ((1UL << order) * PAGE_SIZE)
+			> bootloader_memory_limit)
+			order--;
+
+		kernel_map_pages(page, 1 << order, 1);
+		__free_pages_hotplug(page, order);
+		onlined_pages += (1UL << order);
+	}
+
+	*(unsigned long *)arg = onlined_pages;
 }
 
 static int online_pages_range(unsigned long start_pfn, unsigned long nr_pages,
 			void *arg)
 {
-	unsigned long i;
-	unsigned long onlined_pages = *(unsigned long *)arg;
-	struct page *page;
-
 	if (PageReserved(pfn_to_page(start_pfn)))
-		for (i = 0; i < nr_pages; i++) {
-			page = pfn_to_page(start_pfn + i);
-			(*online_page_callback)(page);
-			onlined_pages++;
-		}
+		__free_pages_memory(start_pfn, nr_pages, arg);
 
 	online_mem_sections(start_pfn, start_pfn + nr_pages);
 
-	*(unsigned long *)arg = onlined_pages;
 	return 0;
 }
 
@@ -870,8 +914,7 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages, int online_typ
 		node_states_set_node(nid, &arg);
 		if (need_zonelists_rebuild)
 			build_all_zonelists(NULL);
-		else
-			zone_pcp_update(zone);
+		zone_pcp_update(zone);
 	}
 
 	init_per_zone_wmark_min();
@@ -1019,6 +1062,35 @@ int try_online_node(int nid)
 	ret =  __try_online_node(nid, 0, true);
 	mem_hotplug_done();
 	return ret;
+}
+
+static int online_memory_one_block(struct memory_block *mem, void *arg)
+{
+	bool *onlined_block = (bool *)arg;
+	int ret;
+
+	if (*onlined_block || !is_memblock_offlined(mem))
+		return 0;
+
+	ret = device_online(&mem->dev);
+	if (!ret)
+		*onlined_block = true;
+
+	return 0;
+}
+
+bool try_online_one_block(int nid)
+{
+	struct zone *zone = &NODE_DATA(nid)->node_zones[ZONE_MOVABLE];
+	bool onlined_block = false;
+
+	lock_device_hotplug();
+
+	walk_memory_range(zone->zone_start_pfn, zone_end_pfn(zone),
+			  &onlined_block, online_memory_one_block);
+
+	unlock_device_hotplug();
+	return onlined_block;
 }
 
 static int check_hotplug_memory_range(u64 start, u64 size)
@@ -1371,7 +1443,9 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
 			if (WARN_ON(PageLRU(page)))
 				isolate_lru_page(page);
 			if (page_mapped(page))
-				try_to_unmap(page, TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS);
+				try_to_unmap(page,
+					TTU_IGNORE_MLOCK | TTU_IGNORE_ACCESS,
+					NULL);
 			continue;
 		}
 

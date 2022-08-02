@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
- * Copyright (c) 2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012,2017-2018,2021, The Linux Foundation. All rights reserved.
  */
 
 #ifndef _LINUX_CORESIGHT_H
@@ -90,24 +90,44 @@ union coresight_dev_subtype {
 };
 
 /**
+ * struct coresight_reg_clk - regulators and clocks need by coresight
+ * @nr_reg:	number of regulators
+ * @nr_clk:	number of clocks
+ * @reg:	regulator list
+ * @clk:	clock list
+ */
+struct coresight_reg_clk {
+	int nr_reg;
+	int nr_clk;
+	struct regulator **reg;
+	struct clk **clk;
+};
+
+/**
  * struct coresight_platform_data - data harvested from the DT specification
  * @cpu:	the CPU a source belongs to. Only applicable for ETM/PTMs.
  * @name:	name of the component as shown under sysfs.
  * @nr_inport:	number of input ports for this component.
  * @outports:	list of remote endpoint port number.
+ * @source_names:name of all source components connected to this device.
  * @child_names:name of all child components connected to this device.
  * @child_ports:child component port number the current component is
 		connected  to.
  * @nr_outport:	number of output ports for this component.
+ * @clk:	The clock this component is associated to.
+ * @reg_clk:	as defined by @coresight_reg_clk.
  */
 struct coresight_platform_data {
 	int cpu;
 	const char *name;
 	int nr_inport;
 	int *outports;
+	const char **source_names;
 	const char **child_names;
 	int *child_ports;
 	int nr_outport;
+	struct clk *clk;
+	struct coresight_reg_clk *reg_clk;
 };
 
 /**
@@ -133,6 +153,7 @@ struct coresight_desc {
 /**
  * struct coresight_connection - representation of a single connection
  * @outport:	a connection's output port number.
+ * @source_name:source component's name.
  * @chid_name:	remote component's name.
  * @child_port:	remote component's port number @output is connected to.
  * @child_dev:	a @coresight_device representation of the component
@@ -140,6 +161,7 @@ struct coresight_desc {
  */
 struct coresight_connection {
 	int outport;
+	const char *source_name;
 	const char *child_name;
 	int child_port;
 	struct coresight_device *child_dev;
@@ -159,8 +181,10 @@ struct coresight_connection {
  * @orphan:	true if the component has connections that haven't been linked.
  * @enable:	'true' if component is currently part of an active path.
  * @activated:	'true' only if a _sink_ has been activated.  A sink can be
- *		activated but not yet enabled.  Enabling for a _sink_
- *		appens when a source has been selected for that it.
+		activated but not yet enabled.  Enabling for a _sink_
+		happens when a source has been selected for that it.
+ * @abort:     captures sink trace on abort.
+ * @reg_clk:	as defined by @coresight_reg_clk.
  * @ea:		Device attribute for sink representation under PMU directory.
  */
 struct coresight_device {
@@ -172,11 +196,13 @@ struct coresight_device {
 	const struct coresight_ops *ops;
 	struct device dev;
 	atomic_t *refcnt;
+	struct coresight_path *node;
 	bool orphan;
 	bool enable;	/* true only if configured as part of a path */
 	/* sink specific fields */
 	bool activated;	/* true only if a sink is part of a path */
 	struct dev_ext_attribute *ea;
+	struct coresight_reg_clk *reg_clk;
 };
 
 #define to_coresight_device(d) container_of(d, struct coresight_device, dev)
@@ -266,6 +292,18 @@ extern int coresight_enable(struct coresight_device *csdev);
 extern void coresight_disable(struct coresight_device *csdev);
 extern int coresight_timeout(void __iomem *addr, u32 offset,
 			     int position, int value);
+extern void coresight_abort(void);
+extern void coresight_disable_reg_clk(struct coresight_device *csdev);
+extern int coresight_enable_reg_clk(struct coresight_device *csdev);
+static inline bool coresight_link_late_disable(void)
+{
+	if (IS_ENABLED(CONFIG_CORESIGHT_LINK_LATE_DISABLE))
+		return true;
+	else
+		return false;
+}
+extern void coresight_disable_all_source_link(void);
+extern void coresight_enable_all_source_link(void);
 
 extern int coresight_claim_device(void __iomem *base);
 extern int coresight_claim_device_unlocked(void __iomem *base);
@@ -283,6 +321,12 @@ coresight_enable(struct coresight_device *csdev) { return -ENOSYS; }
 static inline void coresight_disable(struct coresight_device *csdev) {}
 static inline int coresight_timeout(void __iomem *addr, u32 offset,
 				     int position, int value) { return 1; }
+static inline void coresight_abort(void) {}
+static inline void coresight_disable_reg_clk(struct coresight_device *csdev) {}
+static inline int coresight_enable_reg_clk(struct coresight_device *csdev)
+{ return -EINVAL; }
+static inline void coresight_disable_all_source_link(void) {};
+static inline void coresight_enable_all_source_link(void) {};
 static inline int coresight_claim_device_unlocked(void __iomem *base)
 {
 	return -EINVAL;
@@ -302,16 +346,25 @@ static inline bool coresight_loses_context_with_cpu(struct device *dev)
 }
 #endif
 
-#ifdef CONFIG_OF
+#if defined(CONFIG_OF) && defined(CONFIG_CORESIGHT)
 extern int of_coresight_get_cpu(const struct device_node *node);
 extern struct coresight_platform_data *
 of_get_coresight_platform_data(struct device *dev,
 			       const struct device_node *node);
+extern int of_get_coresight_csr_name(struct device_node *node,
+				const char **csr_name);
+
+extern struct coresight_cti_data *of_get_coresight_cti_data(
+				struct device *dev, struct device_node *node);
 #else
 static inline int of_coresight_get_cpu(const struct device_node *node)
 { return 0; }
 static inline struct coresight_platform_data *of_get_coresight_platform_data(
 	struct device *dev, const struct device_node *node) { return NULL; }
+static inline int of_get_coresight_csr_name(struct device_node *node,
+		const char **csr_name){ return -EINVAL; }
+static inline struct coresight_cti_data *of_get_coresight_cti_data(
+		struct device *dev, struct device_node *node) { return NULL; }
 #endif
 
 #endif

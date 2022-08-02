@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2020, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -25,6 +25,8 @@
 #define UFS_VENDOR_TOSHIBA     0x198
 #define UFS_VENDOR_SAMSUNG     0x1CE
 #define UFS_VENDOR_SKHYNIX     0x1AD
+#define UFS_VENDOR_WDC         0x145
+#define UFS_VENDOR_MICRON      0x12C
 
 /**
  * ufs_dev_fix - ufs device quirk info
@@ -32,16 +34,17 @@
  * @quirk: device quirk
  */
 struct ufs_dev_fix {
-	struct ufs_dev_desc card;
+	u16 w_manufacturer_id;
+	char *model;
 	unsigned int quirk;
 };
 
-#define END_FIX { { 0 }, 0 }
+#define END_FIX { 0 }
 
 /* add specific device quirk */
 #define UFS_FIX(_vendor, _model, _quirk) { \
-	.card.wmanufacturerid = (_vendor),\
-	.card.model = (_model),		   \
+	.w_manufacturer_id = (_vendor),\
+	.model = (_model),		  \
 	.quirk = (_quirk),		   \
 }
 
@@ -133,9 +136,35 @@ struct ufs_dev_fix {
 #define UFS_DEVICE_QUIRK_HOST_PA_SAVECONFIGTIME	(1 << 8)
 
 /*
- * Some UFS devices require VS_DebugSaveConfigTime is 0x10,
+ * Some UFS devices may stop responding after switching from HS-G1 to HS-G3.
+ * Also, it is found that these devices work fine if we do 2 steps switch:
+ * HS-G1 to HS-G2 followed by HS-G2 to HS-G3. Enabling this quirk for such
+ * device would apply this 2 steps gear switch workaround.
+ */
+#define UFS_DEVICE_QUIRK_HS_G1_TO_HS_G3_SWITCH	(1 << 9)
+
+ /* Some UFS devices require VS_DebugSaveConfigTime is 0x10,
  * enabling this quirk ensure this.
  */
-#define UFS_DEVICE_QUIRK_HOST_VS_DEBUGSAVECONFIGTIME	(1 << 9)
+#define UFS_DEVICE_QUIRK_HOST_VS_DEBUGSAVECONFIGTIME	(1 << 10)
+
+/*
+ * Some UFS devices need more delay after device reference clk is turned on
+ * but before initiation of the state transition to STALL from a LS-MODE or
+ * from the HIBERN8 state. Enable this quirk to give UFS devices 50us delay
+ * instead of the default delay.
+ */
+#define UFS_DEVICE_QUIRK_WAIT_AFTER_REF_CLK_UNGATE	(1 << 11)
+
+
+/*
+ * Few samsung UFS device models advertise PA_HIBERN8TIME as
+ * 200us during handshaking in link establishment b/w host and device but
+ * which may not be enough for the UFS device.
+ * To workaround this issue, host should set its PA_HIBERN8TIME time to
+ * 300us even if device advertises PA_HIBERN8TIME of 200us.
+ */
+#define UFS_DEVICE_QUIRK_PA_HIBER8TIME   (1 << 12)
+
 
 #endif /* UFS_QUIRKS_H_ */

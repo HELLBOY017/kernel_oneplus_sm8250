@@ -142,6 +142,7 @@ static void free_event_data(struct work_struct *work)
 	int cpu;
 	cpumask_t *mask;
 	struct etm_event_data *event_data;
+	struct coresight_device *source;
 
 	event_data = container_of(work, struct etm_event_data, work);
 	mask = &event_data->mask;
@@ -153,8 +154,9 @@ static void free_event_data(struct work_struct *work)
 		struct list_head **ppath;
 
 		ppath = etm_event_cpu_path_ptr(event_data, cpu);
+		source = coresight_get_source(*ppath);
 		if (!(IS_ERR_OR_NULL(*ppath)))
-			coresight_release_path(*ppath);
+			coresight_release_path(source, *ppath);
 		*ppath = NULL;
 	}
 
@@ -218,6 +220,8 @@ static void *etm_setup_aux(struct perf_event *event, void **pages,
 		return NULL;
 	INIT_WORK(&event_data->work, free_event_data);
 
+	mask = &event_data->mask;
+
 	/* First get the selected sink from user space. */
 	if (event->attr.config2) {
 		id = (u32)event->attr.config2;
@@ -226,11 +230,10 @@ static void *etm_setup_aux(struct perf_event *event, void **pages,
 		sink = coresight_get_enabled_sink(true);
 	}
 
-	if (!sink)
+	if (!sink) {
+		cpumask_clear(mask);
 		goto err;
-
-	mask = &event_data->mask;
-
+	}
 	/*
 	 * Setup the path for each CPU in a trace session. We try to build
 	 * trace path for each CPU in the mask. If we don't find an ETM
@@ -499,7 +502,7 @@ int etm_perf_symlink(struct coresight_device *csdev, bool link)
 	struct device *pmu_dev = etm_pmu.dev;
 	struct device *cs_dev = &csdev->dev;
 
-	sprintf(entry, "cpu%d", cpu);
+	scnprintf(entry, PAGE_SIZE, "cpu%d", cpu);
 
 	if (!etm_perf_up)
 		return -EPROBE_DEFER;

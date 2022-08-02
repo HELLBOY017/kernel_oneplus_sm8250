@@ -361,32 +361,36 @@ int of_irq_domain_map(const struct irq_fwspec *in, struct irq_fwspec *out)
 		map += out_size;
 		map_len -= out_size;
 	}
-	if (match) {
-		/* Get the irqdomain-map-pass-thru property (optional) */
-		pass = of_get_property(cur, pass_name, NULL);
-		if (!pass)
-			pass = dummy_pass;
 
-		/*
-		 * Successfully parsed a irqdomain-map translation; copy new
-		 * specifier into the out structure, keeping the
-		 * bits specified in irqdomain-map-pass-thru.
-		 */
-		match_array = map - out_size;
-		for (i = 0; i < out_size; i++) {
-			__be32 val = *(map - out_size + i);
-
-			out->param[i] = in->param[i];
-			if (i < in_size) {
-				val &= ~pass[i];
-				val |= cpu_to_be32(out->param[i]) & pass[i];
-			}
-
-			out->param[i] = be32_to_cpu(val);
-		}
-		out->param_count = in_size = out_size;
-		out->fwnode = of_node_to_fwnode(new);
+	if (!match) {
+		ret = -EINVAL;
+		goto put;
 	}
+
+	/* Get the irqdomain-map-pass-thru property (optional) */
+	pass = of_get_property(cur, pass_name, NULL);
+	if (!pass)
+		pass = dummy_pass;
+
+	/*
+	 * Successfully parsed a irqdomain-map translation; copy new
+	 * specifier into the out structure, keeping the
+	 * bits specified in irqdomain-map-pass-thru.
+	 */
+	match_array = map - out_size;
+	for (i = 0; i < out_size; i++) {
+		__be32 val = *(map - out_size + i);
+
+		out->param[i] = in->param[i];
+		if (i < in_size) {
+			val &= ~pass[i];
+			val |= cpu_to_be32(out->param[i]) & pass[i];
+		}
+
+		out->param[i] = be32_to_cpu(val);
+	}
+	out->param_count = in_size = out_size;
+	out->fwnode = of_node_to_fwnode(new);
 put:
 	of_node_put(cur);
 	of_node_put(new);
@@ -475,6 +479,8 @@ EXPORT_SYMBOL_GPL(of_irq_parse_one);
 int of_irq_to_resource(struct device_node *dev, int index, struct resource *r)
 {
 	int irq = of_irq_get(dev, index);
+	u32 trigger_type;
+	struct of_phandle_args oirq;
 
 	if (irq < 0)
 		return irq;
@@ -492,8 +498,17 @@ int of_irq_to_resource(struct device_node *dev, int index, struct resource *r)
 		of_property_read_string_index(dev, "interrupt-names", index,
 					      &name);
 
+		trigger_type = irqd_get_trigger_type(irq_get_irq_data(irq));
+
+		of_irq_parse_one(dev, index, &oirq);
+
+		if (!trigger_type &&
+			of_device_is_compatible(oirq.np, "arm,gic-v3"))
+			pr_err("IRQ TYPE should not be NONE for %s\n",
+							dev->full_name);
+
 		r->start = r->end = irq;
-		r->flags = IORESOURCE_IRQ | irqd_get_trigger_type(irq_get_irq_data(irq));
+		r->flags = IORESOURCE_IRQ | trigger_type;
 		r->name = name ? name : of_node_full_name(dev);
 	}
 

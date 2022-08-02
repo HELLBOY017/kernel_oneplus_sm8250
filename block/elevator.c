@@ -560,15 +560,22 @@ void elv_bio_merged(struct request_queue *q, struct request *rq,
 #ifdef CONFIG_PM
 static void blk_pm_requeue_request(struct request *rq)
 {
-	if (rq->q->dev && !(rq->rq_flags & RQF_PM))
+	if (rq->q->dev && !(rq->rq_flags & RQF_PM) &&
+	    (rq->rq_flags & (RQF_PM_ADDED | RQF_FLUSH_SEQ))) {
+		rq->rq_flags &= ~RQF_PM_ADDED;
 		rq->q->nr_pending--;
+	}
 }
 
 static void blk_pm_add_request(struct request_queue *q, struct request *rq)
 {
-	if (q->dev && !(rq->rq_flags & RQF_PM) && q->nr_pending++ == 0 &&
-	    (q->rpm_status == RPM_SUSPENDED || q->rpm_status == RPM_SUSPENDING))
-		pm_request_resume(q->dev);
+	if (q->dev && !(rq->rq_flags & RQF_PM)) {
+		rq->rq_flags |= RQF_PM_ADDED;
+		if (q->nr_pending++ == 0 &&
+		    (q->rpm_status == RPM_SUSPENDED ||
+		     q->rpm_status == RPM_SUSPENDING))
+			pm_request_resume(q->dev);
+	}
 }
 #else
 static inline void blk_pm_requeue_request(struct request *rq) {}
@@ -854,6 +861,8 @@ int elv_register_queue(struct request_queue *q)
 		e->registered = 1;
 		if (!e->uses_mq && e->type->ops.sq.elevator_registered_fn)
 			e->type->ops.sq.elevator_registered_fn(q);
+		else if (e->uses_mq && e->type->ops.mq.elevator_registered_fn)
+			e->type->ops.mq.elevator_registered_fn(q);
 	}
 	return error;
 }
@@ -982,11 +991,15 @@ int elevator_init_mq(struct request_queue *q)
 
 	if (unlikely(q->elevator))
 		goto out;
-
-	e = elevator_get(q, "mq-deadline", false);
-	if (!e)
-		goto out;
-
+	if (IS_ENABLED(CONFIG_IOSCHED_BFQ)) {
+		e = elevator_get(q, "bfq", false);
+		if (!e)
+			goto out;
+	} else {
+		e = elevator_get(q, "mq-deadline", false);
+		if (!e)
+			goto out;
+	}
 	err = blk_mq_init_sched(q, e);
 	if (err)
 		elevator_put(e);

@@ -42,6 +42,13 @@
 #include <linux/log2.h>
 #include <linux/configfs.h>
 
+/* FUNCTION_SUSPEND: suspend options from usb 3.0 spec Table 9-7 */
+#define FUNC_SUSPEND_OPT_SUSP_MASK BIT(0)
+#define FUNC_SUSPEND_OPT_RW_EN_MASK BIT(1)
+
+#define FUNC_WAKEUP_CAPABLE_SHIFT  0
+#define FUNC_WAKEUP_ENABLE_SHIFT   1
+
 /*
  * USB function drivers should return USB_GADGET_DELAYED_STATUS if they
  * wish to delay the data/status stages of the control transfer till they
@@ -163,7 +170,7 @@ struct usb_os_desc_table {
  * @get_status: Returns function status as a reply to
  *	GetStatus() request when the recipient is Interface.
  * @func_suspend: callback to be called when
- *	SetFeature(FUNCTION_SUSPEND) is reseived
+ *	SetFeature(FUNCTION_SUSPEND) is received
  * @func_is_suspended: Tells whether the function is currently in
  *	Function Suspend state (used in Super Speed mode only).
  * @func_wakeup_allowed: Tells whether Function Remote Wakeup has been allowed

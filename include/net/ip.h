@@ -158,6 +158,7 @@ int ip_rcv(struct sk_buff *skb, struct net_device *dev, struct packet_type *pt,
 void ip_list_rcv(struct list_head *head, struct packet_type *pt,
 		 struct net_device *orig_dev);
 int ip_local_deliver(struct sk_buff *skb);
+void ip_protocol_deliver_rcu(struct net *net, struct sk_buff *skb, int proto);
 int ip_mr_input(struct sk_buff *skb);
 int ip_output(struct net *net, struct sock *sk, struct sk_buff *skb);
 int ip_mc_output(struct net *net, struct sock *sk, struct sk_buff *skb);
@@ -332,6 +333,8 @@ static inline int inet_prot_sock(struct net *net)
 #endif
 
 __be32 inet_current_timestamp(void);
+
+extern int sysctl_reserved_port_bind;
 
 /* From inetpeer.c */
 extern int inet_peer_threshold;

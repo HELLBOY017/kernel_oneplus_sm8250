@@ -3,7 +3,6 @@
 #define _LINUX_SCHED_TOPOLOGY_H
 
 #include <linux/topology.h>
-#include <linux/android_kabi.h>
 
 #include <linux/sched/idle.h>
 
@@ -60,6 +59,8 @@ struct sched_domain_attr {
 }
 
 extern int sched_domain_level_max;
+
+unsigned long capacity_curr_of(int cpu);
 
 struct sched_group;
 
@@ -144,10 +145,6 @@ struct sched_domain {
 	struct sched_domain_shared *shared;
 
 	unsigned int span_weight;
-
-	ANDROID_KABI_RESERVE(1);
-	ANDROID_KABI_RESERVE(2);
-
 	/*
 	 * Span of all CPUs in this domain.
 	 *

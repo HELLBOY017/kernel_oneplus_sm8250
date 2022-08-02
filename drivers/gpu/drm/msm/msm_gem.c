@@ -1044,14 +1044,16 @@ struct drm_gem_object *msm_gem_import(struct drm_device *dev,
 	msm_obj = to_msm_bo(obj);
 	mutex_lock(&msm_obj->lock);
 	msm_obj->sgt = sgt;
-	msm_obj->pages = kvmalloc_array(npages, sizeof(struct page *), GFP_KERNEL);
+	msm_obj->pages = kvmalloc_array(npages, sizeof(struct page *),
+							GFP_KERNEL);
 	if (!msm_obj->pages) {
 		mutex_unlock(&msm_obj->lock);
 		ret = -ENOMEM;
 		goto fail;
 	}
 
-	ret = drm_prime_sg_to_page_addr_arrays(sgt, msm_obj->pages, NULL, npages);
+	ret = drm_prime_sg_to_page_addr_arrays(sgt, msm_obj->pages, NULL,
+						npages);
 	if (ret) {
 		mutex_unlock(&msm_obj->lock);
 		goto fail;

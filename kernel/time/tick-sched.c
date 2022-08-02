@@ -29,12 +29,17 @@
 #include <linux/timer.h>
 #include <linux/context_tracking.h>
 #include <linux/mm.h>
+#include <linux/rq_stats.h>
 
 #include <asm/irq_regs.h>
 
 #include "tick-internal.h"
 
 #include <trace/events/timer.h>
+
+struct rq_data rq_info;
+struct workqueue_struct *rq_wq;
+spinlock_t rq_lock;
 
 /*
  * Per-CPU nohz control structure
@@ -925,6 +930,11 @@ static void __tick_nohz_idle_stop_tick(struct tick_sched *ts)
 	ktime_t expires;
 	int cpu = smp_processor_id();
 
+#ifdef CONFIG_SMP
+	if (check_pending_deferrable_timers(cpu))
+		raise_softirq_irqoff(TIMER_SOFTIRQ);
+#endif
+
 	/*
 	 * If tick_nohz_get_sleep_length() ran tick_nohz_next_event(), the
 	 * tick timer expiration time is known already.
@@ -1259,7 +1269,6 @@ void tick_irq_enter(void)
  * High resolution timer specific code
  */
 #ifdef CONFIG_HIGH_RES_TIMERS
-
 static void (*wake_callback)(void);
 
 void register_tick_sched_wakeup_callback(void (*cb)(void))
@@ -1290,7 +1299,8 @@ static enum hrtimer_restart tick_sched_timer(struct hrtimer *timer)
 	 */
 	if (regs) {
 		tick_sched_handle(ts, regs);
-		if (wake_callback && tick_do_timer_cpu == smp_processor_id()) {
+		if (rq_info.init == 1 && wake_callback &&
+				tick_do_timer_cpu == smp_processor_id()) {
 			/*
 			 * wakeup user if needed
 			 */

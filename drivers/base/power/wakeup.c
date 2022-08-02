@@ -19,6 +19,9 @@
 #include <linux/irqdesc.h>
 #include <linux/wakeup_reason.h>
 #include <trace/events/power.h>
+#include <linux/irq.h>
+#include <linux/interrupt.h>
+#include <linux/irqdesc.h>
 
 #include "power.h"
 

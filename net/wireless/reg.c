@@ -61,6 +61,7 @@
 #include "core.h"
 #include "reg.h"
 #include "rdev-ops.h"
+#include "regdb.h"
 #include "nl80211.h"
 
 /*
@@ -421,6 +422,11 @@ static bool is_user_regdom_saved(void)
 	return true;
 }
 
+static bool is_cfg80211_regdom_intersected(void)
+{
+	return is_intersected_alpha2(get_cfg80211_regdom()->alpha2);
+}
+
 static const struct ieee80211_regdomain *
 reg_copy_regd(const struct ieee80211_regdomain *src_regd)
 {
@@ -495,6 +501,38 @@ static int reg_schedule_apply(const struct ieee80211_regdomain *regdom)
 	schedule_work(&reg_regdb_work);
 	return 0;
 }
+
+#ifdef CONFIG_CFG80211_INTERNAL_REGDB
+static int reg_query_builtin(const char *alpha2)
+{
+	const struct ieee80211_regdomain *regdom = NULL;
+	unsigned int i;
+
+	for (i = 0; i < reg_regdb_size; i++) {
+		if (alpha2_equal(alpha2, reg_regdb[i]->alpha2)) {
+			regdom = reg_copy_regd(reg_regdb[i]);
+			break;
+		}
+	}
+	if (!regdom)
+		return -ENODATA;
+
+	return reg_schedule_apply(regdom);
+}
+
+/* Feel free to add any other sanity checks here */
+static void reg_regdb_size_check(void)
+{
+	/* We should ideally BUILD_BUG_ON() but then random builds would fail */
+	WARN_ONCE(!reg_regdb_size, "db.txt is empty, you should update it...");
+}
+#else
+static inline void reg_regdb_size_check(void) {}
+static inline int reg_query_builtin(const char *alpha2)
+{
+	return -ENODATA;
+}
+#endif /* CONFIG_CFG80211_INTERNAL_REGDB */
 
 #ifdef CONFIG_CFG80211_CRDA_SUPPORT
 /* Max number of consecutive attempts to communicate with CRDA  */
@@ -1098,6 +1136,10 @@ int reg_reload_regdb(void)
 
 static bool reg_query_database(struct regulatory_request *request)
 {
+	/* query internal regulatory database (if it exists) */
+	if (reg_query_builtin(request->alpha2) == 0)
+		return true;
+
 	if (query_regdb_file(request->alpha2) == 0)
 		return true;
 
@@ -1649,22 +1691,23 @@ static uint32_t reg_rule_to_chan_bw_flags(const struct ieee80211_regdomain *regd
 					  const struct ieee80211_channel *chan)
 {
 	const struct ieee80211_freq_range *freq_range = NULL;
-	u32 max_bandwidth_khz, bw_flags = 0;
+	u32 max_bandwidth_khz, center_freq_khz, bw_flags = 0;
 
 	freq_range = &reg_rule->freq_range;
 
 	max_bandwidth_khz = freq_range->max_bandwidth_khz;
+	center_freq_khz = ieee80211_channel_to_khz(chan);
 	/* Check if auto calculation requested */
 	if (reg_rule->flags & NL80211_RRF_AUTO_BW)
 		max_bandwidth_khz = reg_get_max_bandwidth(regd, reg_rule);
 
 	/* If we get a reg_rule we can assume that at least 5Mhz fit */
 	if (!cfg80211_does_bw_fit_range(freq_range,
-					MHZ_TO_KHZ(chan->center_freq),
+					center_freq_khz,
 					MHZ_TO_KHZ(10)))
 		bw_flags |= IEEE80211_CHAN_NO_10MHZ;
 	if (!cfg80211_does_bw_fit_range(freq_range,
-					MHZ_TO_KHZ(chan->center_freq),
+					center_freq_khz,
 					MHZ_TO_KHZ(20)))
 		bw_flags |= IEEE80211_CHAN_NO_20MHZ;
 
@@ -1701,7 +1744,7 @@ static void handle_channel(struct wiphy *wiphy,
 
 	flags = chan->orig_flags;
 
-	reg_rule = freq_reg_info(wiphy, MHZ_TO_KHZ(chan->center_freq));
+	reg_rule = freq_reg_info(wiphy, ieee80211_channel_to_khz(chan));
 	if (IS_ERR(reg_rule)) {
 		/*
 		 * We will disable all channels that do not match our
@@ -1720,13 +1763,13 @@ static void handle_channel(struct wiphy *wiphy,
 		if (lr->initiator == NL80211_REGDOM_SET_BY_DRIVER &&
 		    request_wiphy && request_wiphy == wiphy &&
 		    request_wiphy->regulatory_flags & REGULATORY_STRICT_REG) {
-			pr_debug("Disabling freq %d MHz for good\n",
-				 chan->center_freq);
+			pr_debug("Disabling freq %d.%03d MHz for good\n",
+				 chan->center_freq, chan->freq_offset);
 			chan->orig_flags |= IEEE80211_CHAN_DISABLED;
 			chan->flags = chan->orig_flags;
 		} else {
-			pr_debug("Disabling freq %d MHz\n",
-				 chan->center_freq);
+			pr_debug("Disabling freq %d.%03d MHz\n",
+				 chan->center_freq, chan->freq_offset);
 			chan->flags |= IEEE80211_CHAN_DISABLED;
 		}
 		return;
@@ -1927,7 +1970,7 @@ static void handle_reg_beacon(struct wiphy *wiphy, unsigned int chan_idx,
 	sband = wiphy->bands[reg_beacon->chan.band];
 	chan = &sband->channels[chan_idx];
 
-	if (likely(chan->center_freq != reg_beacon->chan.center_freq))
+	if (likely(!ieee80211_channel_equal(chan, &reg_beacon->chan)))
 		return;
 
 	if (chan->beacon_found)
@@ -2260,18 +2303,18 @@ static void handle_channel_custom(struct wiphy *wiphy,
 	u32 bw_flags = 0;
 	const struct ieee80211_reg_rule *reg_rule = NULL;
 	const struct ieee80211_power_rule *power_rule = NULL;
-	u32 bw;
+	u32 bw, center_freq_khz;
 
+	center_freq_khz = ieee80211_channel_to_khz(chan);
 	for (bw = MHZ_TO_KHZ(20); bw >= min_bw; bw = bw / 2) {
-		reg_rule = freq_reg_info_regd(MHZ_TO_KHZ(chan->center_freq),
-					      regd, bw);
+		reg_rule = freq_reg_info_regd(center_freq_khz, regd, bw);
 		if (!IS_ERR(reg_rule))
 			break;
 	}
 
 	if (IS_ERR_OR_NULL(reg_rule)) {
-		pr_debug("Disabling freq %d MHz as custom regd has no rule that fits it\n",
-			 chan->center_freq);
+		pr_debug("Disabling freq %d.%03d MHz as custom regd has no rule that fits it\n",
+			 chan->center_freq, chan->freq_offset);
 		if (wiphy->regulatory_flags & REGULATORY_WIPHY_SELF_MANAGED) {
 			chan->flags |= IEEE80211_CHAN_DISABLED;
 		} else {
@@ -2418,9 +2461,14 @@ __reg_process_hint_user(struct regulatory_request *user_request)
 	 */
 	if ((lr->initiator == NL80211_REGDOM_SET_BY_CORE ||
 	     lr->initiator == NL80211_REGDOM_SET_BY_DRIVER ||
-	     lr->initiator == NL80211_REGDOM_SET_BY_USER) &&
-	    regdom_changes(lr->alpha2))
-		return REG_REQ_IGNORE;
+	     lr->initiator == NL80211_REGDOM_SET_BY_USER)) {
+		if (lr->intersect) {
+			if (!is_cfg80211_regdom_intersected())
+				return REG_REQ_IGNORE;
+		} else if (regdom_changes(lr->alpha2)) {
+			return REG_REQ_IGNORE;
+		}
+	}
 
 	if (!regdom_changes(user_request->alpha2))
 		return REG_REQ_ALREADY_SET;
@@ -2956,6 +3004,7 @@ int regulatory_hint_user(const char *alpha2,
 
 	return 0;
 }
+EXPORT_SYMBOL(regulatory_hint_user);
 
 int regulatory_hint_indoor(bool is_indoor, u32 portid)
 {
@@ -3293,7 +3342,7 @@ void regulatory_hint_disconnect(void)
 	restore_regulatory_settings(false);
 }
 
-static bool freq_is_chan_12_13_14(u16 freq)
+static bool freq_is_chan_12_13_14(u32 freq)
 {
 	if (freq == ieee80211_channel_to_frequency(12, NL80211_BAND_2GHZ) ||
 	    freq == ieee80211_channel_to_frequency(13, NL80211_BAND_2GHZ) ||
@@ -3307,8 +3356,8 @@ static bool pending_reg_beacon(struct ieee80211_channel *beacon_chan)
 	struct reg_beacon *pending_beacon;
 
 	list_for_each_entry(pending_beacon, &reg_pending_beacons, list)
-		if (beacon_chan->center_freq ==
-		    pending_beacon->chan.center_freq)
+		if (ieee80211_channel_equal(beacon_chan,
+					    &pending_beacon->chan))
 			return true;
 	return false;
 }
@@ -3337,9 +3386,10 @@ int regulatory_hint_found_beacon(struct wiphy *wiphy,
 	if (!reg_beacon)
 		return -ENOMEM;
 
-	pr_debug("Found new beacon on frequency: %d MHz (Ch %d) on %s\n",
-		 beacon_chan->center_freq,
-		 ieee80211_frequency_to_channel(beacon_chan->center_freq),
+	pr_debug("Found new beacon on frequency: %d.%03d MHz (Ch %d) on %s\n",
+		 beacon_chan->center_freq, beacon_chan->freq_offset,
+		 ieee80211_freq_khz_to_channel(
+			 ieee80211_channel_to_khz(beacon_chan)),
 		 wiphy_name(wiphy));
 
 	memcpy(&reg_beacon->chan, beacon_chan,
@@ -3783,8 +3833,9 @@ void wiphy_regulatory_deregister(struct wiphy *wiphy)
 }
 
 /*
- * See http://www.fcc.gov/document/5-ghz-unlicensed-spectrum-unii, for
- * UNII band definitions
+ * See FCC notices for UNII band definitions
+ *  5GHz: https://www.fcc.gov/document/5-ghz-unlicensed-spectrum-unii
+ *  6GHz: https://www.fcc.gov/document/fcc-proposes-more-spectrum-unlicensed-use-0
  */
 int cfg80211_get_unii(int freq)
 {
@@ -3807,6 +3858,22 @@ int cfg80211_get_unii(int freq)
 	/* UNII-3 */
 	if (freq > 5725 && freq <= 5825)
 		return 4;
+
+	/* UNII-5 */
+	if (freq > 5925 && freq <= 6425)
+		return 5;
+
+	/* UNII-6 */
+	if (freq > 6425 && freq <= 6525)
+		return 6;
+
+	/* UNII-7 */
+	if (freq > 6525 && freq <= 6875)
+		return 7;
+
+	/* UNII-8 */
+	if (freq > 6875 && freq <= 7125)
+		return 8;
 
 	return -EINVAL;
 }
@@ -3955,6 +4022,8 @@ int __init regulatory_init(void)
 	spin_lock_init(&reg_requests_lock);
 	spin_lock_init(&reg_pending_beacons_lock);
 	spin_lock_init(&reg_indoor_lock);
+
+	reg_regdb_size_check();
 
 	rcu_assign_pointer(cfg80211_regdomain, cfg80211_world_regdom);
 

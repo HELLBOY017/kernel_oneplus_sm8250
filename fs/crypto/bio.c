@@ -33,7 +33,8 @@ void fscrypt_decrypt_bio(struct bio *bio)
 
 	bio_for_each_segment_all(bv, bio, i) {
 		struct page *page = bv->bv_page;
-		int ret = fscrypt_decrypt_pagecache_blocks(page, bv->bv_len,
+		int ret = fscrypt_decrypt_pagecache_blocks(page,
+							   bv->bv_len,
 							   bv->bv_offset);
 		if (ret)
 			SetPageError(page);

@@ -487,7 +487,7 @@ int extcon_sync(struct extcon_dev *edev, unsigned int id)
 }
 EXPORT_SYMBOL_GPL(extcon_sync);
 
-int extcon_blocking_sync(struct extcon_dev *edev, unsigned int id, bool val)
+int extcon_blocking_sync(struct extcon_dev *edev, unsigned int id, u8 val)
 {
 	int index;
 
@@ -880,6 +880,17 @@ int extcon_set_property_capability(struct extcon_dev *edev, unsigned int id,
 	return ret;
 }
 EXPORT_SYMBOL_GPL(extcon_set_property_capability);
+
+int extcon_set_mutually_exclusive(struct extcon_dev *edev,
+				const u32 *exclusive)
+{
+	if (!edev)
+		return -EINVAL;
+
+	edev->mutually_exclusive = exclusive;
+	return 0;
+}
+EXPORT_SYMBOL(extcon_set_mutually_exclusive);
 
 /**
  * extcon_get_extcon_dev() - Get the extcon device instance from the name.
@@ -1308,8 +1319,10 @@ int extcon_dev_register(struct extcon_dev *edev)
 		goto err_dev;
 	}
 
-	for (index = 0; index < edev->max_supported; index++)
+	for (index = 0; index < edev->max_supported; index++) {
 		RAW_INIT_NOTIFIER_HEAD(&edev->nh[index]);
+		BLOCKING_INIT_NOTIFIER_HEAD(&edev->bnh[index]);
+	}
 
 	RAW_INIT_NOTIFIER_HEAD(&edev->nh_all);
 

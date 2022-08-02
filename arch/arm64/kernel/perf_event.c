@@ -30,6 +30,8 @@
 #include <linux/perf/arm_pmu.h>
 #include <linux/platform_device.h>
 
+static DEFINE_PER_CPU(bool, perf_event_is_hotplugging);
+
 /*
  * ARMv8 PMUv3 Performance Events handling code.
  * Common event types (some are defined in asm/perf_event.h).
@@ -784,6 +786,41 @@ static void armv8pmu_start(struct arm_pmu *cpu_pmu)
 	armv8pmu_pmcr_write(armv8pmu_pmcr_read() | ARMV8_PMU_PMCR_E);
 	raw_spin_unlock_irqrestore(&events->pmu_lock, flags);
 }
+#ifdef CONFIG_KRYO_PMU_WORKAROUND
+static inline u32 armv8pmu_get_enabled_ints(void)
+{
+	u32 int_enset;
+
+	int_enset = read_sysreg(pmintenset_el1);
+	write_sysreg(0xffffffff, pmintenclr_el1);
+	isb();
+	return int_enset;
+}
+
+static inline u32 armv8pmu_update_enabled_ints(u32 value, int idx, int set)
+{
+	if (set)
+		value |=  BIT(ARMV8_IDX_TO_COUNTER(idx));
+	else
+		value &= ~(BIT(ARMV8_IDX_TO_COUNTER(idx)));
+
+	return value;
+}
+
+static inline void armv8pmu_set_enabled_ints(u32 mask)
+{
+	write_sysreg(mask, pmintenset_el1);
+	isb();
+}
+#else
+static inline u32 armv8pmu_get_enabled_ints(void)
+{ return 0; }
+
+static inline u32 armv8pmu_update_enabled_ints(u32 value, int idx, int set)
+{ return value; }
+
+static inline void armv8pmu_set_enabled_ints(u32 mask) { }
+#endif
 
 static void armv8pmu_stop(struct arm_pmu *cpu_pmu)
 {
@@ -803,6 +840,12 @@ static irqreturn_t armv8pmu_handle_irq(struct arm_pmu *cpu_pmu)
 	struct pmu_hw_events *cpuc = this_cpu_ptr(cpu_pmu->hw_events);
 	struct pt_regs *regs;
 	int idx;
+	u32 enabled_ints;
+
+	/*
+	 * Get enabled the PMU interrupts and mask all PMU interrupts.
+	 */
+	enabled_ints = armv8pmu_get_enabled_ints();
 
 	/*
 	 * Get and reset the IRQ flags
@@ -829,8 +872,8 @@ static irqreturn_t armv8pmu_handle_irq(struct arm_pmu *cpu_pmu)
 		struct perf_event *event = cpuc->events[idx];
 		struct hw_perf_event *hwc;
 
-		/* Ignore if we don't have an event. */
-		if (!event)
+		/* Ignore if we don't have an event */
+		if (!event || event->state != PERF_EVENT_STATE_ACTIVE)
 			continue;
 
 		/*
@@ -846,8 +889,16 @@ static irqreturn_t armv8pmu_handle_irq(struct arm_pmu *cpu_pmu)
 		if (!armpmu_event_set_period(event))
 			continue;
 
-		if (perf_event_overflow(event, &data, regs))
+		if (perf_event_overflow(event, &data, regs)) {
 			cpu_pmu->disable(event);
+
+			/*
+			 * Update the list of interrupts
+			 * that should be reenabled.
+			 */
+			enabled_ints = armv8pmu_update_enabled_ints(
+					enabled_ints, idx, 0);
+		}
 	}
 	armv8pmu_start(cpu_pmu);
 
@@ -859,6 +910,11 @@ static irqreturn_t armv8pmu_handle_irq(struct arm_pmu *cpu_pmu)
 	 * will not work.
 	 */
 	irq_work_run();
+
+	/*
+	 * Re-enable the PMU interrupts
+	 */
+	armv8pmu_set_enabled_ints(enabled_ints);
 
 	return IRQ_HANDLED;
 }
@@ -936,9 +992,6 @@ static int armv8pmu_set_event_filter(struct hw_perf_event *event,
 {
 	unsigned long config_base = 0;
 
-	if (attr->exclude_idle)
-		return -EPERM;
-
 	/*
 	 * If we're running in hyp mode, then we *are* the hypervisor.
 	 * Therefore we ignore exclude_hv in this configuration, since
@@ -987,8 +1040,8 @@ static void armv8pmu_reset(void *info)
 	 * Initialize & Reset PMNC. Request overflow interrupt for
 	 * 64 bit cycle counter but cheat in armv8pmu_write_counter().
 	 */
-	armv8pmu_pmcr_write(ARMV8_PMU_PMCR_P | ARMV8_PMU_PMCR_C |
-			    ARMV8_PMU_PMCR_LC);
+	armv8pmu_pmcr_write(armv8pmu_pmcr_read() | ARMV8_PMU_PMCR_P |
+			ARMV8_PMU_PMCR_C | ARMV8_PMU_PMCR_LC);
 }
 
 static int __armv8_pmuv3_map_event(struct perf_event *event,
@@ -1086,6 +1139,55 @@ static void __armv8pmu_probe_pmu(void *info)
 			     pmceid, ARMV8_PMUV3_MAX_COMMON_EVENTS);
 }
 
+static void armv8pmu_idle_update(struct arm_pmu *cpu_pmu)
+{
+	struct pmu_hw_events *hw_events;
+	struct perf_event *event;
+	int idx;
+
+	if (!cpu_pmu)
+		return;
+
+	if (__this_cpu_read(perf_event_is_hotplugging))
+		return;
+
+	hw_events = this_cpu_ptr(cpu_pmu->hw_events);
+
+	if (!hw_events)
+		return;
+
+	for (idx = 0; idx < cpu_pmu->num_events; ++idx) {
+
+		if (!test_bit(idx, hw_events->used_mask))
+			continue;
+
+		event = hw_events->events[idx];
+
+		if (!event || !event->attr.exclude_idle ||
+				event->state != PERF_EVENT_STATE_ACTIVE)
+			continue;
+
+		cpu_pmu->pmu.read(event);
+	}
+}
+
+struct arm_pmu_and_idle_nb {
+	struct arm_pmu *cpu_pmu;
+	struct notifier_block perf_cpu_idle_nb;
+};
+
+static int perf_cpu_idle_notifier(struct notifier_block *nb,
+				unsigned long action, void *data)
+{
+	struct arm_pmu_and_idle_nb *pmu_nb = container_of(nb,
+				struct arm_pmu_and_idle_nb, perf_cpu_idle_nb);
+
+	if (action == IDLE_START)
+		armv8pmu_idle_update(pmu_nb->cpu_pmu);
+
+	return NOTIFY_OK;
+}
+
 static int armv8pmu_probe_pmu(struct arm_pmu *cpu_pmu)
 {
 	struct armv8pmu_probe_info probe = {
@@ -1093,6 +1195,15 @@ static int armv8pmu_probe_pmu(struct arm_pmu *cpu_pmu)
 		.present = false,
 	};
 	int ret;
+	struct arm_pmu_and_idle_nb *pmu_idle_nb;
+
+	pmu_idle_nb = devm_kzalloc(&cpu_pmu->plat_device->dev,
+					sizeof(*pmu_idle_nb), GFP_KERNEL);
+	if (!pmu_idle_nb)
+		return -ENOMEM;
+
+	pmu_idle_nb->cpu_pmu = cpu_pmu;
+	pmu_idle_nb->perf_cpu_idle_nb.notifier_call = perf_cpu_idle_notifier;
 
 	ret = smp_call_function_any(&cpu_pmu->supported_cpus,
 				    __armv8pmu_probe_pmu,
@@ -1100,7 +1211,13 @@ static int armv8pmu_probe_pmu(struct arm_pmu *cpu_pmu)
 	if (ret)
 		return ret;
 
-	return probe.present ? 0 : -ENODEV;
+	if (!probe.present)
+		return -ENODEV;
+
+	idle_notifier_register(&pmu_idle_nb->perf_cpu_idle_nb);
+
+	return 0;
+
 }
 
 static int armv8_pmu_init(struct arm_pmu *cpu_pmu)
@@ -1265,9 +1382,65 @@ static const struct of_device_id armv8_pmu_of_device_ids[] = {
 	{},
 };
 
+#ifdef CONFIG_HOTPLUG_CPU
+static int perf_event_hotplug_coming_up(unsigned int cpu)
+{
+	per_cpu(perf_event_is_hotplugging, cpu) = false;
+	return 0;
+}
+
+static int perf_event_hotplug_going_down(unsigned int cpu)
+{
+	per_cpu(perf_event_is_hotplugging, cpu) = true;
+	return 0;
+}
+
+static int perf_event_cpu_hp_init(void)
+{
+	int ret;
+
+	ret = cpuhp_setup_state_nocalls(CPUHP_AP_NOTIFY_PERF_ONLINE,
+				"PERF_EVENT/CPUHP_AP_NOTIFY_PERF_ONLINE",
+				perf_event_hotplug_coming_up,
+				perf_event_hotplug_going_down);
+	if (ret)
+		pr_err("CPU hotplug notifier for perf_event.c could not be registered: %d\n",
+		       ret);
+
+	return ret;
+}
+#else
+static int perf_event_cpu_hp_init(void) { return 0; }
+#endif
+
+/*
+ * Non DT systems have their micro/arch events probed at run-time.
+ * A fairly complete list of generic events are provided and ones that
+ * aren't supported by the current PMU are disabled.
+ */
+static const struct pmu_probe_info armv8_pmu_probe_table[] = {
+	PMU_PROBE(0, 0, armv8_pmuv3_init), /* enable all defined counters */
+	{ /* sentinel value */ }
+};
+
 static int armv8_pmu_device_probe(struct platform_device *pdev)
 {
-	return arm_pmu_device_probe(pdev, armv8_pmu_of_device_ids, NULL);
+	int ret, cpu;
+
+	for_each_possible_cpu(cpu)
+		per_cpu(perf_event_is_hotplugging, cpu) = false;
+
+	ret = perf_event_cpu_hp_init();
+	if (ret)
+		return ret;
+
+	/* set to true so armv8pmu_idle_update doesn't try to load
+	 * hw_events before arm_pmu_device_probe has initialized it.
+	 */
+	ret = arm_pmu_device_probe(pdev, armv8_pmu_of_device_ids,
+		(acpi_disabled ?  NULL : armv8_pmu_probe_table));
+
+	return ret;
 }
 
 static struct platform_driver armv8_pmu_driver = {

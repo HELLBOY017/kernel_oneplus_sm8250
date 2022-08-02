@@ -1870,6 +1870,10 @@ drop:
 		return -EINVAL;
 	}
 
+	if (!(tun->flags & IFF_NO_PI))
+		if (pi.flags & htons(CHECKSUM_UNNECESSARY))
+			skb->ip_summed = CHECKSUM_UNNECESSARY;
+
 	switch (tun->flags & TUN_TYPE_MASK) {
 	case IFF_TUN:
 		if (tun->flags & IFF_NO_PI) {
@@ -2943,6 +2947,12 @@ static long __tun_chr_ioctl(struct file *file, unsigned int cmd,
 	int le;
 	int ret;
 	bool do_notify = false;
+
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
+	if (cmd != TUNGETIFF && !capable(CAP_NET_ADMIN)) {
+		return -EPERM;
+	}
+#endif
 
 	if (cmd == TUNSETIFF || cmd == TUNSETQUEUE ||
 	    (_IOC_TYPE(cmd) == SOCK_IOC_TYPE && cmd != SIOCGSKNS)) {

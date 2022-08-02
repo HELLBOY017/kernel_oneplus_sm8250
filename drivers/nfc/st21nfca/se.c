@@ -334,6 +334,13 @@ int st21nfca_connectivity_event_received(struct nfc_hci_dev *hdev, u8 host,
 		    skb->data[0] != NFC_EVT_TRANSACTION_AID_TAG)
 			return -EPROTO;
 
+		/*
+		 * Buffer should have enough space for at least
+		 * two tag fields + two length fields + aid_len (skb->data[1])
+		 */
+		if (skb->len < skb->data[1] + 4)
+			return -EPROTO;
+
 		transaction = (struct nfc_evt_transaction *)devm_kzalloc(dev,
 						   skb->len - 2, GFP_KERNEL);
 		if (!transaction)
@@ -350,14 +357,13 @@ int st21nfca_connectivity_event_received(struct nfc_hci_dev *hdev, u8 host,
 		memcpy(transaction->aid, &skb->data[2],
 		       transaction->aid_len);
 
-		/* Check next byte is PARAMETERS tag (82) */
+		/* Check next byte is PARAMETERS tag (82) and the length field */
 		if (skb->data[transaction->aid_len + 2] !=
-		    NFC_EVT_TRANSACTION_PARAMS_TAG) {
+		    NFC_EVT_TRANSACTION_PARAMS_TAG ||
+		    skb->len < transaction->aid_len + transaction->params_len + 4) {
 			devm_kfree(dev, transaction);
 			return -EPROTO;
 		}
-
-		transaction->params_len = skb->data[transaction->aid_len + 3];
 
 		/* Total size is allocated (skb->len - 2) minus fixed array members */
 		if (transaction->params_len > ((skb->len - 2) -

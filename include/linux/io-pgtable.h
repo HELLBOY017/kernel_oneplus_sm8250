@@ -4,6 +4,7 @@
 #include <linux/bitops.h>
 
 #include <linux/scatterlist.h>
+#include <soc/qcom/msm_tz_smmu.h>
 
 /*
  * Public API for use by IOMMU drivers
@@ -15,6 +16,7 @@ enum io_pgtable_fmt {
 	ARM_64_LPAE_S2,
 	ARM_V7S,
 	ARM_V8L_FAST,
+	ARM_MSM_SECURE,
 	IO_PGTABLE_NUM_FMTS,
 };
 
@@ -141,6 +143,11 @@ struct io_pgtable_cfg {
 			u64	mair[2];
 			void	*pmds;
 		} av8l_fast_cfg;
+
+		struct {
+			enum tz_smmu_device_id sec_id;
+			int cbndx;
+		} arm_msm_secure_cfg;
 	};
 };
 

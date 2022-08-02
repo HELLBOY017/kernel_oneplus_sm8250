@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Copyright (c) 2011-2012, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2012,2018 The Linux Foundation. All rights reserved.
  *
  * Description: CoreSight Embedded Trace Buffer driver
  */
@@ -655,7 +655,7 @@ static ssize_t trigger_cntr_show(struct device *dev,
 	struct etb_drvdata *drvdata = dev_get_drvdata(dev->parent);
 	unsigned long val = drvdata->trigger_cntr;
 
-	return sprintf(buf, "%#lx\n", val);
+	return scnprintf(buf, PAGE_SIZE, "%#lx\n", val);
 }
 
 static ssize_t trigger_cntr_store(struct device *dev,
@@ -736,7 +736,6 @@ static int etb_probe(struct amba_device *adev, const struct amba_id *id)
 	spin_lock_init(&drvdata->spinlock);
 
 	drvdata->buffer_depth = etb_get_buffer_depth(drvdata);
-	pm_runtime_put(&adev->dev);
 
 	if (drvdata->buffer_depth & 0x80000000)
 		return -EINVAL;
@@ -762,6 +761,7 @@ static int etb_probe(struct amba_device *adev, const struct amba_id *id)
 	ret = misc_register(&drvdata->miscdev);
 	if (ret)
 		goto err_misc_register;
+	pm_runtime_put(&adev->dev);
 
 	return 0;
 

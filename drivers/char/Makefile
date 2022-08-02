@@ -14,6 +14,8 @@ obj-$(CONFIG_MSPEC)		+= mspec.o
 obj-$(CONFIG_UV_MMTIMER)	+= uv_mmtimer.o
 obj-$(CONFIG_IBM_BSR)		+= bsr.o
 obj-$(CONFIG_SGI_MBCS)		+= mbcs.o
+obj-$(CONFIG_BFIN_OTP)		+= bfin-otp.o
+obj-$(CONFIG_MSM_SMD_PKT)       += msm_smd_pkt.o
 
 obj-$(CONFIG_PRINTER)		+= lp.o
 
@@ -57,4 +59,21 @@ js-rtc-y = rtc.o
 
 obj-$(CONFIG_XILLYBUS)		+= xillybus/
 obj-$(CONFIG_POWERNV_OP_PANEL)	+= powernv-op-panel.o
+obj-$(CONFIG_MSM_ADSPRPC)	+= adsprpc.o
+ifdef CONFIG_COMPAT
+  obj-$(CONFIG_MSM_ADSPRPC)	+= adsprpc_compat.o
+endif
+obj-$(CONFIG_MSM_FASTCVPD)	+= fastcvpd.o
+obj-$(CONFIG_MSM_RDBG)		+= rdbg.o
 obj-$(CONFIG_ADI)		+= adi.o
+obj-$(CONFIG_DIAG_CHAR)		+= diag/
+obj-$(CONFIG_OKL4_PIPE)		+= okl4_pipe.o
+CFLAGS_okl4_pipe.o			+= -Werror
+obj-$(CONFIG_VSERVICES_SERIAL)		+= vservices_serial.o
+CFLAGS_vservices_serial.o	+= -Werror
+obj-$(CONFIG_VSERVICES_SERIAL_CLIENT)	+= vs_serial_client.o
+CFLAGS_vs_serial_client.o	 += -Werror
+obj-$(CONFIG_VSERVICES_SERIAL_SERVER)	+= vs_serial_server.o
+CFLAGS_vs_serial_server.o	+= -Werror
+obj-$(CONFIG_RB5_FAN_CONTROLLER)	+= rb5_fan.o
+obj-$(CONFIG_RB5_GPIOS_ENABLE)	+= rb5-gpios-enable.o

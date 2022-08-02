@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2016-2019, The Linux Foundation. All rights reserved.
  * Copyright (C) 2013 Red Hat
  * Author: Rob Clark <robdclark@gmail.com>
  *
@@ -42,9 +42,11 @@ struct msm_kms_funcs {
 	int (*enable_vblank)(struct msm_kms *kms, struct drm_crtc *crtc);
 	void (*disable_vblank)(struct msm_kms *kms, struct drm_crtc *crtc);
 	/* modeset, bracketing atomic_commit(): */
-	void (*prepare_commit)(struct msm_kms *kms, struct drm_atomic_state *state);
+	void (*prepare_commit)(struct msm_kms *kms,
+				struct drm_atomic_state *state);
 	void (*commit)(struct msm_kms *kms, struct drm_atomic_state *state);
-	void (*complete_commit)(struct msm_kms *kms, struct drm_atomic_state *state);
+	void (*complete_commit)(struct msm_kms *kms,
+				struct drm_atomic_state *state);
 	/* functions to wait for atomic commit completed on each CRTC */
 	void (*wait_for_crtc_commit_done)(struct msm_kms *kms,
 					struct drm_crtc *crtc);

@@ -457,8 +457,8 @@ static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
 	pgoff_t pgoff;
 	if (unlikely(is_vm_hugetlb_page(vma)))
 		return linear_hugepage_index(vma, address);
-	pgoff = (address - vma->vm_start) >> PAGE_SHIFT;
-	pgoff += vma->vm_pgoff;
+	pgoff = (address - READ_ONCE(vma->vm_start)) >> PAGE_SHIFT;
+	pgoff += READ_ONCE(vma->vm_pgoff);
 	return pgoff;
 }
 
@@ -538,6 +538,8 @@ static inline __sched int wait_on_page_locked_killable(struct page *page)
 		return 0;
 	return wait_on_page_bit_killable(compound_head(page), PG_locked);
 }
+
+extern void put_and_wait_on_page_locked(struct page *page);
 
 /* 
  * Wait for a page to complete writeback

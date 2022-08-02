@@ -64,6 +64,9 @@ static vm_fault_t f2fs_vm_page_mkwrite(struct vm_fault *vmf)
 		goto err;
 	}
 
+	/* should do out of any locked page */
+	f2fs_balance_fs(sbi, true);
+
 	if (!f2fs_is_checkpoint_ready(sbi)) {
 		err = -ENOSPC;
 		goto err;
