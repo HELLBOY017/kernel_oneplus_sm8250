@@ -2323,4 +2323,11 @@ config ARCH_HAS_SYNC_CORE_BEFORE_USERMODE
 config ARCH_HAS_SYSCALL_WRAPPER
 	def_bool n
 
+config CPUFREQ_GOV_SCHEDUTIL_TARGET_LOAD
+	depends on SMP
+	bool
+	help
+	  This will provide a new parameter called "target loads".
+	  Lower values result in higher CPU speeds.
+
 source "init/Kconfig.gki"
