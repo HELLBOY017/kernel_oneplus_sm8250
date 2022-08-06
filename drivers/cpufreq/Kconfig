@@ -338,6 +338,13 @@ endif
 
 comment "CPU frequency scaling drivers"
 
+config CPUFREQ_GOV_SCHEDUTIL_TARGET_LOAD
+	bool "'schedutil' extra function"
+	default n
+	depends on CPU_FREQ_GOV_SCHEDUTIL
+	help
+	  This will provide a new parameter called "target loads".
+
 config CPUFREQ_DT
 	tristate "Generic DT based cpufreq driver"
 	depends on HAVE_CLK && OF
