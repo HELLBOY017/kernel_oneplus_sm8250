@@ -345,6 +345,13 @@ config CPUFREQ_GOV_SCHEDUTIL_TARGET_LOAD
 	help
 	  This will provide a new parameter called "target loads".
 
+config CPUFREQ_GOV_SCHEDUTIL_WALT_AWARE
+	bool "'schedutil' extra function"
+	default n
+	depends on CPU_FREQ_GOV_SCHEDUTIL
+	help
+	  This will expand the functions of schedutil governor.
+
 config CPUFREQ_DT
 	tristate "Generic DT based cpufreq driver"
 	depends on HAVE_CLK && OF
