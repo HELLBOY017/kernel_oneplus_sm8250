@@ -430,13 +430,13 @@ static unsigned int get_next_freq(struct sugov_policy *sg_policy,
 				  unsigned long util, unsigned long max)
 {
 	struct cpufreq_policy *policy = sg_policy->policy;
-	struct sugov_cpu *sg_cpu;
+	unsigned int final_freq;
 #ifdef CONFIG_CPUFREQ_GOV_SCHEDUTIL_TARGET_LOAD
 	unsigned int freq = policy->cpuinfo.max_freq;
 	unsigned int prev_freq = freq;
 	unsigned int prev_laf = prev_freq * util * 100 / max;
-	unsigned int final_freq;
 #ifdef CONFIG_CPUFREQ_GOV_SCHEDUTIL_WALT_AWARE
+	struct sugov_cpu *sg_cpu;
         int def_freq = choose_freq(sg_policy, prev_laf);
         int walt_freq = walt_map_util_freq(util, sg_policy, max, sg_cpu->cpu);
 
