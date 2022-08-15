@@ -2896,6 +2896,15 @@ int dp_addba_requestprocess_wifi3(struct cdp_soc_t *cdp_soc,
 		goto fail;
 	}
 
+	if (peer->vdev &&
+		peer->vdev->pdev &&
+		wlan_cfg_get_dp_force_rx_64_ba(
+			peer->vdev->pdev->soc->wlan_cfg_ctx)) {
+
+		    QDF_TRACE(QDF_MODULE_ID_DP, QDF_TRACE_LEVEL_INFO,
+			    "force use BA64 scheme");
+                   buffersize = 64;
+        }
 	if (wlan_cfg_is_dp_force_rx_64_ba(soc->wlan_cfg_ctx)) {
 		QDF_TRACE(QDF_MODULE_ID_DP, QDF_TRACE_LEVEL_INFO,
 			  "force use BA64 scheme");
@@ -3495,6 +3504,8 @@ QDF_STATUS dp_peer_state_update(struct cdp_soc_t *soc_hdl, uint8_t *peer_mac,
 	}
 	peer->state = state;
 
+	peer->authorize = (state == OL_TXRX_PEER_STATE_AUTH) ? 1 : 0;
+
 	dp_info("peer %pK state %d", peer, peer->state);
 	/* ref_cnt is incremented inside dp_peer_find_hash_find().
 	 * Decrement it here.
@@ -3847,4 +3858,31 @@ bool dp_peer_find_by_id_valid(struct dp_soc *soc, uint16_t peer_id)
 	}
 
 	return false;
+}
+
+void dp_peer_flush_frags(struct cdp_soc_t *soc_hdl, uint8_t vdev_id,
+			 uint8_t *peer_mac)
+{
+	struct dp_soc *soc = cdp_soc_t_to_dp_soc(soc_hdl);
+	struct dp_peer *peer = dp_peer_find_hash_find(soc, peer_mac, 0,
+						      vdev_id);
+	struct dp_rx_tid *rx_tid;
+	uint8_t tid;
+
+	if (!peer)
+		return;
+
+	dp_info("Flushing fragments for peer " QDF_MAC_ADDR_FMT,
+		QDF_MAC_ADDR_REF(peer->mac_addr.raw));
+
+	for (tid = 0; tid < DP_MAX_TIDS; tid++) {
+		rx_tid = &peer->rx_tid[tid];
+
+		qdf_spin_lock_bh(&rx_tid->tid_lock);
+		dp_rx_defrag_waitlist_remove(peer, tid);
+		dp_rx_reorder_flush_frag(peer, tid);
+		qdf_spin_unlock_bh(&rx_tid->tid_lock);
+	}
+
+	dp_peer_unref_delete(peer);
 }

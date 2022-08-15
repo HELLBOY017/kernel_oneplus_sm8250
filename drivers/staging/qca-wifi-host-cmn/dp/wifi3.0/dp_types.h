@@ -827,6 +827,12 @@ struct dp_soc_stats {
 			uint32_t hal_wbm_rel_dup;
 			/* HAL RXDMA error Duplicate count */
 			uint32_t hal_rxdma_err_dup;
+			/* ipa smmu map duplicate count */
+			uint32_t ipa_smmu_map_dup;
+			/* ipa smmu unmap duplicate count */
+			uint32_t ipa_smmu_unmap_dup;
+			/* ipa smmu unmap while ipa pipes is disabled */
+			uint32_t ipa_unmap_no_pipe;
 			/* REO cmd send fail/requeue count */
 			uint32_t reo_cmd_send_fail;
 			/* REO cmd send drain count */
@@ -861,6 +867,10 @@ struct dp_soc_stats {
 			uint32_t nbuf_sanity_fail;
 			/* Duplicate link desc refilled */
 			uint32_t dup_refill_link_desc;
+			/* Non Eapol pkt drop cnt due to peer not authorized */
+			uint32_t peer_unauth_rx_pkt_drop;
+			/* EAPOL drop count in intrabss scenario */
+			uint32_t intrabss_eapol_drop;
 		} err;
 
 		/* packet count per core - per ring */
@@ -1315,6 +1325,8 @@ struct dp_soc {
 		void *ipa_wbm_ring_base_vaddr;
 		uint32_t ipa_wbm_ring_size;
 		qdf_dma_addr_t ipa_wbm_tp_paddr;
+		/* WBM2SW HP shadow paddr */
+		qdf_dma_addr_t ipa_wbm_hp_shadow_paddr;
 
 		/* TX buffers populated into the WBM ring */
 		void **tx_buf_pool_vaddr_unaligned;
@@ -1402,6 +1414,10 @@ struct dp_soc {
 #endif /* WLAN_SUPPORT_RX_FLOW_TAG || WLAN_SUPPORT_RX_FISA */
 	/* Save recent operation related variable */
 	struct dp_last_op_info last_op_info;
+#ifdef FEATURE_RUNTIME_PM
+	/* Dp runtime refcount */
+	qdf_atomic_t dp_runtime_refcount;
+#endif
 };
 
 #ifdef IPA_OFFLOAD

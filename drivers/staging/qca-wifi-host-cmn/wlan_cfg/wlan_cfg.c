@@ -1314,6 +1314,11 @@ wlan_cfg_is_rx_mon_protocol_flow_tag_enabled(struct wlan_cfg_dp_soc_ctxt *cfg)
 	return cfg->is_rx_mon_protocol_flow_tag_enabled;
 }
 
+bool wlan_cfg_get_dp_force_rx_64_ba(struct wlan_cfg_dp_soc_ctxt *cfg)
+{
+	return cfg->enable_force_rx_64_ba;
+}
+
 bool wlan_cfg_is_dp_force_rx_64_ba(struct wlan_cfg_dp_soc_ctxt *cfg)
 {
 	return cfg->enable_force_rx_64_ba;

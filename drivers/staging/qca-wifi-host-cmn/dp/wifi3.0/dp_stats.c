@@ -5521,6 +5521,8 @@ void dp_txrx_path_stats(struct dp_soc *soc)
 			       pdev->stats.rx.intra_bss.fail.bytes);
 		DP_PRINT_STATS("intra-bss no mdns fwds %u msdus",
 			       pdev->stats.rx.intra_bss.mdns_no_fwd);
+		DP_PRINT_STATS("intra-bss EAPOL drops: %u",
+			       soc->stats.rx.err.intrabss_eapol_drop);
 
 		DP_PRINT_STATS("raw packets %u msdus ( %llu bytes),",
 			       pdev->stats.rx.raw.num,
@@ -5563,6 +5565,12 @@ void dp_txrx_path_stats(struct dp_soc *soc)
 			       pdev->soc->stats.rx.err.nbuf_sanity_fail);
 		DP_PRINT_STATS("Rx refill duplicate link desc: %d",
 			       pdev->soc->stats.rx.err.dup_refill_link_desc);
+		DP_PRINT_STATS("Rx ipa smmu map duplicate: %d",
+			       pdev->soc->stats.rx.err.ipa_smmu_map_dup);
+		DP_PRINT_STATS("Rx ipa smmu unmap duplicate: %d",
+			       pdev->soc->stats.rx.err.ipa_smmu_unmap_dup);
+		DP_PRINT_STATS("Rx ipa smmu unmap no pipes: %d",
+			       pdev->soc->stats.rx.err.ipa_unmap_no_pipe);
 
 		DP_PRINT_STATS("Reo Statistics");
 		DP_PRINT_STATS("near_full: %u ", soc->stats.rx.near_full);
@@ -6040,6 +6048,8 @@ dp_print_soc_rx_stats(struct dp_soc *soc)
 		       soc->stats.rx.err.defrag_peer_uninit);
 	DP_PRINT_STATS("Pkts delivered no peer = %d",
 		       soc->stats.rx.err.pkt_delivered_no_peer);
+	DP_PRINT_STATS("Pkts drop due to no peer auth :%d",
+		       soc->stats.rx.err.peer_unauth_rx_pkt_drop);
 	DP_PRINT_STATS("Invalid Pdev = %d",
 		       soc->stats.rx.err.invalid_pdev);
 	DP_PRINT_STATS("Invalid Peer = %d",

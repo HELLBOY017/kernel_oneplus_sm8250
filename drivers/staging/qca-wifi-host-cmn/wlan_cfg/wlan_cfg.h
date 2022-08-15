@@ -1336,6 +1336,14 @@ void wlan_cfg_fill_interrupt_mask(struct wlan_cfg_dp_soc_ctxt *wlan_cfg_ctx,
 bool wlan_cfg_is_rx_fisa_enabled(struct wlan_cfg_dp_soc_ctxt *cfg);
 
 /**
+ * wlan_cfg_get_dp_force_rx_64_ba() - Get force use 64 BA flag
+ * @cfg: config context
+ *
+ * Return: force use 64BA flag
+ */
+bool wlan_cfg_get_dp_force_rx_64_ba(struct wlan_cfg_dp_soc_ctxt *cfg);
+ 
+/**
  * wlan_cfg_is_dp_force_rx_64_ba() - Get force use 64 BA flag
  * @cfg: config context
  *
