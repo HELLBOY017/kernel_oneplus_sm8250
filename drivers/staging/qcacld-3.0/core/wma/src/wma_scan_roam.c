@@ -1859,7 +1859,6 @@ QDF_STATUS wma_process_roaming_config(tp_wma_handle wma_handle,
 	switch (roam_req->Command) {
 	case ROAM_SCAN_OFFLOAD_START:
 		intr = &wma_handle->interfaces[roam_req->sessionId];
-		intr->delay_before_vdev_stop = roam_req->delay_before_vdev_stop;
 		/*
 		 * Scan/Roam threshold parameters are translated from
 		 * fields of struct roam_offload_scan_req to WMITLV
@@ -3780,7 +3779,7 @@ int wma_roam_stats_event_handler(WMA_HANDLE handle, uint8_t *event,
 		num_tlv = MAX_ROAM_SCAN_STATS_TLV;
 	}
 
-	rem_len = WMI_SVC_MSG_MAX_SIZE - sizeof(*fixed_param);
+	rem_len = len - sizeof(*fixed_param);
 	if (rem_len < num_tlv * sizeof(wmi_roam_trigger_reason)) {
 		wma_err_rl("Invalid roam trigger data");
 		goto err;
@@ -4161,19 +4160,14 @@ wma_roam_ho_fail_handler(tp_wma_handle wma, uint32_t vdev_id,
 	struct handoff_failure_ind *ho_failure_ind;
 	struct scheduler_msg sme_msg = { 0 };
 	QDF_STATUS qdf_status;
-	struct reject_ap_info ap_info;
-
-	ap_info.bssid = bssid;
-	ap_info.reject_ap_type = DRIVER_AVOID_TYPE;
-	ap_info.reject_reason = REASON_ROAM_HO_FAILURE;
-	ap_info.source = ADDED_BY_DRIVER;
-	wlan_blm_add_bssid_to_reject_list(wma->pdev, &ap_info);
 
 	ho_failure_ind = qdf_mem_malloc(sizeof(*ho_failure_ind));
 	if (!ho_failure_ind)
 		return;
 
 	ho_failure_ind->vdev_id = vdev_id;
+	ho_failure_ind->bssid = bssid;
+
 	sme_msg.type = eWNI_SME_HO_FAIL_IND;
 	sme_msg.bodyptr = ho_failure_ind;
 	sme_msg.bodyval = 0;

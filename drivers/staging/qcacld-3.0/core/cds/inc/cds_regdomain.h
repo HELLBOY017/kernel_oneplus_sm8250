@@ -258,6 +258,7 @@ enum country_code {
 	CTRY_JAPAN48 = 4048,
 	CTRY_JAPAN55 = 4055,
 	CTRY_JAPAN60 = 4060,
+	CTRY_MYANMAR = 4061,
 	CTRY_XA = 4100,
 };
 

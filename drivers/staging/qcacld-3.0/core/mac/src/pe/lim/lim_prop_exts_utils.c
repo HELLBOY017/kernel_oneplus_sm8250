@@ -320,6 +320,44 @@ static inline bool lim_extract_adaptive_11r_cap(uint8_t *ie, uint16_t ie_len)
 }
 #endif
 
+static
+void lim_update_ch_width_for_p2p_client(struct mac_context *mac,
+					struct pe_session *session,
+					uint32_t ch_freq)
+{
+	struct ch_params ch_params = {0};
+
+	/*
+	 * Some IOT AP's/P2P-GO's (e.g. make: Intel and model: Intel(R)
+	 * Wireless-AC 9560160MHz as P2P GO), send beacon with 20mhz and assoc
+	 * resp with 80mhz and after assoc resp, next beacon also has 80mhz.
+	 * Connection is expected to happen in better possible
+	 * bandwidth(80MHz in this case).
+	 * Start the vdev with max supported ch_width in order to support this.
+	 * It'll be downgraded to appropriate ch_width or the same would be
+	 * continued based on assoc resp.
+	 * Restricting this check for p2p client and 5G only and this may be
+	 * extended to STA based on wider testing results with multiple AP's.
+	 * Limit it to 80MHz as 80+80 is channel specific and 160MHz is not
+	 * supported in p2p.
+	 */
+	ch_params.ch_width = CH_WIDTH_80MHZ;
+
+	wlan_reg_set_channel_params_for_freq(mac->pdev, ch_freq, 0, &ch_params);
+	if (ch_params.ch_width == CH_WIDTH_20MHZ)
+		ch_params.sec_ch_offset = PHY_SINGLE_CHANNEL_CENTERED;
+
+	session->htSupportedChannelWidthSet = ch_params.sec_ch_offset ? 1 : 0;
+	session->htRecommendedTxWidthSet = session->htSupportedChannelWidthSet;
+	session->htSecondaryChannelOffset = ch_params.sec_ch_offset;
+	session->ch_width = ch_params.ch_width;
+	session->ch_center_freq_seg0 = ch_params.center_freq_seg0;
+	session->ch_center_freq_seg1 = ch_params.center_freq_seg1;
+	pe_debug("Start P2P_CLI in ch freq %d max supported ch_width: %u cbmode: %u seg0: %u, seg1: %u",
+		 ch_freq, ch_params.ch_width, ch_params.sec_ch_offset,
+		 session->ch_center_freq_seg0, session->ch_center_freq_seg1);
+}
+
 void lim_extract_ap_capability(struct mac_context *mac_ctx, uint8_t *p_ie,
 			       uint16_t ie_len, uint8_t *qos_cap,
 			       uint8_t *uapsd, int8_t *local_constraint,
@@ -337,6 +375,7 @@ void lim_extract_ap_capability(struct mac_context *mac_ctx, uint8_t *p_ie,
 	tDot11fIEVHTCaps *vht_caps;
 	uint8_t channel = 0;
 	struct mlme_vht_capabilities_info *mlme_vht_cap;
+	bool ch_wd_initialized = false;
 
 	beacon_struct = qdf_mem_malloc(sizeof(tSirProbeRespBeacon));
 	if (!beacon_struct)
@@ -389,6 +428,13 @@ void lim_extract_ap_capability(struct mac_context *mac_ctx, uint8_t *p_ie,
 			!session->htSupportedChannelWidthSet) {
 		if (!mac_ctx->mlme_cfg->vht_caps.vht_cap_info.enable_txbf_20mhz)
 			session->vht_config.su_beam_formee = 0;
+
+		if (session->opmode == QDF_P2P_CLIENT_MODE &&
+		    !wlan_reg_is_24ghz_ch_freq(beacon_struct->chan_freq))
+			lim_update_ch_width_for_p2p_client(
+					mac_ctx, session,
+					beacon_struct->chan_freq);
+
 	} else if (session->vhtCapabilityPresentInBeacon &&
 			vht_op->chanWidth) {
 		/* If VHT is supported min 80 MHz support is must */
@@ -424,8 +470,14 @@ void lim_extract_ap_capability(struct mac_context *mac_ctx, uint8_t *p_ie,
 					WNI_CFG_VHT_CHANNEL_WIDTH_80MHZ;
 		}
 
-		fw_vht_ch_wd = wma_get_vht_ch_width();
-		vht_ch_wd = QDF_MIN(fw_vht_ch_wd, ap_bcon_ch_width);
+		if (session->opmode == QDF_P2P_CLIENT_MODE &&
+		    !wlan_reg_is_24ghz_ch_freq(beacon_struct->chan_freq)) {
+			vht_ch_wd = wma_get_vht_ch_width();
+			pe_debug("vht_ch_wd: %u", vht_ch_wd);
+		} else {
+			fw_vht_ch_wd = wma_get_vht_ch_width();
+			vht_ch_wd = QDF_MIN(fw_vht_ch_wd, ap_bcon_ch_width);
+		}
 
 		if ((vht_ch_wd > WNI_CFG_VHT_CHANNEL_WIDTH_80MHZ) &&
 		    (ap_bcon_ch_width ==
@@ -500,6 +552,15 @@ void lim_extract_ap_capability(struct mac_context *mac_ctx, uint8_t *p_ie,
 				lim_get_80Mhz_center_channel(channel);
 		}
 		session->ch_width = vht_ch_wd + 1;
+		ch_wd_initialized = true;
+	}
+
+	if (!ch_wd_initialized &&
+	    (session->opmode == QDF_P2P_CLIENT_MODE &&
+	     !wlan_reg_is_24ghz_ch_freq(beacon_struct->chan_freq))) {
+		lim_get_cb_mode_for_p2p_client(mac_ctx, session,
+					       beacon_struct->chan_freq);
+		pe_debug("session->ch_width: %u", session->ch_width);
 	}
 
 	if (session->vhtCapability &&

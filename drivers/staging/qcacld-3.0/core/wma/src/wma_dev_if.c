@@ -85,6 +85,7 @@
 #include "wlan_mlme_public_struct.h"
 #include "wlan_mlme_api.h"
 #include "wlan_mlme_main.h"
+#include "wlan_mlme_ucfg_api.h"
 #include <wlan_dfs_utils_api.h>
 #include "../../core/src/vdev_mgr_ops.h"
 #include "wlan_utility.h"
@@ -4868,9 +4869,10 @@ fail_del_bss_ho_fail:
 static void wma_wait_tx_complete(tp_wma_handle wma,
 				uint32_t session_id)
 {
-	uint8_t max_wait_iterations = 0;
+	uint8_t max_wait_iterations = 0, delay = 0;
 	cdp_config_param_type val;
 	void *soc = cds_get_context(QDF_MODULE_ID_SOC);
+	QDF_STATUS status;
 
 	if (!wma_is_vdev_valid(session_id)) {
 		WMA_LOGE("%s: Vdev is not valid: %d",
@@ -4878,10 +4880,11 @@ static void wma_wait_tx_complete(tp_wma_handle wma,
 		return;
 	}
 
-	max_wait_iterations =
-		wma->interfaces[session_id].delay_before_vdev_stop /
-		WMA_TX_Q_RECHECK_TIMER_WAIT;
+	status = ucfg_mlme_get_delay_before_vdev_stop(wma->psoc, &delay);
+	if (QDF_IS_STATUS_ERROR(status))
+		wma_err("Failed to get delay before vdev stop");
 
+	max_wait_iterations = delay / WMA_TX_Q_RECHECK_TIMER_WAIT;
 	if (cdp_txrx_get_pdev_param(soc,
 				    wlan_objmgr_pdev_get_pdev_id(wma->pdev),
 				    CDP_TX_PENDING, &val))
@@ -5190,6 +5193,28 @@ QDF_STATUS wma_set_wlm_latency_level(void *wma_ptr,
 		WMA_LOGW("Failed to set latency level");
 
 	return ret;
+}
+
+int8_t wma_get_rssi_offset(uint8_t vdev_id)
+{
+	tp_wma_handle wma;
+	enum phy_ch_width ch_width;
+
+	wma = cds_get_context(QDF_MODULE_ID_WMA);
+	if (!wma) {
+		WMA_LOGE("Invalid wma");
+		return 0;
+	}
+	ch_width = wma->interfaces[vdev_id].chan_width;
+	WMA_LOGD("ch wdith: %d", ch_width);
+	switch (ch_width) {
+	case CH_WIDTH_40MHZ:
+		return 3;
+	case CH_WIDTH_80MHZ:
+		return 6;
+	default:
+		return 0;
+	}
 }
 
 QDF_STATUS wma_add_bss_peer_sta(uint8_t *self_mac, uint8_t *bssid,
