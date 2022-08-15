@@ -81,6 +81,15 @@
 
 #define SDE_ERROR(fmt, ...) pr_err("[sde error]" fmt, ##__VA_ARGS__)
 
+#ifdef OPLUS_BUG_STABILITY
+#include <soc/oplus/system/oplus_mm_kevent_fb.h>
+#define SDE_MM_ERROR(fmt, ...) \
+	do { \
+		pr_err("[sde error]" fmt, ##__VA_ARGS__); \
+		mm_fb_display_kevent_named(MM_FB_KEY_RATELIMIT_1H, fmt, ##__VA_ARGS__); \
+	} while(0)
+#endif /* OPLUS_BUG_STABILITY */
+
 #define POPULATE_RECT(rect, a, b, c, d, Q16_flag) \
 	do {						\
 		(rect)->x = (Q16_flag) ? (a) >> 16 : (a);    \
