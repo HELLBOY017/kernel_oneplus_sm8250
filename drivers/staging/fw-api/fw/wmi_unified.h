@@ -7117,6 +7117,8 @@ typedef enum {
     /* Param to enable/disable PCIE HW ILP */
     WMI_PDEV_PARAM_PCIE_HW_ILP,
 
+    /* Param to disable Hardware Assist feature */
+    WMI_PDEV_PARAM_DISABLE_HW_ASSIST,
     /*
      * Configure the TXTD_START_TIMESTAMP parameters
      * The timestamp units are nanoseconds.
