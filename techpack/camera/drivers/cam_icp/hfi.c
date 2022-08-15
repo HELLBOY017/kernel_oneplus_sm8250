@@ -420,7 +420,7 @@ int hfi_set_fw_dump_level(uint32_t lvl)
 	fw_dump_level_switch_prop->pkt_type = HFI_CMD_SYS_SET_PROPERTY;
 	fw_dump_level_switch_prop->num_prop = 1;
 	fw_dump_level_switch_prop->prop_data[0] = HFI_PROP_SYS_FW_DUMP_CFG;
-	fw_dump_level_switch_prop->prop_data[1] = lvl;
+	fw_dump_level_switch_prop->prop_data[1] = (lvl > HFI_SET_HANG_DUMP_ON_FAILURE) ? lvl : HFI_SET_HANG_DUMP_ON_FAILURE;
 
 	CAM_DBG(CAM_HFI, "prop->size = %d\n"
 			 "prop->pkt_type = %d\n"

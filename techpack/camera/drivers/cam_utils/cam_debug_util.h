@@ -3,6 +3,9 @@
  * Copyright (c) 2017-2019, The Linux Foundation. All rights reserved.
  */
 
+#include <linux/io.h>
+#include <linux/module.h>
+
 #ifndef _CAM_DEBUG_UTIL_H_
 #define _CAM_DEBUG_UTIL_H_
 
@@ -67,6 +70,8 @@ void cam_debug_log(unsigned int module_id, const char *func, const int line,
  */
 const char *cam_get_module_name(unsigned int module_id);
 
+bool cam_is_log_enabled(unsigned int module_id);
+
 /*
  * CAM_ERR
  * @brief    :  This Macro will print error logs
@@ -76,7 +81,8 @@ const char *cam_get_module_name(unsigned int module_id);
  * @args     :  Arguments which needs to be print in log
  */
 #define CAM_ERR(__module, fmt, args...)                            \
-	pr_info("CAM_ERR: %s: %s: %d " fmt "\n",                   \
+	pr_err("[%d %d] CAM_ERR: %s: %s: %d " fmt "\n",                   \
+	    task_tgid_nr(current),  task_pid_nr(current),                  \
 		cam_get_module_name(__module), __func__,  __LINE__, ##args)
 /*
  * CAM_WARN
@@ -87,7 +93,8 @@ const char *cam_get_module_name(unsigned int module_id);
  * @args     :  Arguments which needs to be print in log
  */
 #define CAM_WARN(__module, fmt, args...)                           \
-	pr_info("CAM_WARN: %s: %s: %d " fmt "\n",                  \
+	pr_warn("[%d %d] CAM_WARN: %s: %s: %d " fmt "\n",                  \
+	    task_tgid_nr(current),  task_pid_nr(current),                  \
 		cam_get_module_name(__module), __func__,  __LINE__, ##args)
 /*
  * CAM_INFO
@@ -98,7 +105,8 @@ const char *cam_get_module_name(unsigned int module_id);
  * @args     :  Arguments which needs to be print in log
  */
 #define CAM_INFO(__module, fmt, args...)                           \
-	pr_info("CAM_INFO: %s: %s: %d " fmt "\n",                     \
+	pr_info("[%d %d] CAM_INFO: %s: %s: %d " fmt "\n",                     \
+	    task_tgid_nr(current),  task_pid_nr(current),   \
 		cam_get_module_name(__module), __func__,  __LINE__, ##args)
 
 /*
