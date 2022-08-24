@@ -7478,7 +7478,7 @@ static void oplus_chg_update_ui_soc(struct oplus_chg_chip *chip)
 		}
 	} else {
 		cnt = 0;
-		chip->prop_status = POWER_SUPPLY_STATUS_NOT_CHARGING;
+		chip->prop_status = POWER_SUPPLY_STATUS_DISCHARGING;
 		soc_up_count = 0;
 		allow_uisoc_down = false;
 		if (chip->smooth_soc <= chip->ui_soc || vbatt_too_low) {
