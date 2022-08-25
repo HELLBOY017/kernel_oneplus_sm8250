@@ -58,7 +58,7 @@ bool iris_is_chip_supported(void)
 
 bool iris_is_softiris_supported(void)
 {
-	return soft_iris_enable;
+	return false;
 }
 
 bool iris_is_dual_supported(void)
