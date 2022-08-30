@@ -6,44 +6,20 @@
 	qcom,msm-id = <356 0x20000>;
 };
 
-&CPU0 {
-	capacity-dmips-mhz = <448>;
-	dynamic-power-coefficient = <103>;
-};
-
-&CPU1 {
-	capacity-dmips-mhz = <448>;
-	dynamic-power-coefficient = <103>;
-};
-
-&CPU2 {
-	capacity-dmips-mhz = <448>;
-	dynamic-power-coefficient = <103>;
-};
-
-&CPU3 {
-	capacity-dmips-mhz = <448>;
-	dynamic-power-coefficient = <103>;
-};
-
 &CPU4 {
-	capacity-dmips-mhz = <1022>;
-	dynamic-power-coefficient = <340>;
+	dynamic-power-coefficient = <533>;
 };
 
 &CPU5 {
-	capacity-dmips-mhz = <1022>;
-	dynamic-power-coefficient = <340>;
+	dynamic-power-coefficient = <533>;
 };
 
 &CPU6 {
-	capacity-dmips-mhz = <1022>;
-	dynamic-power-coefficient = <340>;
+	dynamic-power-coefficient = <533>;
 };
 
 &CPU7 {
-	capacity-dmips-mhz = <1024>;
-	dynamic-power-coefficient = <409>;
+	dynamic-power-coefficient = <642>;
 };
 
 &clock_camcc {
@@ -414,29 +390,4 @@
 		   <GIC_SPI 31 IRQ_TYPE_LEVEL_HIGH>,
 		   <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
 	interrupt-names = "dcvsh0_int", "dcvsh1_int", "dcvsh2_int";
-
-	qcom,cpufreq-table-0 =
-			< 691200>,
-			<1708800>;
-
-	qcom,cpufreq-table-1 =
-			< 710400>,
-			<1478400>,
-			<1766400>,
-			<2054400>,
-			<2150400>,
-			<2246400>,
-			<2342400>,
-			<2419200>;
-
-	qcom,cpufreq-table-2 =
-			< 844800>,
-			<1862400>,
-			<2073600>,
-			<2457600>,
-			<2553600>,
-			<2649600>,
-			<2745600>,
-			<2841600>,
-			<3187200>;
 };
