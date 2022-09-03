@@ -436,7 +436,7 @@ static void dump_secure_stage(struct seq_file *s)
 }
 
 //#ifdef OPLUS_FEATURE_NFC_FELICA
-static void update_felica_cfg(struct proc_dir_entry *parent) {
+static __init void update_felica_cfg(struct proc_dir_entry *parent) {
 
     static const char* simfree_cfg_src[3] = {
         "/odm/etc/felica_cfg/simfree/common.cfg",
@@ -474,7 +474,7 @@ static void update_felica_cfg(struct proc_dir_entry *parent) {
 }
 //#endif /*OPLUS_FEATURE_NFC_FELICA*/
 
-static void update_manifest(struct proc_dir_entry *parent)
+static __init void update_manifest(struct proc_dir_entry *parent)
 {
     static const char* manifest_src[2] = {
         "/vendor/odm/etc/vintf/manifest_ssss.xml",
@@ -503,7 +503,7 @@ static void update_manifest(struct proc_dir_entry *parent)
     set_fs(fs);
 }
 
-static void update_telephony_manifest(struct proc_dir_entry *parent)
+static __init void update_telephony_manifest(struct proc_dir_entry *parent)
 {
     static const char* manifest_src[2] = {
         "/vendor/odm/etc/vintf/telephony_manifest_ssss.xml",
