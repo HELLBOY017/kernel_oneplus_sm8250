@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
- * Copyright (c) 2009-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2009-2021, The Linux Foundation. All rights reserved.
  */
 
 #ifndef _ARCH_ARM_MACH_MSM_SOCINFO_H_
@@ -54,6 +54,8 @@
 	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,sa8150")
 #define early_machine_is_kona()	\
 	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,kona")
+#define early_machine_is_kona_7230_iot()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,kona-7230-iot")
 #define early_machine_is_lito()	\
 	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,lito")
 #define early_machine_is_orchid()	\
@@ -62,6 +64,12 @@
 	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,bengal")
 #define early_machine_is_bengalp()	\
 	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,bengalp")
+#define early_machine_is_khaje()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,khaje")
+#define early_machine_is_khajep()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,khajep")
+#define early_machine_is_khajeq()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,khajeq")
 #define early_machine_is_lagoon()	\
 	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,lagoon")
 #define early_machine_is_scuba()	\
@@ -86,6 +94,20 @@
 	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,bengal-iot")
 #define early_machine_is_bengalp_iot()	\
 	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,bengalp-iot")
+#define early_machine_is_msm8937()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,msm8937")
+#define early_machine_is_msm8917()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,msm8917")
+#define early_machine_is_sdm439()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,sdm439")
+#define early_machine_is_sdm429()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,sdm429")
+#define early_machine_is_qm215()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,qm215")
+#define early_machine_is_msm8953()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,msm8953")
+#define early_machine_is_sdm450()	\
+	of_flat_dt_is_compatible(of_get_flat_dt_root(), "qcom,sdm450")
 #else
 #define of_board_is_sim()		0
 #define of_board_is_rumi()		0
@@ -111,6 +133,9 @@
 #define early_machine_is_orchid()	0
 #define early_machine_is_bengal()	0
 #define early_machine_is_bengalp()	0
+#define early_machine_is_khaje()	0
+#define early_machine_is_khajep()	0
+#define early_machine_is_khajeq()	0
 #define early_machine_is_lagoon()	0
 #define early_machine_is_scuba()	0
 #define early_machine_is_scubaiot()	0
@@ -123,6 +148,13 @@
 #define early_machine_is_sdm660()	0
 #define early_machine_is_bengal_iot()	0
 #define early_machine_is_bengalp_iot()	0
+#define early_machine_is_msm8937()	0
+#define early_machine_is_msm8917()	0
+#define early_machine_is_sdm439()	0
+#define early_machine_is_sdm429()	0
+#define early_machine_is_qm215()	0
+#define early_machine_is_msm8953()	0
+#define early_machine_is_sdm450()	0
 #endif
 
 #define PLATFORM_SUBTYPE_MDM	1
@@ -147,10 +179,14 @@ enum msm_cpu {
 	MSM_CPU_SM8150,
 	MSM_CPU_SA8150,
 	MSM_CPU_KONA,
+	MSM_CPU_KONA_IOT,
 	MSM_CPU_LITO,
 	MSM_CPU_ORCHID,
 	MSM_CPU_BENGAL,
 	MSM_CPU_BENGALP,
+	MSM_CPU_KHAJE,
+	MSM_CPU_KHAJEP,
+	MSM_CPU_KHAJEQ,
 	MSM_CPU_LAGOON,
 	MSM_CPU_SCUBA,
 	MSM_CPU_SCUBAIOT,
@@ -162,6 +198,13 @@ enum msm_cpu {
 	MSM_CPU_SDMMAGPIE,
 	MSM_CPU_BENGAL_IOT,
 	MSM_CPU_BENGALP_IOT,
+	MSM_CPU_8937,
+	MSM_CPU_8917,
+	MSM_CPU_SDM439,
+	MSM_CPU_SDM429,
+	MSM_CPU_QM215,
+	MSM_CPU_8953,
+	MSM_CPU_SDM450,
 };
 
 struct msm_soc_info {

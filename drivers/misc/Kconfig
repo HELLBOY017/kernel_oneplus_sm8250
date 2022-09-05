@@ -655,6 +655,15 @@ config OEM_QMI
 	  Say Y here to enable oem qmi support
 #endif /* OPLUS_FEATURE_SIM_DETECT */
 
+config KINECTICS_XR_NORDIC
+	tristate "Nordic Misc driver support in XR Reference devices"
+	help
+	  This driver supports Nordic Chip in XR Reference devices.
+	  This driver interfaces with SoC to Nordic chip over SPI and contains
+	  code to power up the Nordic chip and initializes SPI interface. Also,
+	  this also parses the gpios and interrupts from device tree and sets
+	  the gpios and interrupt handler for handling the interrupt.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
@@ -681,6 +690,7 @@ source "drivers/misc/colorctrl_v2/Kconfig"
 source "drivers/misc/aw8697_haptic/Kconfig"
 #endif
 source "drivers/misc/fpr_FingerprintCard/Kconfig"
+source "drivers/misc/qrc/Kconfig"
 endmenu
 
 config OKL4_USER_VIPC
