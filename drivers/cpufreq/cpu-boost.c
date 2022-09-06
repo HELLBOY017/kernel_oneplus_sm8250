@@ -351,7 +351,7 @@ static int cpu_boost_init(void)
 	if (IS_ERR(cpu_boost_worker_thread))
 		return -EFAULT;
 
-	sched_setscheduler(cpu_boost_worker_thread, SCHED_FIFO, &param);
+	sched_setscheduler_nocheck(cpu_boost_worker_thread, SCHED_FIFO, &param);
 	kthread_init_work(&input_boost_work, do_input_boost);
 	INIT_DELAYED_WORK(&input_boost_rem, do_input_boost_rem);
 
