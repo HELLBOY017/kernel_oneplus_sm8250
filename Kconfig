@@ -109,5 +109,3 @@ source "crypto/Kconfig"
 source "lib/Kconfig"
 
 source "lib/Kconfig.debug"
-
-source "techpack/Kconfig"
