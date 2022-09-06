@@ -57,7 +57,7 @@ show_one(input_boost_ms);
 store_one(input_boost_ms);
 cpu_boost_attr_rw(input_boost_ms);
 
-static unsigned int sched_boost_on_input = 1;
+static unsigned int sched_boost_on_input = 0;
 show_one(sched_boost_on_input);
 store_one(sched_boost_on_input);
 cpu_boost_attr_rw(sched_boost_on_input);
