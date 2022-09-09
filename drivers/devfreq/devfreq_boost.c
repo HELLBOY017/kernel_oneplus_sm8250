@@ -11,10 +11,9 @@
 #include <linux/msm_drm_notify.h>
 #include <linux/slab.h>
 #include <uapi/linux/sched/types.h>
-#include <drm/drm_panel.h>
 
 enum {
-	SCREEN_ON,
+	SCREEN_OFF,
 	INPUT_BOOST,
 	MAX_BOOST
 };
@@ -56,7 +55,7 @@ static struct df_boost_drv df_boost_drv_g __read_mostly = {
 
 static void __devfreq_boost_kick(struct boost_dev *b)
 {
-	if (!READ_ONCE(b->df) || !test_bit(SCREEN_ON, &b->state))
+	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state))
 		return;
 
 	set_bit(INPUT_BOOST, &b->state);
@@ -80,7 +79,7 @@ static void __devfreq_boost_kick_max(struct boost_dev *b,
 {
 	unsigned long boost_jiffies, curr_expires, new_expires;
 
-	if (!READ_ONCE(b->df) || !test_bit(SCREEN_ON, &b->state))
+	if (!READ_ONCE(b->df) || test_bit(SCREEN_OFF, &b->state))
 		return;
 
 	boost_jiffies = msecs_to_jiffies(duration_ms);
@@ -143,7 +142,7 @@ static void devfreq_update_boosts(struct boost_dev *b, unsigned long state)
 	struct devfreq *df = b->df;
 
 	mutex_lock(&df->lock);
-	if (!(state & BIT(SCREEN_ON))) {
+	if (test_bit(SCREEN_OFF, &state)) {
 		df->min_freq = df->profile->freq_table[0];
 		df->max_boost = false;
 	} else {
@@ -186,8 +185,8 @@ static int devfreq_boost_thread(void *data)
 	return 0;
 }
 
-static int msm_drm_notifier_cb(struct notifier_block *nb,
-			       unsigned long action, void *data)
+static int msm_drm_notifier_cb(struct notifier_block *nb, unsigned long action,
+			  void *data)
 {
 	struct df_boost_drv *d = container_of(nb, typeof(*d), msm_drm_notif);
 	int i, *blank = ((struct msm_drm_notifier *)data)->data;
@@ -199,13 +198,12 @@ static int msm_drm_notifier_cb(struct notifier_block *nb,
 	/* Boost when the screen turns on and unboost when it turns off */
 	for (i = 0; i < DEVFREQ_MAX; i++) {
 		struct boost_dev *b = &d->devices[i];
-
 		if (*blank == MSM_DRM_BLANK_UNBLANK) {
-			set_bit(SCREEN_ON, &b->state);
+			clear_bit(SCREEN_OFF, &b->state);
 			__devfreq_boost_kick_max(b,
 				CONFIG_DEVFREQ_WAKE_BOOST_DURATION_MS);
 		} else {
-			clear_bit(SCREEN_ON, &b->state);
+			set_bit(SCREEN_OFF, &b->state);
 			wake_up(&b->boost_waitq);
 		}
 	}
@@ -286,6 +284,11 @@ static const struct input_device_id devfreq_boost_ids[] = {
 		.flags = INPUT_DEVICE_ID_MATCH_EVBIT,
 		.evbit = { BIT_MASK(EV_KEY) }
 	},
+	/* Power Key */
+	{
+		.flags = INPUT_DEVICE_ID_MATCH_EVBIT,
+		.evbit = { BIT_MASK(KEY_POWER) }
+	},
 	{ }
 };
 
@@ -296,8 +299,6 @@ static struct input_handler devfreq_boost_input_handler = {
 	.name		= "devfreq_boost_handler",
 	.id_table	= devfreq_boost_ids
 };
-
-extern struct drm_panel *active_panel;
 
 static int __init devfreq_boost_init(void)
 {
@@ -316,7 +317,6 @@ static int __init devfreq_boost_init(void)
 			pr_err("Failed to create kthread, err: %d\n", ret);
 			goto stop_kthreads;
 		}
-		set_bit(SCREEN_ON, &b->state);
 	}
 
 	devfreq_boost_input_handler.private = d;
@@ -328,14 +328,10 @@ static int __init devfreq_boost_init(void)
 
 	d->msm_drm_notif.notifier_call = msm_drm_notifier_cb;
 	d->msm_drm_notif.priority = INT_MAX;
-	if (active_panel) {
-		ret = drm_panel_notifier_register(active_panel, &d->msm_drm_notif);
-		if (ret) {
-			pr_err("Unable to register msm_drm notifier: %d\n", ret);
-			goto unregister_handler;
-		}
-	} else {
-		pr_err("active_panel is null\n");
+	ret = msm_drm_register_client(&d->msm_drm_notif);
+	if (ret) {
+		pr_err("Failed to register msm_drm notifier, err: %d\n", ret);
+		goto unregister_handler;
 	}
 
 	return 0;
