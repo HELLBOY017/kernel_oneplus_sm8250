@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2017-2018 HUAWEI, Inc.
- *             http://www.huawei.com/
- * Created by Gao Xiang <gaoxiang25@huawei.com>
+ *             https://www.huawei.com/
  */
 #include <linux/security.h>
 #include "xattr.h"
@@ -709,4 +708,3 @@ struct posix_acl *erofs_get_acl(struct inode *inode, int type)
 	return acl;
 }
 #endif
-
