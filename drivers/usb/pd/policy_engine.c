@@ -12,8 +12,8 @@
 #include <linux/module.h>
 #include <linux/gpio.h>
 #include <linux/of.h>
-#include <linux/of_gpio.h>
 #include <linux/of_platform.h>
+#include <linux/of_gpio.h>
 #include <linux/power_supply.h>
 #include <linux/regulator/consumer.h>
 #include <linux/slab.h>
@@ -422,11 +422,11 @@ struct usbpd {
 	bool			peer_usb_comm;
 	bool			peer_pr_swap;
 	bool			peer_dr_swap;
-	bool			no_usb3dp_concurrency;
-	bool			pd20_source_only;
 #ifdef OPLUS_CUSTOM_OP_DEF
 	bool			probe_done;
 #endif
+	bool			no_usb3dp_concurrency;
+	bool			pd20_source_only;
 
 	u32			sink_caps[7];
 	int			num_sink_caps;
@@ -465,8 +465,10 @@ struct usbpd {
 
 	struct regulator	*vbus;
 	struct regulator	*vconn;
+
 	int			vbus_gpio;
 	int			otg_en_gpio;
+
 	bool			vbus_enabled;
 	bool			vconn_enabled;
 	bool			is_otg_mode;
@@ -508,7 +510,6 @@ struct usbpd {
 	u32			battery_sts_dobj;
 	bool			typec_analog_audio_connected;
 };
-
 #ifdef OPLUS_FEATURE_CHG_BASIC
 struct usbpd *pd_lobal;
 #endif
@@ -964,7 +965,6 @@ static int pd_eval_src_caps(struct usbpd *pd)
 			POWER_SUPPLY_PD_ACTIVE;
 	power_supply_set_property(pd->usb_psy,
 			POWER_SUPPLY_PROP_PD_ACTIVE, &val);
-
 #ifdef OPLUS_FEATURE_CHG_BASIC
 /* Yichun.Chen  PSW.BSP.CHG  2019-08-19  for c to c */
 	if (pd->peer_usb_comm && pd->current_dr == DR_UFP && !pd->pd_connected) {
@@ -973,7 +973,6 @@ static int pd_eval_src_caps(struct usbpd *pd)
 			//opluschg_pd_sdp = true;
 	}
 #endif
-
 	/* First time connecting to a PD source and it supports USB data */
 	if (pd->peer_usb_comm && pd->current_dr == DR_UFP && !pd->pd_connected)
 		start_usb_peripheral(pd);
@@ -1441,7 +1440,6 @@ int usbpd_send_vdm(struct usbpd *pd, u32 vdm_hdr, const u32 *vdos, int num_vdos)
 		kfree(pd->vdm_tx);
 		pd->vdm_tx = NULL;
 	}
-
 #ifdef OPLUS_FEATURE_CHG_BASIC
 	if (pd->current_state != PE_SRC_READY &&
 		pd->current_state != PE_SNK_READY) {
@@ -1497,7 +1495,6 @@ EXPORT_SYMBOL(usbpd_vdm_in_suspend);
 #ifdef OPLUS_FEATURE_CHG_BASIC
 #define OPLUS_SVID			0x22d9
 #endif
-
 static void handle_vdm_resp_ack(struct usbpd *pd, u32 *vdos, u8 num_vdos,
 	u16 vdm_hdr)
 {
@@ -2079,7 +2076,6 @@ static void vconn_swap(struct usbpd *pd)
 		pd_phy_update_frame_filter(FRAME_FILTER_EN_SOP |
 					   FRAME_FILTER_EN_HARD_RESET);
 #endif
-
 		/*
 		 * Small delay to ensure Vconn has ramped up. This is well
 		 * below tVCONNSourceOn (100ms) so we still send PS_RDY within
@@ -2153,11 +2149,6 @@ static int enable_vbus(struct usbpd *pd)
 			pd->vbus_enabled = true;
 		}
 	}
-	ret = regulator_enable(pd->vbus);
-	if (ret)
-		usbpd_err(&pd->dev, "Unable to enable vbus (%d)\n", ret);
-	else
-		pd->vbus_enabled = true;
 
 	count = 10;
 	/*
@@ -4014,7 +4005,6 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 					ret);
 			return ret;
 		}
-
 #ifdef OPLUS_FEATURE_CHG_BASIC
 		if (val.intval == POWER_SUPPLY_TYPE_USB ||
 			val.intval == POWER_SUPPLY_TYPE_USB_CDP ||
@@ -4035,7 +4025,6 @@ static int psy_changed(struct notifier_block *nb, unsigned long evt, void *ptr)
 			queue_work(pd->wq, &pd->start_periph_work);
 		}
 #endif
-
 		return 0;
 	}
 
@@ -4484,6 +4473,7 @@ static ssize_t select_pdo_store(struct device *dev,
 	int src_cap_id;
 	int pdo, uv = 0, ua = 0;
 	int ret;
+
 #ifdef OPLUS_FEATURE_CHG_BASIC
 /* BSP.CHG.Basic, 2021/10/27, hvdcp_opti return */
 	return size;
@@ -4901,7 +4891,6 @@ static void usbpd_release(struct device *dev)
 
 	kfree(pd);
 }
-
 #ifdef OPLUS_FEATURE_CHG_BASIC
 int oplus_usbpd_send_svdm(u16 svid, u8 cmd, enum usbpd_svdm_cmd_type cmd_type,
 				int obj_pos, const u32 *vdos, int num_vdos) {
@@ -5207,9 +5196,6 @@ struct usbpd *usbpd_create(struct device *parent)
 
 	pd->pps_disabled = device_property_read_bool(parent,
 				"qcom,pps-disabled");
-#ifdef OPLUS_CUSTOM_OP_DEF
-	pd->probe_done = true;
-#endif
 	pd->current_pr = PR_NONE;
 	pd->current_dr = DR_NONE;
 	list_add_tail(&pd->instance, &_usbpd);
@@ -5246,6 +5232,7 @@ free_otg_en_gpio:
 free_vbus_gpio:
 	if (pd->use_external_boost && gpio_is_valid(pd->vbus_gpio))
 		devm_gpio_free(&pd->dev, pd->vbus_gpio);
+
 del_pd:
 	device_del(&pd->dev);
 free_pd:
