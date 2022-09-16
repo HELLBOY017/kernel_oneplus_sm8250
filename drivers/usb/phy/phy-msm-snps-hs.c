@@ -82,7 +82,6 @@
 #define USB_HSPHY_1P8_VOL_MIN			1704000 /* uV */
 #define USB_HSPHY_1P8_VOL_MAX			1800000 /* uV */
 #define USB_HSPHY_1P8_HPM_LOAD			19000	/* uA */
-
 #ifdef OPLUS_FEATURE_CHG_BASIC
 
 #define QUSB2PHY_PORT_TUNE1 0x6c    // PARAMETER_OVERRIDE_X0
@@ -103,6 +102,7 @@ MODULE_PARM_DESC(dev_phy_tune3, "QUSB PHY v2 TUNE1");
 unsigned int dev_phy_tune4 = 0;
 module_param(dev_phy_tune4, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(dev_phy_tune4, "QUSB PHY v2 TUNE2");
+
 #endif
 
 struct msm_hsphy {
@@ -359,9 +359,9 @@ static void hsusb_phy_write_seq(void __iomem *base, u32 *seq, int cnt,
 {
 	int i;
 
-	pr_debug("Seq count:%d\n", cnt);
+	pr_err("Seq count:%d\n", cnt);
 	for (i = 0; i < cnt; i = i+2) {
-		pr_debug("write 0x%02x to 0x%02x\n", seq[i], seq[i+1]);
+		pr_err("write 0x%02x to 0x%02x\n", seq[i], seq[i+1]);
 		writel_relaxed(seq[i], base + seq[i+1]);
 		if (delay)
 			usleep_range(delay, (delay + 2000));
@@ -522,7 +522,6 @@ static int msm_hsphy_init(struct usb_phy *uphy)
 		dev_dbg(uphy->dev, "rcal_mask:%08x reg:%pK code:%08x\n",
 				phy->rcal_mask, phy->phy_rcal_reg, rcal_code);
 	}
-
 #ifdef OPLUS_FEATURE_CHG_BASIC
 	/*add for dynamic change tune settings*/
 	/* If phy_tune1 modparam set, override tune1 value */
@@ -571,7 +570,6 @@ static int msm_hsphy_init(struct usb_phy *uphy)
 				phy->param_override_seq_cnt, 0);
 	pr_debug("hsusb_phy_read_seq again  end\n");
 #endif
-
 	return 0;
 }
 
