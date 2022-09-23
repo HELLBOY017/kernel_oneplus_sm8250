@@ -2153,11 +2153,6 @@ static int enable_vbus(struct usbpd *pd)
 			pd->vbus_enabled = true;
 		}
 	}
-	ret = regulator_enable(pd->vbus);
-	if (ret)
-		usbpd_err(&pd->dev, "Unable to enable vbus (%d)\n", ret);
-	else
-		pd->vbus_enabled = true;
 
 	count = 10;
 	/*
