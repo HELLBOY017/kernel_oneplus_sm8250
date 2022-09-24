@@ -135,3 +135,15 @@ all.config
 
 # fetched Android config fragments
 kernel/configs/android-*.cfg
+
+# Build script
+build.sh
+
+# Output dir
+out
+
+#
+#Ignoring Android.bp link file
+#
+Android.bp
+techpack/audio/Android.bp
