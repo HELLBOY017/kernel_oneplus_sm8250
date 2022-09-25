@@ -147,3 +147,6 @@ out
 #
 Android.bp
 techpack/audio/Android.bp
+
+# AnyKernel
+AnyKernel3
