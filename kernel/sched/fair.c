@@ -5565,6 +5565,12 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 
 	if (!se) {
 		add_nr_running(rq, 1);
+
+#ifdef CONFIG_SONY_SCHED
+		if (unlikely(p->nr_cpus_allowed == 1))
+			rq->nr_pinned_tasks++;
+#endif
+
 		inc_rq_walt_stats(rq, p);
 		/*
 		 * Since new tasks are assigned an initial util_avg equal to
@@ -5679,6 +5685,12 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 
 	if (!se) {
 		sub_nr_running(rq, 1);
+
+#ifdef CONFIG_SONY_SCHED
+		if (unlikely(p->nr_cpus_allowed == 1))
+			rq->nr_pinned_tasks--;
+#endif
+
 		dec_rq_walt_stats(rq, p);
 	}
 
@@ -8833,6 +8845,12 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 		if ((rcu_dereference(rd->pd) && !sd_overutilized(env->sd)) &&
 		    env->idle == CPU_NEWLY_IDLE && !env->prefer_spread &&
 		    !task_in_related_thread_group(p)) {
+#ifdef CONFIG_SONY_SCHED
+			long new_util_cum = cpu_util_cum(env->dst_cpu, task_util(p));
+
+			if (add_capacity_margin(new_util_cum, env->dst_cpu) >
+				capacity_curr_of(env->dst_cpu))
+#else
 			long util_cum_dst, util_cum_src;
 			unsigned long demand;
 
@@ -8841,6 +8859,7 @@ int can_migrate_task(struct task_struct *p, struct lb_env *env)
 			util_cum_src = cpu_util_cum(env->src_cpu, 0) - demand;
 
 			if (util_cum_dst > util_cum_src)
+#endif
 				return 0;
 		}
 	}
@@ -8898,13 +8917,20 @@ static void detach_task(struct task_struct *p, struct lb_env *env)
 
 	p->on_rq = TASK_ON_RQ_MIGRATING;
 	deactivate_task(env->src_rq, p, DEQUEUE_NOCLOCK);
+#ifndef CONFIG_SONY_SCHED
 	lockdep_off();
 	double_lock_balance(env->src_rq, env->dst_rq);
+#endif
 	if (!(env->src_rq->clock_update_flags & RQCF_UPDATED))
 		update_rq_clock(env->src_rq);
+#ifdef CONFIG_SONY_SCHED
+	walt_prepare_migrate(p, env->src_cpu, env->dst_cpu, true);
+#endif
 	set_task_cpu(p, env->dst_cpu);
+#ifndef CONFIG_SONY_SCHED
 	double_unlock_balance(env->src_rq, env->dst_rq);
 	lockdep_on();
+#endif
 }
 
 /*
@@ -8978,6 +9004,16 @@ redo:
 		if (env->idle != CPU_NOT_IDLE && env->src_rq->nr_running <= 1)
 			break;
 
+#ifdef CONFIG_SONY_SCHED
+		/*
+		 * Another CPU can place tasks, since we do not hold dst_rq lock
+		 * while doing balancing. If newly idle CPU already got something,
+		 * give up to reduce a latency.
+		 */
+		if (env->idle == CPU_NEWLY_IDLE && env->dst_rq->nr_running > 0)
+			break;
+#endif
+
 		p = list_last_entry(tasks, struct task_struct, se.group_node);
 
 		env->loop++;
@@ -9023,13 +9059,17 @@ redo:
 		 * And load based checks are skipped for prefer_spread in
 		 * finding busiest group, ignore the task's h_load.
 		 */
-
+#ifdef CONFIG_SONY_SCHED
+		if (env->idle != CPU_NEWLY_IDLE) {
+#endif
 		if (!env->prefer_spread &&
 			((cpu_rq(env->src_cpu)->nr_running > 2) ||
 			(env->flags & LBF_IGNORE_BIG_TASKS)) &&
 			((load / 2) > env->imbalance))
 			goto next;
-
+#ifdef CONFIG_SONY_SCHED
+		}
+#endif
 		detach_task(p, env);
 		list_add(&p->se.group_node, &env->tasks);
 
@@ -9085,11 +9125,19 @@ next:
 /*
  * attach_task() -- attach the task detached by detach_task() to its new rq.
  */
-static void attach_task(struct rq *rq, struct task_struct *p)
+#ifdef CONFIG_SONY_SCHED
+static void attach_task(struct rq *rq, struct task_struct *p,
+			struct lb_env *env)
+#else
+static void attach_task(struct rq *rq, struct task_struct *p)	
+#endif
 {
 	lockdep_assert_held(&rq->lock);
 
 	BUG_ON(task_rq(p) != rq);
+#ifdef CONFIG_SONY_SCHED
+	walt_finish_migrate(p, env->src_cpu, env->dst_cpu, true);
+#endif
 	activate_task(rq, p, ENQUEUE_NOCLOCK);
 	p->on_rq = TASK_ON_RQ_QUEUED;
 	check_preempt_curr(rq, p, 0);
@@ -9099,13 +9147,22 @@ static void attach_task(struct rq *rq, struct task_struct *p)
  * attach_one_task() -- attaches the task returned from detach_one_task() to
  * its new rq.
  */
+#ifdef CONFIG_SONY_SCHED
+static void attach_one_task(struct rq *rq, struct task_struct *p,
+			    struct lb_env *env)
+#else
 static void attach_one_task(struct rq *rq, struct task_struct *p)
+#endif
 {
 	struct rq_flags rf;
 
 	rq_lock(rq, &rf);
 	update_rq_clock(rq);
+#ifdef CONFIG_SONY_SCHED
+	attach_task(rq, p, env);
+#else
 	attach_task(rq, p);
+#endif
 	update_overutilized_status(rq);
 	rq_unlock(rq, &rf);
 }
@@ -9114,20 +9171,33 @@ static void attach_one_task(struct rq *rq, struct task_struct *p)
  * attach_tasks() -- attaches all tasks detached by detach_tasks() to their
  * new rq.
  */
+#ifdef CONFIG_SONY_SCHED
+static void attach_tasks(struct lb_env *env, bool dst_locked)
+#else
 static void attach_tasks(struct lb_env *env)
+#endif
 {
 	struct list_head *tasks = &env->tasks;
 	struct task_struct *p;
 	struct rq_flags rf;
 
+#ifdef CONFIG_SONY_SCHED
+	if (!dst_locked)
+		rq_lock(env->dst_rq, &rf);
+#else
 	rq_lock(env->dst_rq, &rf);
+#endif
 	update_rq_clock(env->dst_rq);
 
 	while (!list_empty(tasks)) {
 		p = list_first_entry(tasks, struct task_struct, se.group_node);
 		list_del_init(&p->se.group_node);
 
+#ifdef CONFIG_SONY_SCHED
+		attach_task(env->dst_rq, p, env);
+#else
 		attach_task(env->dst_rq, p);
+#endif
 	}
 
 	/*
@@ -9137,7 +9207,12 @@ static void attach_tasks(struct lb_env *env)
 	 * overutilized status here at the end.
 	 */
 	update_overutilized_status(env->dst_rq);
+#ifdef CONFIG_SONY_SCHED
+	if (!dst_locked)
+		rq_unlock(env->dst_rq, &rf);
+#else
 	rq_unlock(env->dst_rq, &rf);
+#endif
 }
 
 static inline bool cfs_rq_has_blocked(struct cfs_rq *cfs_rq)
@@ -10800,7 +10875,9 @@ redo:
 		 * correctly treated as an imbalance.
 		 */
 		env.flags |= LBF_ALL_PINNED;
+#ifndef CONFIG_SONY_SCHED
 		env.loop_max  = min(sysctl_sched_nr_migrate, busiest->nr_running);
+#endif
 
 more_balance:
 		rq_lock_irqsave(busiest, &rf);
@@ -10820,12 +10897,30 @@ more_balance:
 
 		update_rq_clock(busiest);
 
+#ifdef CONFIG_SONY_SCHED
+		/*
+		 * Set loop_max when rq's lock is taken to prevent a race.
+		 */
+		env.loop_max = min(sysctl_sched_nr_migrate,
+							busiest->cfs.h_nr_running);
+#endif
+
 		/*
 		 * cur_ld_moved - load moved in current iteration
 		 * ld_moved     - cumulative load moved across iterations
 		 */
 		cur_ld_moved = detach_tasks(&env);
-
+#ifdef CONFIG_SONY_SCHED
+		if (cur_ld_moved) {
+			if (same_freq_domain(env.src_cpu, env.dst_cpu))
+				/*
+				 * If we move tasks within the same freq domain, it is
+				 * important to acquire dst_rq before releasing src_rq
+				 * to prevent potential load drop.
+				 */
+				double_lock_balance(env.src_rq, env.dst_rq);
+		}
+#endif
 		/*
 		 * We've detached some tasks from busiest_rq. Every
 		 * task is masked "TASK_ON_RQ_MIGRATING", so we can safely
@@ -10837,7 +10932,16 @@ more_balance:
 		rq_unlock(busiest, &rf);
 
 		if (cur_ld_moved) {
+#ifdef CONFIG_SONY_SCHED
+			if (same_freq_domain(env.src_cpu, env.dst_cpu)) {
+				attach_tasks(&env, true);
+				raw_spin_unlock(&env.dst_rq->lock);
+			} else
+				attach_tasks(&env, false);
+#else
 			attach_tasks(&env);
+#endif
+
 			ld_moved += cur_ld_moved;
 		}
 
@@ -11223,12 +11327,20 @@ out_unlock:
 
 	if (push_task) {
 		if (push_task_detached)
+#ifdef CONFIG_SONY_SCHED
+			attach_one_task(target_rq, push_task, &env);
+#else
 			attach_one_task(target_rq, push_task);
+#endif
 		put_task_struct(push_task);
 	}
 
 	if (p)
+#ifdef CONFIG_SONY_SCHED
+		attach_one_task(target_rq, p, &env);
+#else
 		attach_one_task(target_rq, p);
+#endif
 
 	local_irq_enable();
 
@@ -11389,6 +11501,22 @@ static inline int find_energy_aware_new_ilb(void)
 	cpumask_and(&idle_cpus, nohz.idle_cpus_mask,
 			housekeeping_cpumask(HK_FLAG_MISC));
 	cpumask_andnot(&idle_cpus, &idle_cpus, cpu_isolated_mask);
+
+#ifdef CONFIG_SONY_SCHED
+	/*
+	 * If a CPU is claimed it means that TIF_NEED_RESCHED
+	 * is on its way or is already in place. In first case
+	 * a nohz_idle_balance work will most likely be stopped
+	 * or even canceled earlier, because of pending task.
+	 * In second one a CPU is not kicked for doing a load
+	 * balancing.
+	 *
+	 * Therefore exclude CPUs (among nohz.idle_cpus_mask)
+	 * which have already been claimed for waking up a task
+	 * on, preferring other CPUs to do NO_HZ balancing.
+	 */
+	cpumask_andnot(&idle_cpus, &idle_cpus, &cpu_wclaimed_mask);
+#endif
 
 	sg = sd->groups;
 	do {
@@ -11551,6 +11679,24 @@ static void nohz_balancer_kick(struct rq *rq)
 		goto out;
 	}
 
+#ifdef CONFIG_SONY_SCHED
+	if (unlikely(rq->nr_pinned_tasks > 0)) {
+		int delta = rq->nr_running - rq->nr_pinned_tasks;
+
+		/*
+		 * Check if it is possible to "unload" this CPU in case
+		 * of having pinned/affine tasks. Do not disturb idle
+		 * core if one of the below condition is true:
+		 *
+		 * - there is one pinned task and it is not "current"
+		 * - all tasks are pinned to this CPU
+		 */
+		if (delta < 2)
+			if (current->nr_cpus_allowed > 1 || !delta)
+				goto out;
+	}
+#endif
+
 	if (rq->nr_running >= 2) {
 		flags = NOHZ_KICK_MASK;
 		goto out;
@@ -11670,6 +11816,10 @@ void nohz_balance_enter_idle(int cpu)
 		nohz_balance_exit_idle(rq);
 		return;
 	}
+
+#ifdef CONFIG_SONY_SCHED
+	cpumask_clear_cpu(cpu, &cpu_wclaimed_mask);
+#endif
 
 	/* Spare idle load balancing on CPUs that don't want to be disturbed: */
 	if (!housekeeping_cpu(cpu, HK_FLAG_SCHED))
@@ -12716,6 +12866,9 @@ __init void init_sched_fair_class(void)
 	nohz.next_balance = jiffies;
 	nohz.next_blocked = jiffies;
 	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
+#ifdef CONFIG_SONY_SCHED
+	cpumask_clear(&cpu_wclaimed_mask);
+#endif
 #endif
 #endif /* SMP */
 

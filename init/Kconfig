@@ -441,6 +441,15 @@ config SCHED_WALT
 	used to guide task placement as well as task frequency requirements
 	for cpufreq governors.
 
+config SONY_SCHED
+	bool "Support SONY's scheduler optimizations"
+	depends on SCHED_WALT
+	help
+	  This option will enable the scheduler codes at compile time that
+	  have been imported from Sony Xperia 1 II.
+
+	  Say N if unsure.
+
 config HAVE_SCHED_AVG_IRQ
 	def_bool y
 	depends on IRQ_TIME_ACCOUNTING || PARAVIRT_TIME_ACCOUNTING

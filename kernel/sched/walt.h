@@ -64,6 +64,9 @@ extern void update_task_ravg(struct task_struct *p, struct rq *rq, int event,
 						u64 wallclock, u64 irqtime);
 
 extern unsigned int walt_big_tasks(int cpu);
+#ifdef CONFIG_SONY_SCHED
+extern u64 walt_get_prev_group_run_sum(struct rq *rq);
+#endif
 
 static inline void
 inc_nr_big_task(struct walt_sched_stats *stats, struct task_struct *p)
@@ -159,6 +162,12 @@ extern void fixup_walt_sched_stats_common(struct rq *rq, struct task_struct *p,
 extern void inc_rq_walt_stats(struct rq *rq, struct task_struct *p);
 extern void dec_rq_walt_stats(struct rq *rq, struct task_struct *p);
 extern void fixup_busy_time(struct task_struct *p, int new_cpu);
+#ifdef CONFIG_SONY_SCHED
+extern void walt_prepare_migrate(struct task_struct *p,
+				 int src_cpu, int new_cpu, bool locked);
+extern void walt_finish_migrate(struct task_struct *p,
+				int src_cpu, int new_cpu, bool locked);
+#endif
 extern void init_new_task_load(struct task_struct *p);
 extern void mark_task_starting(struct task_struct *p);
 extern void set_window_start(struct rq *rq);
@@ -492,6 +501,13 @@ static inline unsigned int walt_big_tasks(int cpu)
 	return 0;
 }
 
+#ifdef CONFIG_SONY_SCHED
+static inline u64 walt_get_prev_group_run_sum(struct rq *rq)
+{
+	return 0;
+}
+#endif
+
 static inline void walt_adjust_nr_big_tasks(struct rq *rq,
 		int delta, bool inc)
 {
@@ -512,6 +528,12 @@ static inline void walt_dec_cumulative_runnable_avg(struct rq *rq,
 }
 
 static inline void fixup_busy_time(struct task_struct *p, int new_cpu) { }
+#ifdef CONFIG_SONY_SCHED
+static inline void walt_prepare_migrate(struct task_struct *p,
+		int src_cpu, int new_cpu, bool locked) { }
+static inline void walt_finish_migrate(struct task_struct *p,
+		int src_cpu, int new_cpu, bool locked) { }
+#endif
 static inline void init_new_task_load(struct task_struct *p)
 {
 }

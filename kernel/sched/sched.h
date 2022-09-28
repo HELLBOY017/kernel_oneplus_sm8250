@@ -948,6 +948,9 @@ struct rq {
 #endif
 	#define CPU_LOAD_IDX_MAX 5
 	unsigned long		cpu_load[CPU_LOAD_IDX_MAX];
+#ifdef CONFIG_SONY_SCHED
+	unsigned int		nr_pinned_tasks;
+#endif
 #ifdef CONFIG_NO_HZ_COMMON
 #ifdef CONFIG_SMP
 	unsigned long		last_load_update_tick;
@@ -1070,8 +1073,10 @@ struct rq {
 	int			prev_top;
 	int			curr_top;
 	bool			notif_pending;
+#ifndef CONFIG_SONY_SCHED
 	u64			last_cc_update;
 	u64			cycles;
+#endif
 #endif /* CONFIG_SCHED_WALT */
 
 #ifdef CONFIG_IRQ_TIME_ACCOUNTING
@@ -2484,6 +2489,9 @@ extern void cfs_bandwidth_usage_dec(void);
 
 #define nohz_flags(cpu)	(&cpu_rq(cpu)->nohz_flags)
 
+#ifdef CONFIG_SONY_SCHED
+extern cpumask_t cpu_wclaimed_mask;
+#endif
 extern void nohz_balance_exit_idle(struct rq *rq);
 #else
 static inline void nohz_balance_exit_idle(struct rq *rq) { }
