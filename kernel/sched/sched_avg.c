@@ -198,18 +198,35 @@ unsigned int sched_get_cpu_util(int cpu)
 {
 	struct rq *rq = cpu_rq(cpu);
 	u64 util;
-	unsigned long capacity, flags;
+	unsigned long capacity;
+#ifndef CONFIG_SONY_SCHED
+	unsigned long flags;
+#endif
 	unsigned int busy;
 
+#ifdef CONFIG_SONY_SCHED
+	u32 prev_run_sum, group_run_sum;
+
+	util = walt_get_prev_group_run_sum(rq);
+	group_run_sum = (u32) (util >> 32);
+	prev_run_sum = (u32) util;
+
+	util = prev_run_sum + group_run_sum;
+#else
 	raw_spin_lock_irqsave(&rq->lock, flags);
 
 	util = rq->cfs.avg.util_avg;
 	capacity = capacity_orig_of(cpu);
 
 	util = rq->prev_runnable_sum + rq->grp_time.prev_runnable_sum;
+#endif
 	util = div64_u64(util, sched_ravg_window >> SCHED_CAPACITY_SHIFT);
 
+#ifdef CONFIG_SONY_SCHED
+	capacity = capacity_orig_of(cpu);
+#else
 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+#endif
 
 	util = (util >= capacity) ? capacity : util;
 	busy = div64_ul((util * 100), capacity);
