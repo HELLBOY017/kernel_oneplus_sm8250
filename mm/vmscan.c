@@ -204,7 +204,7 @@ int kswapd_threads_current = DEF_KSWAPD_THREADS_PER_NODE;
 /*
  * From 0 .. 100.  Higher means more swappy.
  */
-int vm_swappiness = 60;
+int vm_swappiness = 160;
 #ifdef CONFIG_DYNAMIC_TUNNING_SWAPPINESS
 int vm_swappiness_threshold1 = 0;
 int vm_swappiness_threshold2 = 0;
@@ -215,7 +215,7 @@ int swappiness_threshold2_size = 0;
 /*
  * Direct reclaim swappiness, exptct 0 - 60. Higher means more swappy and slower.
  */
-int direct_vm_swappiness = 60;
+int direct_vm_swappiness = 80;
 #endif /*OPLUS_FEATURE_ZRAM_OPT*/
 #ifdef CONFIG_HYBRIDSWAP_SWAPD
 static int hybridswapd_swappiness = 200;
