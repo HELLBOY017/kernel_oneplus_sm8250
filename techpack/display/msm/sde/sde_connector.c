@@ -94,9 +94,6 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 	int bl_lvl;
 	struct drm_event event;
 	int rc = 0;
-#ifdef OPLUS_BUG_STABILITY
-	SDE_ATRACE_BEGIN("debug_io_issue_for_backlight_smooth");
-#endif
 
 	brightness = bd->props.brightness;
 
@@ -107,106 +104,37 @@ static int sde_backlight_device_update_status(struct backlight_device *bd)
 
 	c_conn = bl_get_data(bd);
 	display = (struct dsi_display *) c_conn->display;
-	if (brightness > display->panel->bl_config.bl_max_level)
-		brightness = display->panel->bl_config.bl_max_level;
+	if (brightness > display->panel->bl_config.brightness_max_level)
+		brightness = display->panel->bl_config.brightness_max_level;
 
-#ifndef OPLUS_BUG_STABILITY
-	/* map UI brightness into driver backlight level with rounding */
-	bl_lvl = mult_frac(brightness, display->panel->bl_config.bl_max_level,
-			display->panel->bl_config.brightness_max_level);
-#else
-	if (oplus_debug_max_brightness) {
-		bl_lvl = mult_frac(brightness, oplus_debug_max_brightness,
-			display->panel->bl_config.brightness_max_level);
-	} else if (brightness == 0) {
-		bl_lvl = 0;
+	if (brightness) {
+		int bl_min = display->panel->bl_config.bl_min_level ? : 1;
+		int bl_range = display->panel->bl_config.bl_max_level - bl_min;
+
+		/* map UI brightness into driver backlight level rounding it */
+		bl_lvl = bl_min + DIV_ROUND_CLOSEST((brightness - 1) * bl_range,
+			display->panel->bl_config.brightness_max_level - 1);
 	} else {
-		if (display->panel->oplus_priv.bl_remap && display->panel->oplus_priv.bl_remap_count) {
-			int i = 0;
-			int count = display->panel->oplus_priv.bl_remap_count;
-			struct oplus_brightness_alpha *lut = display->panel->oplus_priv.bl_remap;
-
-			for (i = 0; i < display->panel->oplus_priv.bl_remap_count; i++){
-				if (display->panel->oplus_priv.bl_remap[i].brightness >= brightness)
-					break;
-			}
-
-			if (i == 0)
-				bl_lvl = lut[0].alpha;
-			else if (i == count)
-				bl_lvl = lut[count - 1].alpha;
-			else
-				bl_lvl = interpolate(brightness, lut[i-1].brightness,
-						lut[i].brightness, lut[i-1].alpha,
-						lut[i].alpha, display->panel->oplus_priv.bl_interpolate_nosub);
-		} else if (brightness > display->panel->bl_config.brightness_normal_max_level) {
-			bl_lvl = interpolate(brightness,
-					display->panel->bl_config.brightness_normal_max_level,
-					display->panel->bl_config.brightness_max_level,
-					display->panel->bl_config.bl_normal_max_level,
-					display->panel->bl_config.bl_max_level, false);
-		} else {
-			bl_lvl = mult_frac(brightness, display->panel->bl_config.bl_normal_max_level,
-					display->panel->bl_config.brightness_normal_max_level);
-		}
+		bl_lvl = 0;
 	}
-#endif
-
-	if (!bl_lvl && brightness)
-		bl_lvl = 1;
-
+	
 	if (!c_conn->allow_bl_update) {
 		c_conn->unset_bl_level = bl_lvl;
 		return 0;
 	}
 
-#ifndef OPLUS_BUG_STABILITY
-		if (c_conn->ops.set_backlight) {
-			/* skip notifying user space if bl is 0 */
-			if (brightness != 0) {
-				event.type = DRM_EVENT_SYS_BACKLIGHT;
-				event.length = sizeof(u32);
-				msm_mode_object_event_notify(&c_conn->base.base,
-					c_conn->base.dev, &event, (u8 *)&brightness);
-			}
-			rc = c_conn->ops.set_backlight(&c_conn->base,
+	if (c_conn->ops.set_backlight) {
+		/* skip notifying user space if bl is 0 */
+		if (brightness != 0) {
+			event.type = DRM_EVENT_SYS_BACKLIGHT;
+			event.length = sizeof(u32);
+			msm_mode_object_event_notify(&c_conn->base.base,
+				c_conn->base.dev, &event, (u8 *)&brightness);
+		}
+		rc = c_conn->ops.set_backlight(&c_conn->base,
 				c_conn->display, bl_lvl);
-			c_conn->unset_bl_level = 0;
-		}
-#else
-		if (c_conn->ops.set_backlight) {
-			/* skip notifying user space if bl is 0 */
-			if (brightness != 0) {
-				event.type = DRM_EVENT_SYS_BACKLIGHT;
-				event.length = sizeof(u32);
-				msm_mode_object_event_notify(&c_conn->base.base,
-					c_conn->base.dev, &event, (u8 *)&brightness);
-			}
-
-		if (is_support_panel_backlight_smooths(display->panel->oplus_priv.vendor_name)) {
-				if ((bl_lvl >= 2) && (bl_lvl <= 200)) {
-					spin_lock(&g_bk_lock);
-					g_new_bk_level = bl_lvl;
-					spin_unlock(&g_bk_lock);
-				} else {
-					spin_lock(&g_bk_lock);
-					g_new_bk_level = bl_lvl;
-					spin_unlock(&g_bk_lock);
-					rc = c_conn->ops.set_backlight(&c_conn->base,
-					c_conn->display, bl_lvl);
-					c_conn->unset_bl_level = 0;
-				}
-		} else {
-					rc = c_conn->ops.set_backlight(&c_conn->base,
-					c_conn->display, bl_lvl);
-					c_conn->unset_bl_level = 0;
-				}
-		}
-#endif
-
-#ifdef OPLUS_BUG_STABILITY
-	SDE_ATRACE_END("debug_io_issue_for_backlight_smooth");
-#endif
+		c_conn->unset_bl_level = 0;
+	}
 
 	return rc;
 }
@@ -249,6 +177,7 @@ static int sde_backlight_setup(struct sde_connector *c_conn,
 #else
 	props.brightness = bl_config->brightness_default_level;
 #endif
+	SDE_ERROR("props.brightness = %d\n",props.brightness);
 	snprintf(bl_node_name, BL_NODE_NAME_SIZE, "panel%u-backlight",
 							display_count);
 	c_conn->bl_device = backlight_device_register(bl_node_name, dev->dev,
