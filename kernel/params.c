@@ -532,7 +532,7 @@ struct module_param_attrs
 {
 	unsigned int num;
 	struct attribute_group grp;
-	struct param_attribute attrs[];
+	struct param_attribute attrs[0];
 };
 
 #ifdef CONFIG_SYSFS

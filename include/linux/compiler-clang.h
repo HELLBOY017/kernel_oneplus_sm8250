@@ -64,23 +64,3 @@
 #else
 # define __noscs
 #endif
-
-/*
- * Note: the "type" argument should match any __builtin_object_size(p, type) usage.
- *
- * clang: https://clang.llvm.org/docs/AttributeReference.html#pass-object-size-pass-dynamic-object-size
- */
-#define __pass_object_size(type)	__attribute__((__pass_object_size__(type)))
-
-/*
- * clang: https://clang.llvm.org/docs/AttributeReference.html#overloadable
- */
-#define __overloadable			__attribute__((__overloadable__))
-
-/*
- * Optional: only supported since clang >= 14.0
- *
- * clang: https://clang.llvm.org/docs/AttributeReference.html#diagnose_as_builtin
- */
-#define __diagnose_as(builtin...)	__attribute__((__diagnose_as_builtin__(builtin)))
-

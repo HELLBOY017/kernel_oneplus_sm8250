@@ -6,5 +6,3 @@ gen_crc64table
 crc32table.h
 crc64table.h
 oid_registry_data.c
-/test_fortify.log
-/test_fortify/*.log

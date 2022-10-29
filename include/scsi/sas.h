@@ -340,10 +340,8 @@ struct ssp_response_iu {
 	__be32 sense_data_len;
 	__be32 response_data_len;
 
-	union {
-		DECLARE_FLEX_ARRAY(u8, resp_data);
-		DECLARE_FLEX_ARRAY(u8, sense_data);
-	};
+	u8     resp_data[0];
+	u8     sense_data[0];
 } __attribute__ ((packed));
 
 struct ssp_command_iu {
@@ -365,7 +363,7 @@ struct ssp_command_iu {
 	u8    add_cdb_len:6;
 
 	u8    cdb[16];
-	u8    add_cdb[];
+	u8    add_cdb[0];
 } __attribute__ ((packed));
 
 struct xfer_rdy_iu {
@@ -573,10 +571,8 @@ struct ssp_response_iu {
 	__be32 sense_data_len;
 	__be32 response_data_len;
 
-	union {
-		DECLARE_FLEX_ARRAY(u8, resp_data);
-		DECLARE_FLEX_ARRAY(u8, sense_data);
-	};
+	u8     resp_data[0];
+	u8     sense_data[0];
 } __attribute__ ((packed));
 
 struct ssp_command_iu {
@@ -598,7 +594,7 @@ struct ssp_command_iu {
 	u8    _r_c:2;
 
 	u8    cdb[16];
-	u8    add_cdb[];
+	u8    add_cdb[0];
 } __attribute__ ((packed));
 
 struct xfer_rdy_iu {

@@ -1502,11 +1502,8 @@ struct htt_tx_fetch_ind {
 	__le32 token;
 	__le16 num_resp_ids;
 	__le16 num_records;
-	union {
-		/* ath10k_htt_get_tx_fetch_ind_resp_ids() */
-		DECLARE_FLEX_ARRAY(__le32, resp_ids);
-		DECLARE_FLEX_ARRAY(struct htt_tx_fetch_record, records);
-	};
+	struct htt_tx_fetch_record records[0];
+	__le32 resp_ids[0]; /* ath10k_htt_get_tx_fetch_ind_resp_ids() */
 } __packed;
 
 static inline void *

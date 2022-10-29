@@ -111,7 +111,7 @@ struct islpci_mgmtframe {
 	pimfor_header_t *header;      /* payload header, points into buf */
 	void *data;		      /* payload ex header, points into buf */
         struct work_struct ws;	      /* argument for schedule_work() */
-	char buf[];		      /* fragment buffer */
+	char buf[0];		      /* fragment buffer */
 };
 
 int

@@ -68,7 +68,7 @@ struct ieee80211_measurement_params {
 struct ieee80211_info_element {
 	u8 id;
 	u8 len;
-	u8 data[];
+	u8 data[0];
 } __packed;
 
 struct ieee80211_measurement_request {
@@ -76,7 +76,7 @@ struct ieee80211_measurement_request {
 	u8 token;
 	u8 mode;
 	u8 type;
-	struct ieee80211_measurement_params params[];
+	struct ieee80211_measurement_params params[0];
 } __packed;
 
 struct ieee80211_measurement_report {

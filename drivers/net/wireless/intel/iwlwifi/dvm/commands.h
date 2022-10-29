@@ -1028,7 +1028,7 @@ struct iwl_wep_cmd {
 	u8 global_key_type;
 	u8 flags;
 	u8 reserved;
-	struct iwl_wep_key key[];
+	struct iwl_wep_key key[0];
 } __packed;
 
 #define WEP_KEY_WEP_TYPE 1
@@ -1309,10 +1309,8 @@ struct iwl_tx_cmd {
 	 * MAC header goes here, followed by 2 bytes padding if MAC header
 	 * length is 26 or 30 bytes, followed by payload data
 	 */
-	union {
-		DECLARE_FLEX_ARRAY(u8, payload);
-		DECLARE_FLEX_ARRAY(struct ieee80211_hdr, hdr);
-	};
+	u8 payload[0];
+	struct ieee80211_hdr hdr[0];
 } __packed;
 
 /*
@@ -2387,7 +2385,7 @@ struct iwl_scan_cmd {
 	 * for one scan to complete (i.e. receive SCAN_COMPLETE_NOTIFICATION)
 	 * before requesting another scan.
 	 */
-	u8 data[];
+	u8 data[0];
 } __packed;
 
 /* Can abort will notify by complete notification with abort status. */
@@ -2482,7 +2480,7 @@ struct iwl_tx_beacon_cmd {
 	__le16 tim_idx;
 	u8 tim_size;
 	u8 reserved1;
-	struct ieee80211_hdr frame[];	/* beacon frame */
+	struct ieee80211_hdr frame[0];	/* beacon frame */
 } __packed;
 
 /******************************************************************************
@@ -3195,7 +3193,7 @@ struct iwl_calib_hdr {
 
 struct iwl_calib_cmd {
 	struct iwl_calib_hdr hdr;
-	u8 data[];
+	u8 data[0];
 } __packed;
 
 struct iwl_calib_xtal_freq_cmd {
@@ -3223,7 +3221,7 @@ struct iwl_calib_temperature_offset_v2_cmd {
 /* IWL_PHY_CALIBRATE_CHAIN_NOISE_RESET_CMD */
 struct iwl_calib_chain_noise_reset_cmd {
 	struct iwl_calib_hdr hdr;
-	u8 data[];
+	u8 data[0];
 };
 
 /* IWL_PHY_CALIBRATE_CHAIN_NOISE_GAIN_CMD */

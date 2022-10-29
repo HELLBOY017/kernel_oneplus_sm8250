@@ -4,7 +4,6 @@
 
 #undef memcpy
 #undef memset
-#undef memmove
 
 __visible void *memcpy(void *to, const void *from, size_t n)
 {

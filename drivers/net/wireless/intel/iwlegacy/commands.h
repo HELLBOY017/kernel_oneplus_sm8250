@@ -203,7 +203,7 @@ struct il_cmd_header {
 	__le16 sequence;
 
 	/* command or response/notification data follows immediately */
-	u8 data[];
+	u8 data[0];
 } __packed;
 
 /**
@@ -1112,7 +1112,7 @@ struct il_wep_cmd {
 	u8 global_key_type;
 	u8 flags;
 	u8 reserved;
-	struct il_wep_key key[];
+	struct il_wep_key key[0];
 } __packed;
 
 #define WEP_KEY_WEP_TYPE 1
@@ -1166,7 +1166,7 @@ struct il3945_rx_frame_stats {
 	u8 agc;
 	__le16 sig_avg;
 	__le16 noise_diff;
-	u8 payload[];
+	u8 payload[0];
 } __packed;
 
 struct il3945_rx_frame_hdr {
@@ -1175,7 +1175,7 @@ struct il3945_rx_frame_hdr {
 	u8 reserved1;
 	u8 rate;
 	__le16 len;
-	u8 payload[];
+	u8 payload[0];
 } __packed;
 
 struct il3945_rx_frame_end {
@@ -1211,7 +1211,7 @@ struct il4965_rx_non_cfg_phy {
 	__le16 ant_selection;	/* ant A bit 4, ant B bit 5, ant C bit 6 */
 	__le16 agc_info;	/* agc code 0:6, agc dB 7:13, reserved 14:15 */
 	u8 rssi_info[6];	/* we use even entries, 0/2/4 for A/B/C rssi */
-	u8 pad[];
+	u8 pad[0];
 } __packed;
 
 /*
@@ -1408,10 +1408,8 @@ struct il3945_tx_cmd {
 	 * MAC header goes here, followed by 2 bytes padding if MAC header
 	 * length is 26 or 30 bytes, followed by payload data
 	 */
-	union {
-		DECLARE_FLEX_ARRAY(u8, payload);
-		DECLARE_FLEX_ARRAY(struct ieee80211_hdr, hdr);
-	};
+	u8 payload[0];
+	struct ieee80211_hdr hdr[0];
 } __packed;
 
 /*
@@ -1513,7 +1511,7 @@ struct il_tx_cmd {
 	 * length is 26 or 30 bytes, followed by payload data
 	 */
 	u8 payload[0];
-	struct ieee80211_hdr hdr[];
+	struct ieee80211_hdr hdr[0];
 } __packed;
 
 /* TX command response is sent after *3945* transmission attempts.
@@ -2522,7 +2520,7 @@ struct il3945_scan_cmd {
 	 * for one scan to complete (i.e. receive N_SCAN_COMPLETE)
 	 * before requesting another scan.
 	 */
-	u8 data[];
+	u8 data[0];
 } __packed;
 
 struct il_scan_cmd {
@@ -2566,7 +2564,7 @@ struct il_scan_cmd {
 	 * for one scan to complete (i.e. receive N_SCAN_COMPLETE)
 	 * before requesting another scan.
 	 */
-	u8 data[];
+	u8 data[0];
 } __packed;
 
 /* Can abort will notify by complete notification with abort status. */
@@ -2666,7 +2664,7 @@ struct il3945_tx_beacon_cmd {
 	__le16 tim_idx;
 	u8 tim_size;
 	u8 reserved1;
-	struct ieee80211_hdr frame[];	/* beacon frame */
+	struct ieee80211_hdr frame[0];	/* beacon frame */
 } __packed;
 
 struct il_tx_beacon_cmd {
@@ -2674,7 +2672,7 @@ struct il_tx_beacon_cmd {
 	__le16 tim_idx;
 	u8 tim_size;
 	u8 reserved1;
-	struct ieee80211_hdr frame[];	/* beacon frame */
+	struct ieee80211_hdr frame[0];	/* beacon frame */
 } __packed;
 
 /******************************************************************************

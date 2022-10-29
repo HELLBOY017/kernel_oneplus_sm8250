@@ -126,8 +126,8 @@ struct rxe_dma_info {
 	__u32			sge_offset;
 	__u32			reserved;
 	union {
-		__DECLARE_FLEX_ARRAY(__u8, inline_data);
-		__DECLARE_FLEX_ARRAY(struct rxe_sge, sge);
+		__u8		inline_data[0];
+		struct rxe_sge	sge[0];
 	};
 };
 

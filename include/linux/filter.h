@@ -539,8 +539,8 @@ struct bpf_prog {
 					    const struct bpf_insn *insn);
 	/* Instructions for interpreter */
 	union {
-		DECLARE_FLEX_ARRAY(struct sock_filter, insns);
-		DECLARE_FLEX_ARRAY(struct bpf_insn, insnsi);
+		struct sock_filter	insns[0];
+		struct bpf_insn		insnsi[0];
 	};
 };
 

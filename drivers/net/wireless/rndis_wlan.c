@@ -213,7 +213,7 @@ struct ndis_80211_pmkid_candidate {
 struct ndis_80211_pmkid_cand_list {
 	__le32 version;
 	__le32 num_candidates;
-	struct ndis_80211_pmkid_candidate candidate_list[];
+	struct ndis_80211_pmkid_candidate candidate_list[0];
 } __packed;
 
 struct ndis_80211_status_indication {
@@ -258,12 +258,12 @@ struct ndis_80211_bssid_ex {
 	__le32 net_infra;
 	u8 rates[NDIS_802_11_LENGTH_RATES_EX];
 	__le32 ie_length;
-	u8 ies[];
+	u8 ies[0];
 } __packed;
 
 struct ndis_80211_bssid_list_ex {
 	__le32 num_items;
-	struct ndis_80211_bssid_ex bssid[];
+	struct ndis_80211_bssid_ex bssid[0];
 } __packed;
 
 struct ndis_80211_fixed_ies {
@@ -324,11 +324,17 @@ struct ndis_80211_assoc_info {
 	__le32 offset_resp_ies;
 } __packed;
 
+struct ndis_80211_auth_encr_pair {
+	__le32 auth_mode;
+	__le32 encr_mode;
+} __packed;
+
 struct ndis_80211_capability {
 	__le32 length;
 	__le32 version;
 	__le32 num_pmkids;
 	__le32 num_auth_encr_pair;
+	struct ndis_80211_auth_encr_pair auth_encr_pair[0];
 } __packed;
 
 struct ndis_80211_bssid_info {
@@ -339,7 +345,7 @@ struct ndis_80211_bssid_info {
 struct ndis_80211_pmkid {
 	__le32 length;
 	__le32 bssid_info_count;
-	struct ndis_80211_bssid_info bssid_info[];
+	struct ndis_80211_bssid_info bssid_info[0];
 } __packed;
 
 /*
@@ -3117,7 +3123,8 @@ static int rndis_wlan_get_caps(struct usbnet *usbdev, struct wiphy *wiphy)
 		__le32	num_items;
 		__le32	items[8];
 	} networks_supported;
-	struct ndis_80211_capability caps;
+	struct ndis_80211_capability *caps;
+	u8 caps_buf[sizeof(*caps) + sizeof(caps->auth_encr_pair) * 16];
 	int len, retval, i, n;
 	struct rndis_wlan_private *priv = get_rndis_wlan_priv(usbdev);
 
@@ -3147,18 +3154,19 @@ static int rndis_wlan_get_caps(struct usbnet *usbdev, struct wiphy *wiphy)
 	}
 
 	/* get device 802.11 capabilities, number of PMKIDs */
-	len = sizeof(caps);
+	caps = (struct ndis_80211_capability *)caps_buf;
+	len = sizeof(caps_buf);
 	retval = rndis_query_oid(usbdev,
 				 RNDIS_OID_802_11_CAPABILITY,
-				 &caps, &len);
+				 caps, &len);
 	if (retval >= 0) {
 		netdev_dbg(usbdev->net, "RNDIS_OID_802_11_CAPABILITY -> len %d, "
 				"ver %d, pmkids %d, auth-encr-pairs %d\n",
-				le32_to_cpu(caps.length),
-				le32_to_cpu(caps.version),
-				le32_to_cpu(caps.num_pmkids),
-				le32_to_cpu(caps.num_auth_encr_pair));
-		wiphy->max_num_pmkids = le32_to_cpu(caps.num_pmkids);
+				le32_to_cpu(caps->length),
+				le32_to_cpu(caps->version),
+				le32_to_cpu(caps->num_pmkids),
+				le32_to_cpu(caps->num_auth_encr_pair));
+		wiphy->max_num_pmkids = le32_to_cpu(caps->num_pmkids);
 	} else
 		wiphy->max_num_pmkids = 0;
 

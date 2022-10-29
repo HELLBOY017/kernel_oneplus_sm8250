@@ -8,9 +8,6 @@
  */
 
 #define IN_ARCH_STRING_C 1
-#ifndef __NO_FORTIFY
-# define __NO_FORTIFY
-#endif
 
 #include <linux/types.h>
 #include <linux/string.h>
