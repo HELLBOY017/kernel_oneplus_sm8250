@@ -1,5 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ OR BSD-3-Clause */
 /*
- * Copyright (c) Yann Collet, Facebook, Inc.
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
  * All rights reserved.
  *
  * This source code is licensed under both the BSD-style license (found in the
@@ -17,8 +18,17 @@
 
 
 /* =====   ZSTDERRORLIB_API : control library symbols visibility   ===== */
-#define ZSTDERRORLIB_VISIBILITY 
-#define ZSTDERRORLIB_API ZSTDERRORLIB_VISIBILITY
+#define ZSTDERRORLIB_VISIBLE 
+
+#ifndef ZSTDERRORLIB_HIDDEN
+#  if (__GNUC__ >= 4) && !defined(__MINGW32__)
+#    define ZSTDERRORLIB_HIDDEN __attribute__ ((visibility ("hidden")))
+#  else
+#    define ZSTDERRORLIB_HIDDEN
+#  endif
+#endif
+
+#define ZSTDERRORLIB_API ZSTDERRORLIB_VISIBLE
 
 /*-*********************************************
  *  Error codes list
@@ -43,14 +53,17 @@ typedef enum {
   ZSTD_error_frameParameter_windowTooLarge = 16,
   ZSTD_error_corruption_detected = 20,
   ZSTD_error_checksum_wrong      = 22,
+  ZSTD_error_literals_headerWrong = 24,
   ZSTD_error_dictionary_corrupted      = 30,
   ZSTD_error_dictionary_wrong          = 32,
   ZSTD_error_dictionaryCreation_failed = 34,
   ZSTD_error_parameter_unsupported   = 40,
+  ZSTD_error_parameter_combination_unsupported = 41,
   ZSTD_error_parameter_outOfBound    = 42,
   ZSTD_error_tableLog_tooLarge       = 44,
   ZSTD_error_maxSymbolValue_tooLarge = 46,
   ZSTD_error_maxSymbolValue_tooSmall = 48,
+  ZSTD_error_stabilityCondition_notRespected = 50,
   ZSTD_error_stage_wrong       = 60,
   ZSTD_error_init_missing      = 62,
   ZSTD_error_memory_allocation = 64,
@@ -63,6 +76,7 @@ typedef enum {
   ZSTD_error_seekableIO          = 102,
   ZSTD_error_dstBuffer_wrong     = 104,
   ZSTD_error_srcBuffer_wrong     = 105,
+  ZSTD_error_externalMatchFinder_failed = 106,
   ZSTD_error_maxCode = 120  /* never EVER use this value directly, it can change in future versions! Use ZSTD_isError() instead */
 } ZSTD_ErrorCode;
 
