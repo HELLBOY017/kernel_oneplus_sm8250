@@ -948,7 +948,7 @@ u32 msm_vidc_calculate_dec_input_frame_size(struct msm_vidc_inst *inst)
 			div_factor = 2;
 	}
 
-	if (is_secure_session(inst) && num_mbs >= NUM_MBS_720P)
+	if (is_secure_session(inst))
 		div_factor = div_factor << 1;
 
 	/* For targets that doesn't support 4k, consider max mb's for that

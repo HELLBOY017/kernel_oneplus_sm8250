@@ -4745,17 +4745,29 @@ int msm_comm_qbuf(struct msm_vidc_inst *inst, struct msm_vidc_buffer *mbuf)
 		return -EINVAL;
 	}
 
+	mutex_lock(&inst->registeredbufs.lock);
 	if (inst->state != MSM_VIDC_START_DONE) {
 		mbuf->flags |= MSM_VIDC_FLAG_DEFERRED;
+		mutex_unlock(&inst->registeredbufs.lock);
 		print_vidc_buffer(VIDC_HIGH, "qbuf deferred", inst, mbuf);
 		return 0;
 	}
+
+	mbuf->flags &= ~MSM_VIDC_FLAG_DEFERRED;
+	if (mbuf->flags & MSM_VIDC_FLAG_QUEUED) {
+		mutex_unlock(&inst->registeredbufs.lock);
+		print_vidc_buffer(VIDC_HIGH, "qbuf queued", inst, mbuf);
+		return 0;
+	}
+	mbuf->flags |= MSM_VIDC_FLAG_QUEUED;
+	mutex_unlock(&inst->registeredbufs.lock);
 
 	do_bw_calc = mbuf->vvb.vb2_buf.type == INPUT_MPLANE;
 	rc = msm_comm_scale_clocks_and_bus(inst, do_bw_calc);
 	if (rc)
 		s_vpr_e(inst->sid, "%s: scale clock & bw failed\n", __func__);
 
+	mutex_lock(&inst->registeredbufs.lock);
 	print_vidc_buffer(VIDC_HIGH|VIDC_PERF, "qbuf", inst, mbuf);
 	ctrl = get_ctrl(inst, V4L2_CID_MPEG_VIDC_SUPERFRAME);
 	if (ctrl->val)
@@ -4765,6 +4777,7 @@ int msm_comm_qbuf(struct msm_vidc_inst *inst, struct msm_vidc_buffer *mbuf)
 	if (rc)
 		s_vpr_e(inst->sid, "%s: Failed qbuf to hfi: %d\n",
 			__func__, rc);
+	mutex_unlock(&inst->registeredbufs.lock);
 
 	return rc;
 }
