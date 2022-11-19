@@ -21,6 +21,16 @@
 		fmt, p ? p->index : -1, ##__VA_ARGS__)
 #define DSI_PHY_WARN(p, fmt, ...)	DRM_WARN("[msm-dsi-warn]: DSI_%d: " fmt,\
 		p ? p->index : -1, ##__VA_ARGS__)
+#ifdef OPLUS_BUG_STABILITY
+#undef DSI_PHY_ERR
+#include <soc/oplus/system/oplus_mm_kevent_fb.h>
+#define DSI_PHY_ERR(p, fmt, ...) \
+	do { \
+		DRM_DEV_ERROR(NULL, "[msm-dsi-error]: DSI_%d: "\
+				fmt, p ? p->index : -1, ##__VA_ARGS__); \
+		mm_fb_display_kevent_named(MM_FB_KEY_RATELIMIT_1H, fmt, ##__VA_ARGS__); \
+	} while(0)
+#endif /* OPLUS_BUG_STABILITY */
 
 /**
  * enum dsi_phy_version - DSI PHY version enumeration
