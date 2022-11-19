@@ -1280,16 +1280,24 @@ void policy_mgr_update_user_config_sap_chan(
  */
 static bool policy_mgr_is_sap_go_existed(struct wlan_objmgr_psoc *psoc)
 {
+	uint32_t sta_ap_bit_mask = QDF_STA_MASK | QDF_SAP_MASK;
+	uint32_t sta_go_bit_mask = QDF_STA_MASK | QDF_P2P_GO_MASK;
 	uint32_t ap_present, go_present;
+	bool sta_ap_coexist, sta_go_coexist;
 
 	ap_present = policy_mgr_mode_specific_connection_count(
 				psoc, PM_SAP_MODE, NULL);
-	if (ap_present)
+	sta_ap_coexist = (policy_mgr_get_concurrency_mode(psoc) &
+			  sta_ap_bit_mask) == sta_ap_bit_mask;
+	if (ap_present && sta_ap_coexist)
 		return true;
 
 	go_present = policy_mgr_mode_specific_connection_count(
 				psoc, PM_P2P_GO_MODE, NULL);
-	if (go_present)
+	sta_go_coexist = (policy_mgr_get_concurrency_mode(psoc) &
+			  sta_go_bit_mask) == sta_go_bit_mask;
+	if (go_present && sta_go_coexist &&
+	    policy_mgr_go_scc_enforced(psoc))
 		return true;
 
 	return false;
@@ -1736,28 +1744,28 @@ static void __policy_mgr_check_sta_ap_concurrent_ch_intf(void *data)
 	struct sta_ap_intf_check_work_ctx *work_info = NULL;
 	uint32_t mcc_to_scc_switch, cc_count = 0, i;
 	QDF_STATUS status;
-	uint32_t ch_freq;
+	uint8_t go_index_start;
 	uint32_t op_ch_freq_list[MAX_NUMBER_OF_CONC_CONNECTIONS];
+	uint32_t ch_freq;
 	uint8_t vdev_id[MAX_NUMBER_OF_CONC_CONNECTIONS];
 
 	work_info = data;
 	if (!work_info) {
 		policy_mgr_err("Invalid work_info");
-		return;
+		goto end;
 	}
 
 	psoc = work_info->psoc;
 	if (!psoc) {
 		policy_mgr_err("Invalid psoc");
-		return;
+		goto end;
 	}
 
 	pm_ctx = policy_mgr_get_context(psoc);
 	if (!pm_ctx) {
 		policy_mgr_err("Invalid context");
-		return;
+		goto end;
 	}
-
 	mcc_to_scc_switch =
 		policy_mgr_get_mcc_to_scc_switch_mode(psoc);
 
@@ -1771,6 +1779,7 @@ static void __policy_mgr_check_sta_ap_concurrent_ch_intf(void *data)
 				psoc, &op_ch_freq_list[cc_count],
 				&vdev_id[cc_count], PM_SAP_MODE);
 	policy_mgr_debug("Number of concurrent SAP: %d", cc_count);
+	go_index_start = cc_count;
 	if (cc_count < MAX_NUMBER_OF_CONC_CONNECTIONS)
 		cc_count = cc_count +
 				policy_mgr_get_mode_specific_conn_info(
@@ -1799,6 +1808,9 @@ static void __policy_mgr_check_sta_ap_concurrent_ch_intf(void *data)
 	}
 	if (cc_count <= MAX_NUMBER_OF_CONC_CONNECTIONS)
 		for (i = 0; i < cc_count; i++) {
+			if (i >= go_index_start &&
+			    !policy_mgr_go_scc_enforced(psoc))
+				continue;
 			status = pm_ctx->hdd_cbacks.
 				wlan_hdd_get_channel_for_sap_restart
 					(psoc, vdev_id[i], &ch_freq);
