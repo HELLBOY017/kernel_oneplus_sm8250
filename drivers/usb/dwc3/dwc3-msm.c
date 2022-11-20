@@ -4616,7 +4616,6 @@ set_prop:
 #define DWC3_DCTL 0xc704
 #define DWC3_DCTL_RUN_STOP BIT(31)
 #endif
-
 /**
  * dwc3_otg_sm_work - workqueue function.
  *

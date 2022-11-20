@@ -80,7 +80,6 @@ static int slave_alloc (struct scsi_device *sdev)
 	maxp = usb_maxpacket(us->pusb_dev, us->recv_bulk_pipe, 0);
 	blk_queue_virt_boundary(sdev->request_queue, maxp - 1);
 #endif
-
 	/*
 	 * Some host controllers may have alignment requirements.
 	 * We'll play it safe by requiring 512-byte alignment always.

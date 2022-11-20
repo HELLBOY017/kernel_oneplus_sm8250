@@ -1146,7 +1146,6 @@ static long mtp_send_receive_ioctl(struct file *fp, unsigned int code,
 	/* wait for operation to complete */
 	flush_workqueue(dev->wq);
 	fput(filp);
-
 #ifdef OPLUS_FEATURE_CHG_BASIC
 	atomic_notifier_call_chain(&mtp_rw_notifier, code | 0x8000, (void *)&mfr);
 #endif
@@ -1181,6 +1180,7 @@ int mtp_unregister_notifier(struct notifier_block *nb)
 }
 EXPORT_SYMBOL(mtp_unregister_notifier);
 #endif /*OPLUS_FEATURE_CHG_BASIC*/
+
 
 static long mtp_ioctl(struct file *fp, unsigned int code, unsigned long value)
 {

@@ -63,8 +63,6 @@ struct f_hidg {
 
 	struct usb_ep			*in_ep;
 	struct usb_ep			*out_ep;
-	struct kref			kref;
-	bool				bound;
 };
 
 static inline struct f_hidg *func_to_hidg(struct usb_function *f)
@@ -259,7 +257,7 @@ static ssize_t f_hidg_read(struct file *file, char __user *buffer,
 
 	spin_lock_irqsave(&hidg->read_spinlock, flags);
 
-#define READ_COND (!list_empty(&hidg->completed_out_req) || !hidg->bound)
+#define READ_COND (!list_empty(&hidg->completed_out_req))
 
 	/* wait for at least one buffer to complete */
 	while (!READ_COND) {
@@ -271,11 +269,6 @@ static ssize_t f_hidg_read(struct file *file, char __user *buffer,
 			return -ERESTARTSYS;
 
 		spin_lock_irqsave(&hidg->read_spinlock, flags);
-	}
-
-	if (!hidg->bound) {
-		spin_unlock_irqrestore(&hidg->read_spinlock, flags);
-		return -ENODEV;
 	}
 
 	/* pick the first one */
@@ -305,16 +298,11 @@ static ssize_t f_hidg_read(struct file *file, char __user *buffer,
 	if (list->pos == req->actual) {
 		kfree(list);
 
-		if (req->context ==
-		    (void *)hidg->func.config->cdev->gadget->ep0) {
-			free_ep_req(hidg->func.config->cdev->gadget->ep0, req);
-		} else {
-			req->length = hidg->report_length;
-			ret = usb_ep_queue(hidg->out_ep, req, GFP_KERNEL);
-			if (ret < 0) {
-				free_ep_req(hidg->out_ep, req);
-				return ret;
-			}
+		req->length = hidg->report_length;
+		ret = usb_ep_queue(hidg->out_ep, req, GFP_KERNEL);
+		if (ret < 0) {
+			free_ep_req(hidg->out_ep, req);
+			return ret;
 		}
 	} else {
 		spin_lock_irqsave(&hidg->read_spinlock, flags);
@@ -356,7 +344,7 @@ static ssize_t f_hidg_write(struct file *file, const char __user *buffer,
 
 	spin_lock_irqsave(&hidg->write_spinlock, flags);
 
-#define WRITE_COND (!hidg->write_pending || !hidg->bound)
+#define WRITE_COND (!hidg->write_pending)
 try_again:
 	/* write queue */
 	while (!WRITE_COND) {
@@ -369,11 +357,6 @@ try_again:
 			return -ERESTARTSYS;
 
 		spin_lock_irqsave(&hidg->write_spinlock, flags);
-	}
-
-	if (!hidg->bound) {
-		spin_unlock_irqrestore(&hidg->write_spinlock, flags);
-		return -ENODEV;
 	}
 
 	hidg->write_pending = 1;
@@ -438,9 +421,6 @@ static __poll_t f_hidg_poll(struct file *file, poll_table *wait)
 	poll_wait(file, &hidg->read_queue, wait);
 	poll_wait(file, &hidg->write_queue, wait);
 
-	if (!hidg->bound)
-		return POLLHUP;
-
 	if (WRITE_COND)
 		ret |= EPOLLOUT | EPOLLWRNORM;
 
@@ -453,21 +433,9 @@ static __poll_t f_hidg_poll(struct file *file, poll_table *wait)
 #undef WRITE_COND
 #undef READ_COND
 
-static void hidg_destroy(struct kref *kref)
-{
-	struct f_hidg *hidg = container_of(kref, struct f_hidg, kref);
-
-	kfree(hidg->report_desc);
-	kfree(hidg);
-}
-
 static int f_hidg_release(struct inode *inode, struct file *fd)
 {
-	struct f_hidg *hidg =
-		container_of(inode->i_cdev, struct f_hidg, cdev);
-
 	fd->private_data = NULL;
-	kref_put(&hidg->kref, hidg_destroy);
 	return 0;
 }
 
@@ -477,7 +445,6 @@ static int f_hidg_open(struct inode *inode, struct file *fd)
 		container_of(inode->i_cdev, struct f_hidg, cdev);
 
 	fd->private_data = hidg;
-	kref_get(&hidg->kref);
 
 	return 0;
 }
@@ -506,20 +473,6 @@ static void hidg_set_report_complete(struct usb_ep *ep, struct usb_request *req)
 			goto free_req;
 		}
 
-		if (req == cdev->req) {
-			/*
-			 * control request buffer can be overwritten before
-			 * userspace reads from buffer. So we allocate new
-			 * request, copy from original request and enqueue
-			 * new request to read queue.
-			 */
-			req = alloc_ep_req(ep, cdev->req->length);
-			memcpy(req->buf, cdev->req->buf, cdev->req->actual);
-			req->length = cdev->req->length;
-			req->actual = cdev->req->actual;
-			req->context = ep;
-		}
-
 		req_list->req = req;
 
 		spin_lock_irqsave(&hidg->read_spinlock, flags);
@@ -535,8 +488,7 @@ static void hidg_set_report_complete(struct usb_ep *ep, struct usb_request *req)
 	case -ECONNRESET:		/* request dequeued */
 	case -ESHUTDOWN:		/* disconnect from host */
 free_req:
-		if (req != cdev->req)
-			free_ep_req(ep, req);
+		free_ep_req(ep, req);
 		return;
 	}
 }
@@ -580,9 +532,7 @@ static int hidg_setup(struct usb_function *f,
 	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8
 		  | HID_REQ_SET_REPORT):
 		VDBG(cdev, "set_report | wLength=%d\n", ctrl->wLength);
-		req->context = hidg;
-		req->complete = hidg_set_report_complete;
-		goto respond;
+		goto stall;
 		break;
 
 	case ((USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE) << 8
@@ -869,7 +819,6 @@ static int hidg_bind(struct usb_configuration *c, struct usb_function *f)
 	init_waitqueue_head(&hidg->write_queue);
 	init_waitqueue_head(&hidg->read_queue);
 	INIT_LIST_HEAD(&hidg->completed_out_req);
-	hidg->bound = true;
 
 	/* create char device */
 	cdev_init(&hidg->cdev, &f_hidg_fops);
@@ -1116,7 +1065,8 @@ static void hidg_free(struct usb_function *f)
 
 	hidg = func_to_hidg(f);
 	opts = container_of(f->fi, struct f_hid_opts, func_inst);
-	kref_put(&hidg->kref, hidg_destroy);
+	kfree(hidg->report_desc);
+	kfree(hidg);
 	mutex_lock(&opts->lock);
 	--opts->refcnt;
 	mutex_unlock(&opts->lock);
@@ -1125,10 +1075,6 @@ static void hidg_free(struct usb_function *f)
 static void hidg_unbind(struct usb_configuration *c, struct usb_function *f)
 {
 	struct f_hidg *hidg = func_to_hidg(f);
-
-	hidg->bound = false;
-	wake_up(&hidg->read_queue);
-	wake_up(&hidg->write_queue);
 
 	device_destroy(hidg_class, MKDEV(major, hidg->minor));
 	cdev_del(&hidg->cdev);
@@ -1180,7 +1126,6 @@ static struct usb_function *hidg_alloc(struct usb_function_instance *fi)
 	/* this could me made configurable at some point */
 	hidg->qlen	   = 4;
 
-	kref_init(&hidg->kref);
 	return &hidg->func;
 }
 

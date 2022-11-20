@@ -481,8 +481,6 @@ static void frmnet_unbind(struct usb_configuration *c, struct usb_function *f)
 	if (dev->notify_req)
 		frmnet_free_req(dev->notify, dev->notify_req);
 
-	rmnet_string_defs[0].id = 0;
-	dpl_string_defs[0].id = 0;
 	c->cdev->gadget->bam2bam_func_enabled = false;
 }
 

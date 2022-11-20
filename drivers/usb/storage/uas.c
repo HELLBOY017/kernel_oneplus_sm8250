@@ -844,7 +844,6 @@ static int uas_slave_alloc(struct scsi_device *sdev)
 	maxp = usb_maxpacket(devinfo->udev, devinfo->data_in_pipe, 0);
 	blk_queue_virt_boundary(sdev->request_queue, maxp - 1);
 #endif
-
 	/*
 	 * The protocol has no requirements on alignment in the strict sense.
 	 * Controllers may or may not have alignment restrictions.

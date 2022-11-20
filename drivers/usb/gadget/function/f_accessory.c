@@ -355,7 +355,6 @@ static void acc_complete_set_string(struct usb_ep *ep, struct usb_request *req)
 	spin_unlock_irqrestore(&dev->lock, flags);
 
 #else
-
 	if (string_dest) {
 		unsigned long flags;
 
