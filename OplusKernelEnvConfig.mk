@@ -15,6 +15,8 @@
 ### ------------------------------------------------------------------------------
 ##################################################################################
 
+export BRAND_SHOW_FLAG=oneplus
+
 -include oplus_native_features.mk
 
 OPLUS_CONNECTIVITY_NATIVE_FEATURE_SET :=
