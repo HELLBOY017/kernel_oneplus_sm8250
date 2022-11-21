@@ -74,6 +74,11 @@ int smp_call_function_single_async(int cpu, struct __call_single_data *csd);
 extern void smp_send_stop(void);
 
 /*
+ * sends an IPI event to the specified CPUs:
+ */
+extern void smp_send_ipi(const struct cpumask *cpus);
+
+/*
  * sends a 'reschedule' event to another CPU:
  */
 extern void smp_send_reschedule(int cpu);
