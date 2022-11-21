@@ -715,7 +715,7 @@ static int cpuidle_latency_notify(struct notifier_block *b,
 	/* Use READ_ONCE to get the isolated mask outside cpu_add_remove_lock */
 	cpus &= ~READ_ONCE(*cpumask_bits(cpu_isolated_mask));
 	if (cpus)
-		arch_send_wakeup_ipi_mask(to_cpumask(&cpus));
+		smp_send_ipi(to_cpumask(&cpus));
 
 	return NOTIFY_OK;
 }
