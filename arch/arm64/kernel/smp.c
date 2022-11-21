@@ -958,6 +958,15 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 	set_irq_regs(old_regs);
 }
 
+void smp_send_ipi(const struct cpumask *cpus)
+{
+	int cpu;
+
+	for_each_cpu(cpu, cpus)
+		update_ipi_history(cpu);
+	arch_send_wakeup_ipi_mask(cpus);
+}
+
 void smp_send_reschedule(int cpu)
 {
 	BUG_ON(cpu_is_offline(cpu));
