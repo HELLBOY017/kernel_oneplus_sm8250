@@ -13,7 +13,6 @@
 #include <linux/notifier.h>
 #endif
 #include "../sec_common.h"
-#include "../../touchpanel_prevention.h"
 
 /*********PART2:Define Area**********************/
 #define GESTURE_DOUBLECLICK                     0x00
@@ -29,8 +28,6 @@
 #define GESTURE_M                               0x0A
 #define GESTURE_W                               0x0B
 #define GESTURE_DOUBLE_LINE                     0x0C
-#define GESTURE_SINGLE_TAP                      0x0E
-#define GESTURE_S                               0x0F
 #define GESTURE_EARSENSE                        0x0E
 
 #define RESET_TO_NORMAL_TIME                    (70)
@@ -307,8 +304,6 @@ struct chip_data_s6sy771 {
     u8                              default_lock_point_level;
     u8                              sec_charger_sta;
     bool                            auto_test_need_cal_support;
-	bool                            old_firmware_flag_check;
-	bool				sec_refresh_rate_delay;
 #ifdef CONFIG_OPLUS_TP_APK
 
     bool lock_point_status;
@@ -323,8 +318,4 @@ struct chip_data_s6sy771 {
 #endif //end of CONFIG_OPLUS_TP_APK
 };
 
-struct sec_support_grip_zone {
-    char                            name[GRIP_TAG_SIZE];
-    int                             (*handle_func) (struct grip_zone_area *grip_zone, bool enable);
-};
 #endif
