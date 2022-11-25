@@ -28,6 +28,8 @@
 #define GESTURE_M                               0x0A
 #define GESTURE_W                               0x0B
 #define GESTURE_DOUBLE_LINE                     0x0C
+#define GESTURE_SINGLE_TAP                      0x0E
+#define GESTURE_S                               0x0F
 #define GESTURE_EARSENSE                        0x0E
 
 #define RESET_TO_NORMAL_TIME                    (70)
