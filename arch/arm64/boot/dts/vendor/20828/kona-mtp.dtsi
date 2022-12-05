@@ -351,7 +351,7 @@
 
                 platform_support_project_dir = <19065 19805 19065>;
 
-                platform_support_project_commandline = "mdss_dsi_oplus19065_samsung_1440_3168_dsc_cmd","default_commandline","default_commandline";
+                platform_support_project_commandline = "mdss_dsi_oppo19065_samsung_1440_3168_dsc_cmd","default_commandline","default_commandline";
 		touchpanel,elimination-range = <20 200 200>;
 		prevention,no_handle_para = <0 0 0>;
 		prevention,dead_area_width = <20 10>;
