@@ -1,5 +1,5 @@
 &mdss_mdp {
-	dsi_oplus19065_samsung_1440_3168_dsc_cmd: qcom,mdss_dsi_oplus19065_samsung_1440_3168_dsc_cmd {
+	dsi_oplus19065_samsung_1440_3168_dsc_cmd: qcom,mdss_dsi_oppo19065_samsung_1440_3168_dsc_cmd {
 		qcom,mdss-dsi-panel-name = "samsung AMS678UW01 dsc cmd mode panel";
 		oplus,mdss-dsi-vendor-name = "ANA6706";
 		oplus,mdss-dsi-manufacture = "samsung1024";
