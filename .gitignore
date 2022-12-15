@@ -140,10 +140,3 @@ kernel/configs/android-*.cfg
 #Ignoring Android.bp link file
 #
 Android.bp
-
-# ln the wakelock_profiler
-drivers/soc/oplus/owakelock
-include/soc/oplus/oplus_wakelock_profiler.h
-
-# ignore net/oplus_modules
-net/oplus_modules
