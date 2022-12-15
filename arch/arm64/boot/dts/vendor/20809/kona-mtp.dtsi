@@ -362,6 +362,8 @@
 
 	/* SW Support Feature Control */
 		black_gesture_support;
+		black_gesture_indep_support;
+		sportify_aod_gesture_support;
 		fw_edge_limit_support;
 		//kernel_grip_support;
 		pressure_report_support;
