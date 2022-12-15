@@ -362,6 +362,8 @@
 		//ear_sense_support;
 		oos_edge_limit_support;
 		black_gesture_support;
+		black_gesture_indep_support;
+		sportify_aod_gesture_support;
 		single_tap_support;
 		//fw_edge_limit_support;
 		charger_pump_support;
