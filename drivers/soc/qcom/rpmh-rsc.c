@@ -12,6 +12,9 @@
 #include <linux/ipc_logging.h>
 #include <linux/kernel.h>
 #include <linux/list.h>
+#ifndef CONFIG_DEBUG_KERNEL
+#include <linux/module.h>
+#endif
 #include <linux/of.h>
 #include <linux/of_irq.h>
 #include <linux/of_platform.h>
