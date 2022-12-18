@@ -38,7 +38,6 @@ int wait_fingerprint_event(void *data, unsigned int size,
 
     if ((ret = wait_event_interruptible(fp_queue, g_reporte_condition == 1)) !=
         0) {
-      pr_info("fp driver wait event fail, %d", ret);
     }
     if (msg != NULL) {
       *msg = &g_fingerprint_msg;
@@ -49,15 +48,12 @@ int wait_fingerprint_event(void *data, unsigned int size,
 
 static ssize_t fp_event_node_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 {
-    pr_info("fp_event_node_read enter");
     if (file == NULL || count != sizeof(g_fp_dirver_event_type)) {
         return -1;
     }
-    pr_info("fp_event_node_read,  %d", g_fp_dirver_event_type);
     if (copy_to_user(buf, &g_fp_dirver_event_type, count)) {
       return -EFAULT;
     }
-    pr_info("fp_event_node_read,  %d", g_fp_dirver_event_type);
     return count;
 }
 
@@ -85,7 +81,6 @@ exit :
 
 void set_fp_driver_event_type(int type)
 {
-    pr_info("set_fp_driver_event_type, %d", type);
     g_fp_dirver_event_type = type; // FP_DRIVER_INTERRUPT
 }
 
@@ -125,7 +120,6 @@ int send_fingerprint_message(int module, int event, void *data,
         g_fingerprint_msg.module = module;
         g_fingerprint_msg.event = event;
         need_report = 1;
-        pr_info("unknow module, ignored");
         break;
     }
     if (need_report)
