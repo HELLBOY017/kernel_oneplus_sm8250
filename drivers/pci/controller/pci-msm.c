@@ -319,7 +319,7 @@
 			"INFO:%s: " fmt, __func__, ##arg); \
 	if ((dev) && (dev)->ipc_log)   \
 		ipc_log_string((dev)->ipc_log, "%s: " fmt, __func__, ##arg); \
-	pr_info("%s: " fmt, __func__, ##arg);  \
+	pr_debug_once("%s: " fmt, __func__, ##arg);  \
 	} while (0)
 
 #define PCIE_ERR(dev, fmt, arg...) do {			 \
@@ -2797,7 +2797,7 @@ static ssize_t msm_pcie_debugfs_corr_counter_limit(struct file *file,
 	if (ret)
 		return ret;
 
-	pr_info("PCIe: corr_counter_limit is now %u\n", corr_counter_limit);
+	pr_debug_once("PCIe: corr_counter_limit is now %u\n", corr_counter_limit);
 
 	return count;
 }

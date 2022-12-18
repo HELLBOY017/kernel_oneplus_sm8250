@@ -120,13 +120,13 @@ extern int stmvl53l1_enable_debug;
 #endif
 
 #define vl53l1_info(str, args...) \
-	pr_info("%s: " str "\n", __func__, ##args)
+	pr_debug_once("%s: " str "\n", __func__, ##args)
 
 #define vl53l1_errmsg(str, args...) \
-	pr_err("%s: " str, __func__, ##args)
+	pr_err_once("%s: " str, __func__, ##args)
 
 #define vl53l1_wanrmsg(str, args...) \
-	pr_warn("%s: " str, __func__, ##args)
+	pr_warn_once("%s: " str, __func__, ##args)
 
 /* turn off poll log if not defined */
 #ifndef STMVL53L1_LOG_POLL_TIMING

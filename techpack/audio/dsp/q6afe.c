@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2012-2020, The Linux Foundation. All rights reserved.
  */
+
+#undef pr_info
+#undef pr_debug
+
 #include <linux/slab.h>
 #include <linux/debugfs.h>
 #include <linux/kernel.h>
