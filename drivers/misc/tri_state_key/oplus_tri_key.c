@@ -50,13 +50,13 @@
 #define TRI_KEY_DEVICE "oplus,hall_tri_state_key"
 #define TRI_KEY_TAG                  "[tri_state_key] "
 #define TRI_KEY_ERR(fmt, args...)\
-	pr_info(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
+	pr_debug(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
 #define TRI_KEY_LOG(fmt, args...)\
-	pr_info(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
+	pr_debug(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
 #define TRI_KEY_DEBUG(fmt, args...)\
 	do {\
 		if (tri_key_debug == LEVEL_DEBUG)\
-			pr_info(TRI_KEY_TAG " %s: " fmt, __func__, ##args);\
+			pr_debug(TRI_KEY_TAG " %s: " fmt, __func__, ##args);\
 	} while (0)
 enum {
 	MODE_UNKNOWN,
@@ -102,7 +102,7 @@ static short calib_dnHall_UM_distance, calib_dnHall_MD_distance;
 static short calib_upHall_UM_distance, calib_upHall_MD_distance;
 static short calib_upHall_UD_distance, calib_dnHall_UD_distance;
 
-void oplus_hall_disable_irq(bool enable)
+inline void oplus_hall_disable_irq(bool enable)
 {
 	oplus_hall_clear_irq(DHALL_0);
 	oplus_hall_clear_irq(DHALL_1);
@@ -111,7 +111,7 @@ void oplus_hall_disable_irq(bool enable)
 	g_the_chip->dhall_up_ops->enable_irq(enable);
 }
 
-int oplus_hall_enable_irq(unsigned int id, bool enable)
+inline int oplus_hall_enable_irq(unsigned int id, bool enable)
 {
 	if (!g_the_chip)
 		return -EINVAL;
@@ -143,7 +143,7 @@ int oplus_hall_enable_irq(unsigned int id, bool enable)
 	return -EINVAL;
 }
 
-int oplus_hall_clear_irq(unsigned int id)
+inline int oplus_hall_clear_irq(unsigned int id)
 {
 	if (!g_the_chip)
 		return -EINVAL;
@@ -171,7 +171,7 @@ int oplus_hall_clear_irq(unsigned int id)
 	return -EINVAL;
 }
 
-int oplus_hall_get_data(unsigned int id)
+inline int oplus_hall_get_data(unsigned int id)
 {
 	if (!g_the_chip)
 		return -EINVAL;
@@ -201,7 +201,7 @@ int oplus_hall_get_data(unsigned int id)
 	}
 }
 
-bool oplus_hall_update_threshold(unsigned int id, int position,
+inline bool oplus_hall_update_threshold(unsigned int id, int position,
 					short lowthd, short highthd)
 {
 	if (!g_the_chip)
@@ -232,7 +232,7 @@ bool oplus_hall_update_threshold(unsigned int id, int position,
 	}
 }
 
-int oplus_hall_set_detection_mode(unsigned int id, u8 mode)
+inline int oplus_hall_set_detection_mode(unsigned int id, u8 mode)
 {
 	if (!g_the_chip)
 		return -EINVAL;
@@ -260,7 +260,7 @@ int oplus_hall_set_detection_mode(unsigned int id, u8 mode)
 	}
 }
 
-int oplus_hall_get_irq_state(unsigned int id)
+inline int oplus_hall_get_irq_state(unsigned int id)
 {
 	if (!g_the_chip)
 		return -EINVAL;
@@ -286,7 +286,7 @@ int oplus_hall_get_irq_state(unsigned int id)
 
 
 
-void oplus_hall_dump_regs(unsigned int id, u8 *buf)
+inline void oplus_hall_dump_regs(unsigned int id, u8 *buf)
 {
 	if (!g_the_chip)
 		return;
@@ -312,7 +312,7 @@ void oplus_hall_dump_regs(unsigned int id, u8 *buf)
 	}
 }
 
-int oplus_hall_set_reg(unsigned int id, int reg, int val)
+inline int oplus_hall_set_reg(unsigned int id, int reg, int val)
 {
 	if (!g_the_chip)
 		return -EINVAL;
@@ -336,7 +336,7 @@ int oplus_hall_set_reg(unsigned int id, int reg, int val)
 	}
 }
 
-bool oplus_hall_is_power_on(void)
+inline bool oplus_hall_is_power_on(void)
 {
 	if (!g_the_chip || !g_the_chip->dhall_down_ops ||
 		!g_the_chip->dhall_down_ops->is_power_on ||
@@ -351,7 +351,7 @@ bool oplus_hall_is_power_on(void)
 	}
 	return false;
 }
-static void reboot_get_position(struct extcon_dev_data *chip)
+static inline void reboot_get_position(struct extcon_dev_data *chip)
 {
 	short delta;
 	short up_data1;
@@ -372,7 +372,7 @@ static void reboot_get_position(struct extcon_dev_data *chip)
 	last_position = chip->position;
 }
 
-static int interf_get_position(struct extcon_dev_data *chip)
+static inline int interf_get_position(struct extcon_dev_data *chip)
 {
 	short delta0;
 	short delta1;
@@ -422,7 +422,7 @@ static int interf_get_position(struct extcon_dev_data *chip)
 	return -EINVAL;
 }
 
-static int get_position(struct extcon_dev_data *chip)
+static inline int get_position(struct extcon_dev_data *chip)
 {
 	short diff;
 
@@ -465,7 +465,7 @@ static int get_position(struct extcon_dev_data *chip)
 	return 0;
 }
 
-static int judge_interference(struct extcon_dev_data *chip)
+static inline int judge_interference(struct extcon_dev_data *chip)
 {
 	short delta;
 	short sum;
@@ -612,7 +612,7 @@ static int judge_interference(struct extcon_dev_data *chip)
 }
 
 
-static int oplus_get_data(struct extcon_dev_data *chip)
+static inline int oplus_get_data(struct extcon_dev_data *chip)
 {
 	int res = 0;
 
@@ -630,7 +630,7 @@ static int oplus_get_data(struct extcon_dev_data *chip)
 	return res;
 }
 
-static int reupdata_threshold(struct extcon_dev_data *chip)
+static inline int reupdata_threshold(struct extcon_dev_data *chip)
 {
 	int res = 0;
 	int tolen = 22;
@@ -727,7 +727,7 @@ fail:
 	return res;
 }
 
-static void report_key_value(struct extcon_dev_data *chip)
+static inline void report_key_value(struct extcon_dev_data *chip)
 {
 	if (chip->position == DOWN_STATE) {
 		chip->state = 3;
@@ -756,7 +756,7 @@ static void report_key_value(struct extcon_dev_data *chip)
 		TRI_KEY_LOG("no report\n");
 }
 
-static int report_calibration_location(struct extcon_dev_data *chip)
+static inline int report_calibration_location(struct extcon_dev_data *chip)
 {
 	oplus_get_data(chip);
 	get_position(chip);
@@ -772,7 +772,7 @@ err:
 	return -EINVAL;
 }
 
-static int judge_calibration_data(struct extcon_dev_data *chip)
+static inline int judge_calibration_data(struct extcon_dev_data *chip)
 {
 	if (calib_UpValueMin == 0 || calib_UpValueSum == 0 ||
 	calib_MdValueSum == 0 || calib_DnValueMin == 0
@@ -811,7 +811,7 @@ static int judge_calibration_data(struct extcon_dev_data *chip)
 }
 
 
-int oplus_hall_irq_handler(unsigned int id)
+inline int oplus_hall_irq_handler(unsigned int id)
 {
 	TRI_KEY_LOG("%d tri_key:call :%s\n", id, __func__);
 	if (!g_the_chip)
@@ -822,7 +822,7 @@ int oplus_hall_irq_handler(unsigned int id)
 }
 EXPORT_SYMBOL(oplus_hall_irq_handler);
 
-static void tri_key_dev_work(struct work_struct *work)
+static inline void tri_key_dev_work(struct work_struct *work)
 {
 	struct extcon_dev_data *chip = container_of(work,
 			struct extcon_dev_data, dwork);
@@ -978,13 +978,13 @@ FINAL:
 	mutex_unlock(&chip->mtx);
 }
 
-static enum hrtimer_restart tri_key_status_timeout(struct hrtimer *timer)
+static inline enum hrtimer_restart tri_key_status_timeout(struct hrtimer *timer)
 {
 	schedule_work(&tri_key_timeout_work);
 	return HRTIMER_NORESTART;
 }
 
-static void tri_key_timeout_work_func(struct work_struct *work)
+static inline void tri_key_timeout_work_func(struct work_struct *work)
 {
 	oplus_get_data(g_the_chip);
 	judge_interference(g_the_chip);
@@ -1006,14 +1006,14 @@ static void tri_key_timeout_work_func(struct work_struct *work)
 }
 
 
-static short Sum(short value0, short value1)
+static inline short Sum(short value0, short value1)
 {
 	short sum = 0;
 
 	sum = value0 + value1;
 	return sum;
 }
-static short Minus(short value0, short value1)
+static inline short Minus(short value0, short value1)
 {
 	short minus = 0;
 
@@ -1021,7 +1021,7 @@ static short Minus(short value0, short value1)
 	return minus;
 }
 
-void initialCalibValue(short calib_dnHall_UpV, short calib_dnHall_MdV,
+inline void initialCalibValue(short calib_dnHall_UpV, short calib_dnHall_MdV,
 			short calib_dnHall_DnV, short calib_upHall_UpV,
 			short calib_upHall_MdV, short calib_upHall_DnV)
 {
@@ -1055,7 +1055,7 @@ void initialCalibValue(short calib_dnHall_UpV, short calib_dnHall_MdV,
 		up_mid_tol, mid_down_tol);
 }
 
-static ssize_t proc_hall_data_read(struct file *file, char __user *user_buf,
+static inline ssize_t proc_hall_data_read(struct file *file, char __user *user_buf,
 			size_t count, loff_t *ppos)
 {
 	int ret = 0;
@@ -1081,7 +1081,7 @@ static const struct file_operations proc_hall_data_ops = {
 	.owner = THIS_MODULE,
 };
 
-static ssize_t proc_tri_state_read(struct file *file, char __user *user_buf,
+static inline ssize_t proc_tri_state_read(struct file *file, char __user *user_buf,
 		size_t count, loff_t *ppos)
 {
 	int ret = 0;
@@ -1105,7 +1105,7 @@ static const struct file_operations proc_tri_state_ops = {
 	.owner = THIS_MODULE,
 };
 
-static ssize_t proc_hall_data_calib_read(struct file *file, char __user *user_buf,
+static inline ssize_t proc_hall_data_calib_read(struct file *file, char __user *user_buf,
 			size_t count, loff_t *ppos)
 {
 	int ret = 0;
@@ -1125,7 +1125,7 @@ static ssize_t proc_hall_data_calib_read(struct file *file, char __user *user_bu
 	return ret;
 }
 
-static ssize_t proc_hall_data_calib_write(struct file *file, const char __user *buffer,
+static inline ssize_t proc_hall_data_calib_write(struct file *file, const char __user *buffer,
 			size_t count, loff_t *ppos)
 {
 	int data[6] = {0};
@@ -1169,7 +1169,7 @@ static const struct file_operations proc_hall_data_calib_ops = {
 	.owner = THIS_MODULE,
 };
 
-static ssize_t proc_hall_debug_info_write(struct file *file, const char __user *buffer,
+static inline ssize_t proc_hall_debug_info_write(struct file *file, const char __user *buffer,
 			size_t count, loff_t *ppos)
 {
 	int tmp = 0;
@@ -1186,7 +1186,7 @@ static ssize_t proc_hall_debug_info_write(struct file *file, const char __user *
 
 	return count;
 }
-static ssize_t proc_hall_debug_info_read(struct file *file, char __user *user_buf,
+static inline ssize_t proc_hall_debug_info_read(struct file *file, char __user *user_buf,
 			 size_t count, loff_t *ppos)
 {
 	int ret = -1;
@@ -1209,7 +1209,7 @@ static const struct file_operations proc_hall_debug_info_ops = {
 	.owner = THIS_MODULE,
 };
 
-static int init_trikey_proc(struct extcon_dev_data *hall_dev)
+static inline int init_trikey_proc(struct extcon_dev_data *hall_dev)
 {
 	int ret = 0;
 	struct proc_dir_entry *prEntry_trikey = NULL;
@@ -1251,7 +1251,7 @@ static int init_trikey_proc(struct extcon_dev_data *hall_dev)
 	return ret;
 
 }
-static void register_tri_key_dev_work(struct work_struct *work)
+static inline void register_tri_key_dev_work(struct work_struct *work)
 {
 	struct extcon_dev_data *chip = container_of(work, struct extcon_dev_data,
 			register_work);
@@ -1352,7 +1352,7 @@ fail:
 	TRI_KEY_LOG("fail\n");
 }
 
-int oplus_register_hall(const char *name, struct dhall_operations *ops,
+inline int oplus_register_hall(const char *name, struct dhall_operations *ops,
 		struct extcon_dev_data *hall_dev_t)
 {
 	static int hall_count;
