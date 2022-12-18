@@ -6,6 +6,7 @@
 #ifndef __GF_SPI_H
 #define __GF_SPI_H
 
+#include <linux/gpio.h>
 #include <linux/types.h>
 #include <linux/notifier.h>
 #include "../include/oplus_fp_common.h"
@@ -86,8 +87,6 @@ struct gf_ioc_chip_info {
 #define GF_IOC_RESET            _IO(GF_IOC_MAGIC, 2)
 #define GF_IOC_ENABLE_IRQ       _IO(GF_IOC_MAGIC, 3)
 #define GF_IOC_DISABLE_IRQ      _IO(GF_IOC_MAGIC, 4)
-#define GF_IOC_ENABLE_SPI_CLK   _IOW(GF_IOC_MAGIC, 5, uint32_t)
-#define GF_IOC_DISABLE_SPI_CLK  _IO(GF_IOC_MAGIC, 6)
 #define GF_IOC_ENABLE_POWER     _IO(GF_IOC_MAGIC, 7)
 #define GF_IOC_DISABLE_POWER    _IO(GF_IOC_MAGIC, 8)
 #define GF_IOC_INPUT_KEY_EVENT  _IOW(GF_IOC_MAGIC, 9, struct gf_key)
@@ -110,14 +109,12 @@ struct gf_ioc_chip_info {
 #define  GF_IOC_MAXNR    14  /* THIS MACRO IS NOT USED NOW... */
 #endif
 
-//#define AP_CONTROL_CLK       1
 #define  USE_PLATFORM_BUS     1
-//#define  USE_SPI_BUS	1
-//#define GF_FASYNC   1	/*If support fasync mechanism.*/
 #define GF_NETLINK_ENABLE 1
 #define GF_NET_EVENT_FB_BLACK 2
 #define GF_NET_EVENT_FB_UNBLACK 3
 #define NETLINK_TEST 25
+#define MAX_MSGSIZE 32
 
 enum NETLINK_CMD {
     GF_NET_EVENT_TEST = 0,
@@ -135,11 +132,7 @@ enum NETLINK_CMD {
 struct gf_dev {
 	dev_t devt;
 	struct list_head device_entry;
-#if defined(USE_SPI_BUS)
-	struct spi_device *spi;
-#elif defined(USE_PLATFORM_BUS)
 	struct platform_device *spi;
-#endif
 	struct clk *core_clk;
 	struct clk *iface_clk;
 
@@ -152,9 +145,6 @@ struct gf_dev {
 	int irq;
 	int irq_enabled;
 	int clk_enabled;
-#ifdef GF_FASYNC
-	struct fasync_struct *async;
-#endif
 	struct notifier_block notifier;
 	char device_available;
 	char fb_black;
@@ -166,23 +156,179 @@ struct gf_dev {
     uint32_t ftm_poweroff_flag;
 };
 
+static inline int vreg_setup(struct gf_dev *goodix_fp, fp_power_info_t *pwr_info,
+        bool enable)
+{
+    int rc;
+    struct regulator *vreg;
+    struct device *dev = &goodix_fp->spi->dev;
+    const char *name = NULL;
 
-int gf_parse_dts(struct gf_dev* gf_dev);
-void gf_cleanup(struct gf_dev *gf_dev);
+    if (NULL == pwr_info || NULL == pwr_info->vreg_config.name) {
+        return -EINVAL;
+    }
+    vreg = pwr_info->vreg;
+    name = pwr_info->vreg_config.name;
+    if (enable) {
+        if (!vreg) {
+            vreg = regulator_get(dev, name);
+            if (IS_ERR(vreg)) {
+                return PTR_ERR(vreg);
+            }
+        }
+        if (regulator_count_voltages(vreg) > 0) {
+            rc = regulator_set_voltage(vreg, pwr_info->vreg_config.vmin,
+                    pwr_info->vreg_config.vmax);
+            if (rc) {
+            }
+        }
+        rc = regulator_set_load(vreg, pwr_info->vreg_config.ua_load);
+        if (rc < 0) {
+        }
+        rc = regulator_enable(vreg);
+        if (rc) {
+            regulator_put(vreg);
+            vreg = NULL;
+        }
+        pwr_info->vreg = vreg;
+    } else {
+        if (vreg) {
+            if (regulator_is_enabled(vreg)) {
+                regulator_disable(vreg);
+            }
+            regulator_put(vreg);
+            pwr_info->vreg = NULL;
+        } else {
+        }
+        rc = 0;
+    }
+    return rc;
+}
 
-int gf_power_on(struct gf_dev *gf_dev);
-int gf_power_off(struct gf_dev *gf_dev);
+static inline void gf_cleanup_ftm_poweroff_flag(struct gf_dev* gf_dev) {
+    gf_dev->ftm_poweroff_flag = 0;
+    pr_err("%s cleanup", __func__);
+}
 
-int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms);
-int gf_irq_num(struct gf_dev *gf_dev);
-int gf_power_reset(struct gf_dev *gf_dev);
 
-void sendnlmsg(char *msg);
-int netlink_init(void);
-void netlink_exit(void);
+static inline void gf_cleanup_pwr_list(struct gf_dev* gf_dev) {
+    unsigned index = 0;
+    for (index = 0; index < gf_dev->power_num; index++) {
+        if (gf_dev->pwr_list[index].pwr_type == FP_POWER_MODE_GPIO) {
+            gpio_free(gf_dev->pwr_list[index].pwr_gpio);
+        }
+        memset(&(gf_dev->pwr_list[index]), 0, sizeof(fp_power_info_t));
+    }
+}
 
-void gf_cleanup_pwr_list(struct gf_dev* gf_dev);
-int gf_parse_pwr_list(struct gf_dev* gf_dev);
-int gf_parse_ftm_poweroff_flag(struct gf_dev* gf_dev);
+static inline int gf_parse_dts(struct gf_dev* gf_dev);
+static inline void gf_cleanup(struct gf_dev *gf_dev)
+{
+    pr_info("[info] %s\n",__func__);
+    if (gpio_is_valid(gf_dev->irq_gpio))
+    {
+        gpio_free(gf_dev->irq_gpio);
+        pr_info("remove irq_gpio success\n");
+    }
+    if (gpio_is_valid(gf_dev->reset_gpio))
+    {
+        gpio_free(gf_dev->reset_gpio);
+        pr_info("remove reset_gpio success\n");
+    }
+
+    gf_cleanup_pwr_list(gf_dev);
+}
+
+static inline int gf_power_on(struct gf_dev* gf_dev)
+{
+    int rc = 0;
+    unsigned index = 0;
+
+    for (index = 0; index < gf_dev->power_num; index++) {
+        switch (gf_dev->pwr_list[index].pwr_type) {
+        case FP_POWER_MODE_LDO:
+            rc = vreg_setup(gf_dev, &(gf_dev->pwr_list[index]), true);
+            break;
+        case FP_POWER_MODE_GPIO:
+            gpio_set_value(gf_dev->pwr_list[index].pwr_gpio, gf_dev->pwr_list[index].poweron_level);
+            break;
+        case FP_POWER_MODE_AUTO:
+            break;
+        case FP_POWER_MODE_NOT_SET:
+        default:
+            rc = -1;
+            break;
+        }
+        if (rc) {
+            break;
+        } else {
+        }
+        msleep(gf_dev->pwr_list[index].delay);
+    }
+
+    msleep(30);
+    return rc;
+}
+
+static inline int gf_power_off(struct gf_dev* gf_dev)
+{
+    int rc = 0;
+    unsigned index = 0;
+
+    for (index = 0; index < gf_dev->power_num; index++) {
+        switch (gf_dev->pwr_list[index].pwr_type) {
+        case FP_POWER_MODE_LDO:
+            rc = vreg_setup(gf_dev, &(gf_dev->pwr_list[index]), false);
+            break;
+        case FP_POWER_MODE_GPIO:
+            gpio_set_value(gf_dev->pwr_list[index].pwr_gpio, (gf_dev->pwr_list[index].poweron_level == 0 ? 1 : 0));
+            break;
+        case FP_POWER_MODE_AUTO:
+            break;
+        case FP_POWER_MODE_NOT_SET:
+        default:
+            rc = -1;
+            break;
+        }
+        if (rc) {
+            break;
+        }
+    }
+
+    msleep(30);
+    return rc;
+}
+
+static inline int gf_hw_reset(struct gf_dev *gf_dev, unsigned int delay_ms);
+static inline int gf_irq_num(struct gf_dev *gf_dev);
+static inline int gf_power_reset(struct gf_dev *gf_dev);
+
+static inline void sendnlmsg(char *msg);
+static inline int netlink_init(void);
+static inline void netlink_exit(void);
+
+static inline int gf_parse_pwr_list(struct gf_dev* gf_dev);
+static inline int gf_parse_ftm_poweroff_flag(struct gf_dev* gf_dev) {
+    int ret = 0;
+    struct device *dev = &gf_dev->spi->dev;
+    struct device_node *np = dev->of_node;
+    uint32_t ftm_poweroff_flag = 0;
+
+    gf_cleanup_ftm_poweroff_flag(gf_dev);
+
+    ret = of_property_read_u32(np, FP_FTM_POWEROFF_FLAG, &ftm_poweroff_flag);
+    if (ret) {
+        pr_err("failed to request %s, ret = %d\n", FP_FTM_POWEROFF_FLAG, ret);
+        goto exit;
+    }
+    gf_dev->ftm_poweroff_flag = ftm_poweroff_flag;
+    pr_err("gf_dev->ftm_poweroff_flag = %d\n", gf_dev->ftm_poweroff_flag);
+
+exit:
+    if (ret) {
+        gf_cleanup_ftm_poweroff_flag(gf_dev);
+    }
+    return ret;
+}
 
 #endif /*__GF_SPI_H*/
