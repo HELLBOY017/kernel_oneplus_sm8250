@@ -26,7 +26,7 @@
 #endif
 
 #define TPD_DEVICE "touch_interface"
-#define TPD_INFO(a, arg...)  pr_err("[TP]"TPD_DEVICE ": " a, ##arg)
+#define TPD_INFO(a, arg...)  pr_debug("[TP]"TPD_DEVICE ": " a, ##arg)
 
 static bool register_is_16bit = 0;
 static struct mutex i2c_mutex;

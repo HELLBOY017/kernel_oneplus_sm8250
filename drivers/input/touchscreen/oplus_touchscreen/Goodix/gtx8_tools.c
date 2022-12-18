@@ -7,10 +7,10 @@
 
 /****************************PART1:Log TAG****************************/
 #define TPD_DEVICE "Goodix-TOOL"
-#define TPD_INFO(fmt, arg...)        pr_err(TPD_DEVICE ": " fmt, ##arg)
+#define TPD_INFO(fmt, arg...)        pr_debug(TPD_DEVICE ": " fmt, ##arg)
 #define TPD_DEBUG(fmt, arg...)       do{\
     if (tp_debug)\
-    pr_err(TPD_DEVICE ": " fmt, ##arg);\
+    pr_debug(TPD_DEVICE ": " fmt, ##arg);\
 }while(0)
 
 #define TPD_DEBUG_ARRAY(array, num)    do{\
@@ -18,16 +18,16 @@
     u8* a = array;\
     if (tp_debug)\
     {\
-        pr_err("<< GTP-TOOL-DBG >>");\
+        pr_debug("<< GTP-TOOL-DBG >>");\
         for (i = 0; i < (num); i++)\
         {\
-            pr_err("%02x ", (a)[i]);\
+            pr_debug("%02x ", (a)[i]);\
             if ((i + 1) % 10 == 0)\
             {\
-                pr_err("\n<< GTP-DBG >>");\
+                pr_debug("\n<< GTP-DBG >>");\
             }\
         }\
-        pr_err("\n");\
+        pr_debug("\n");\
     }\
 }while(0)
 
