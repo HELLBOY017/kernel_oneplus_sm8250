@@ -260,7 +260,7 @@ static u64 qcom_cpufreq_get_cpu_cycle_counter(int cpu)
 
 	offset = CYCLE_CNTR_OFFSET(cpu, &cpu_domain->related_cpus,
 					accumulative_counter);
-	val = readl_relaxed_no_log(cpu_domain->reg_bases[REG_CYCLE_CNTR] +
+	val = readl_relaxed(cpu_domain->reg_bases[REG_CYCLE_CNTR] +
 				   offset);
 
 	if (val < cpu_counter->prev_cycle_counter) {

@@ -60,7 +60,7 @@ struct oplus_optiga_chip *g_oplus_optiga_chip;
 #include "pinctrl-utils.h"
 
 
-#define gpio_reg_set(reg, value) ({__iowmb(); writel_relaxed_no_log(value,reg);})
+#define gpio_reg_set(reg, value) ({__iowmb(); writel_relaxed(value,reg);})
 
 struct msm_pinctrl {
 	struct device *dev;

@@ -2661,7 +2661,7 @@ int mhi_get_remote_time_sync(struct mhi_device *mhi_dev,
 	local_irq_disable();
 
 	*t_host = mhi_cntrl->time_get(mhi_cntrl, mhi_cntrl->priv_data);
-	*t_dev = readq_relaxed_no_log(mhi_tsync->time_reg);
+	*t_dev = readq_relaxed(mhi_tsync->time_reg);
 
 	local_irq_enable();
 	preempt_enable();
@@ -2766,7 +2766,7 @@ int mhi_get_remote_time(struct mhi_device *mhi_dev,
 
 	mhi_tsync->local_time =
 		mhi_cntrl->time_get(mhi_cntrl, mhi_cntrl->priv_data);
-	writel_relaxed_no_log(mhi_tsync->int_sequence, mhi_cntrl->tsync_db);
+	writel_relaxed(mhi_tsync->int_sequence, mhi_cntrl->tsync_db);
 	/* write must go thru immediately */
 	wmb();
 

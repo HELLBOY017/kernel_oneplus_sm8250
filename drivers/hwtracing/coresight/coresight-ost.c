@@ -55,30 +55,30 @@ static int stm_ost_send(void __iomem *addr, const void *data, uint32_t size)
 	uint32_t len = size;
 
 	if (((unsigned long)data & 0x1) && (size >= 1)) {
-		writeb_relaxed_no_log(*(uint8_t *)data, addr);
+		writeb_relaxed(*(uint8_t *)data, addr);
 		data++;
 		size--;
 	}
 	if (((unsigned long)data & 0x2) && (size >= 2)) {
-		writew_relaxed_no_log(*(uint16_t *)data, addr);
+		writew_relaxed(*(uint16_t *)data, addr);
 		data += 2;
 		size -= 2;
 	}
 
 	/* now we are 32bit aligned */
 	while (size >= 4) {
-		writel_relaxed_no_log(*(uint32_t *)data, addr);
+		writel_relaxed(*(uint32_t *)data, addr);
 		data += 4;
 		size -= 4;
 	}
 
 	if (size >= 2) {
-		writew_relaxed_no_log(*(uint16_t *)data, addr);
+		writew_relaxed(*(uint16_t *)data, addr);
 		data += 2;
 		size -= 2;
 	}
 	if (size >= 1) {
-		writeb_relaxed_no_log(*(uint8_t *)data, addr);
+		writeb_relaxed(*(uint8_t *)data, addr);
 		data++;
 		size--;
 	}

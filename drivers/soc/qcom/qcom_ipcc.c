@@ -84,7 +84,7 @@ static irqreturn_t qcom_ipcc_irq_fn(int irq, void *data)
 	struct ipcc_protocol_data *proto_data = data;
 
 	for (;;) {
-		packed_id = readl_no_log(proto_data->base + IPCC_REG_RECV_ID);
+		packed_id = readl(proto_data->base + IPCC_REG_RECV_ID);
 		if (packed_id == IPCC_NO_PENDING_IRQ)
 			break;
 
@@ -95,7 +95,7 @@ static irqreturn_t qcom_ipcc_irq_fn(int irq, void *data)
 			qcom_ipcc_get_client_id(packed_id),
 			qcom_ipcc_get_signal_id(packed_id), virq);
 
-		writel_no_log(packed_id,
+		writel(packed_id,
 				proto_data->base + IPCC_REG_RECV_SIGNAL_CLEAR);
 
 		generic_handle_irq(virq);
@@ -117,7 +117,7 @@ static void qcom_ipcc_mask_irq(struct irq_data *irqd)
 		"%s: Disabling interrupts for: client_id: %u; signal_id: %u\n",
 		__func__, sender_client_id, sender_signal_id);
 
-	writel_no_log(hwirq, proto_data->base + IPCC_REG_RECV_SIGNAL_DISABLE);
+	writel(hwirq, proto_data->base + IPCC_REG_RECV_SIGNAL_DISABLE);
 }
 
 static void qcom_ipcc_unmask_irq(struct irq_data *irqd)
@@ -133,7 +133,7 @@ static void qcom_ipcc_unmask_irq(struct irq_data *irqd)
 		"%s: Enabling interrupts for: client_id: %u; signal_id: %u\n",
 		__func__, sender_client_id, sender_signal_id);
 
-	writel_no_log(hwirq, proto_data->base + IPCC_REG_RECV_SIGNAL_ENABLE);
+	writel(hwirq, proto_data->base + IPCC_REG_RECV_SIGNAL_ENABLE);
 }
 
 static struct irq_chip qcom_ipcc_irq_chip = {
@@ -191,7 +191,7 @@ static int qcom_ipcc_mbox_send_data(struct mbox_chan *chan, void *data)
 
 	packed_id = qcom_ipcc_get_packed_id(ipcc_mbox_chan->client_id,
 						ipcc_mbox_chan->signal_id);
-	writel_no_log(packed_id, proto_data->base + IPCC_REG_SEND_ID);
+	writel(packed_id, proto_data->base + IPCC_REG_SEND_ID);
 
 	return 0;
 }
@@ -322,7 +322,7 @@ static void msm_ipcc_resume(void)
 	u32 packed_id;
 	struct ipcc_protocol_data *proto_data = ipcc_proto_data;
 
-	packed_id = readl_no_log(proto_data->base + IPCC_REG_RECV_ID);
+	packed_id = readl(proto_data->base + IPCC_REG_RECV_ID);
 	if (packed_id == IPCC_NO_PENDING_IRQ)
 		return;
 
