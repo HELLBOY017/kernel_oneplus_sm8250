@@ -89,7 +89,7 @@ struct gf_key_map maps[] = {
     {EV_KEY, GF_KEY_INPUT_MENU},
     {EV_KEY, GF_KEY_INPUT_BACK},
     {EV_KEY, GF_KEY_INPUT_POWER},
-#if defined(SUPPORT_NAV_EVENT)
+#ifdef GOODIX_GESTURE_SWITCH
     {EV_KEY, GF_NAV_INPUT_UP},
     {EV_KEY, GF_NAV_INPUT_DOWN},
     {EV_KEY, GF_NAV_INPUT_RIGHT},
