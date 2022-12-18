@@ -860,7 +860,7 @@ static inline void mhi_timesync_log(struct mhi_controller *mhi_cntrl)
 
 	if (mhi_tsync && mhi_cntrl->tsync_log)
 		mhi_cntrl->tsync_log(mhi_cntrl,
-				     readq_no_log(mhi_tsync->time_reg));
+				     readq(mhi_tsync->time_reg));
 }
 
 /* memory allocation methods */
