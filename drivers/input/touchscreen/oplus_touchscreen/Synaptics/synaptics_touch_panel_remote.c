@@ -290,7 +290,7 @@ static int remote_rmit_set_page(unsigned int address) {
 
     buf = kzalloc(2, GFP_KERNEL | GFP_DMA);
     if (!buf) {
-        pr_err("kzalloc buf failed.\n");
+        pr_debug("kzalloc buf failed.\n");
         return -ENOMEM;
     }
 
@@ -334,7 +334,7 @@ static int remote_rmit_put_page(void)
 
     buf = kzalloc(2, GFP_KERNEL | GFP_DMA);
     if (!buf) {
-        pr_err("kzalloc buf failed.\n");
+        pr_debug("kzalloc buf failed.\n");
         return -ENOMEM;
     }
 
@@ -386,13 +386,13 @@ int remote_rmi4_i2c_read(unsigned short addr, unsigned char *data, unsigned shor
 
     buf = kzalloc(1, GFP_KERNEL | GFP_DMA);
     if (!buf) {
-        pr_err("kzalloc buf failed.\n");
+        pr_debug("kzalloc buf failed.\n");
         return -ENOMEM;
     }
 
     read_buf = kzalloc(length, GFP_KERNEL | GFP_DMA);
     if (!read_buf) {
-        pr_err("kzalloc read_buf failed.\n");
+        pr_debug("kzalloc read_buf failed.\n");
         kfree(buf);
         buf = NULL;
         return -ENOMEM;
@@ -449,7 +449,7 @@ int remote_rmi4_i2c_write(unsigned short addr, unsigned char *data, unsigned sho
 
     buf = kzalloc(length + 1, GFP_KERNEL | GFP_DMA);
     if (buf == NULL) {
-        pr_err("buf info kzalloc error\n");
+        pr_debug("buf info kzalloc error\n");
         return -ENOMEM;
     }
     msg[0].buf = buf;
@@ -515,7 +515,7 @@ static loff_t rmidev_llseek(struct file *filp, loff_t off, int whence)
     struct rmidev_data *dev_data = filp->private_data;
 
     if (IS_ERR(dev_data)) {
-        pr_err("%s: Pointer of char device data is invalid", __func__);
+        pr_debug("%s: Pointer of char device data is invalid", __func__);
         return -EBADF;
     }
 
@@ -569,7 +569,7 @@ static ssize_t rmidev_read(struct file *filp, char __user *buf,
     struct rmidev_data *dev_data = filp->private_data;
 
     if (IS_ERR(dev_data)) {
-        pr_err("%s: Pointer of char device data is invalid", __func__);
+        pr_debug("%s: Pointer of char device data is invalid", __func__);
         return -EBADF;
     }
 
@@ -581,7 +581,7 @@ static ssize_t rmidev_read(struct file *filp, char __user *buf,
 
     tmpbuf = kzalloc(count + 1, GFP_KERNEL);
     if(tmpbuf == NULL) {
-        pr_err("buf info kzalloc error\n");
+        pr_debug("buf info kzalloc error\n");
         return -ENOMEM;
     }
 
@@ -625,7 +625,7 @@ static ssize_t rmidev_write(struct file *filp, const char __user *buf,
     struct rmidev_data *dev_data = filp->private_data;
 
     if (IS_ERR(dev_data)) {
-        pr_err("%s: Pointer of char device data is invalid", __func__);
+        pr_debug("%s: Pointer of char device data is invalid", __func__);
         return -EBADF;
     }
 
@@ -637,7 +637,7 @@ static ssize_t rmidev_write(struct file *filp, const char __user *buf,
 
     tmpbuf = kzalloc(count + 1, GFP_KERNEL);
     if(tmpbuf == NULL) {
-        pr_err("buf info kzalloc error\n");
+        pr_debug("buf info kzalloc error\n");
         return -ENOMEM;
     }
 
@@ -843,7 +843,7 @@ static int rmidev_create_device_class(void)
     rmidev_device_class = class_create(THIS_MODULE, DEVICE_CLASS_NAME);
 
     if (IS_ERR(rmidev_device_class)) {
-        pr_err("%s: Failed to create /dev/%s\n",
+        pr_debug("%s: Failed to create /dev/%s\n",
                 __func__, CHAR_DEVICE_NAME);
         return -ENODEV;
     }
@@ -861,7 +861,7 @@ struct remotepanel_data *remote_alloc_panel_data(void)
 {
     if (rmidev)
     {
-        pr_err("%s:remote panel data has alloc already null\n", __func__);
+        pr_debug("%s:remote panel data has alloc already null\n", __func__);
         return NULL;
     }
 
@@ -886,12 +886,12 @@ int register_remote_device(struct remotepanel_data *pdata)
 
     if (pdata == NULL)
     {
-        pr_err("%s:pdata is null\n", __func__);
+        pr_debug("%s:pdata is null\n", __func__);
         return -1;
     }
     if (rmidev)
     {
-        pr_err("%s:remote device has register already null\n", __func__);
+        pr_debug("%s:remote device has register already null\n", __func__);
         return -1;
     }
     rmidev = kzalloc(sizeof(*rmidev), GFP_KERNEL);

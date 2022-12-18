@@ -6,11 +6,11 @@
 #include "goodix_common.h"
 
 #define TPD_DEVICE "goodix_common"
-#define TPD_INFO(a, arg...)  pr_err("[TP]"TPD_DEVICE ": " a, ##arg)
+#define TPD_INFO(a, arg...)  pr_debug("[TP]"TPD_DEVICE ": " a, ##arg)
 #define TPD_DEBUG(a, arg...)\
     do{\
         if (tp_debug)\
-        pr_err("[TP]"TPD_DEVICE ": " a, ##arg);\
+        pr_debug("[TP]"TPD_DEVICE ": " a, ##arg);\
     }while(0)
 
 /**

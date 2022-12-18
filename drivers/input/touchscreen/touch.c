@@ -59,13 +59,13 @@ bool  tp_judge_ic_match_commandline(struct panel_info *panel_data)
 	int prj_id = 0;
 	int i = 0;
 	prj_id = get_project();
-	pr_err("[TP] boot_command_line = %s \n", saved_command_line);
+	pr_debug("[TP] boot_command_line = %s \n", saved_command_line);
 	for(i = 0; i < panel_data->project_num; i++) {
 		if(prj_id == panel_data->platform_support_project[i]) {
 			g_tp_prj_id = panel_data->platform_support_project_dir[i];
 			g_tp_ext_prj_name = panel_data->platform_support_external_name[i];
 			if(strstr(saved_command_line, panel_data->platform_support_commandline[i]) || strstr("default_commandline", panel_data->platform_support_commandline[i])) {
-				pr_err("[TP] Driver match the project\n");
+				pr_debug("[TP] Driver match the project\n");
 				return true;
 			}
 			else {
@@ -73,8 +73,8 @@ bool  tp_judge_ic_match_commandline(struct panel_info *panel_data)
 			}
 		}
 	}
-	pr_err("[TP] Driver does not match the project\n");
-	pr_err("Lcd module not found\n");
+	pr_debug("[TP] Driver does not match the project\n");
+	pr_debug("Lcd module not found\n");
 	return false;
 }
 
@@ -86,7 +86,7 @@ int tp_util_get_vendor(struct hw_resource *hw_res, struct panel_info *panel_data
 
 	panel_data->test_limit_name = kzalloc(MAX_LIMIT_DATA_LENGTH, GFP_KERNEL);
 	if (panel_data->test_limit_name == NULL) {
-		pr_err("[TP]panel_data.test_limit_name kzalloc error\n");
+		pr_debug("[TP]panel_data.test_limit_name kzalloc error\n");
 	}
 
 	prj_id = g_tp_prj_id;
@@ -120,7 +120,7 @@ int tp_util_get_vendor(struct hw_resource *hw_res, struct panel_info *panel_data
 		}
 	}
 	if (panel_data->tp_type == TP_UNKNOWN) {
-		pr_err("[TP]%s type is unknown\n", __func__);
+		pr_debug("[TP]%s type is unknown\n", __func__);
 		return 0;
 	}
 
@@ -147,7 +147,7 @@ int tp_util_get_vendor(struct hw_resource *hw_res, struct panel_info *panel_data
 			snprintf(panel_data->test_limit_name, MAX_LIMIT_DATA_LENGTH,
 				"tp/20669/LIMIT_%s_%s.img", panel_data->chip_name, vendor);
 		}
-		pr_info("panel_data->tp_type = %d\n", panel_data->tp_type);
+		pr_debug("panel_data->tp_type = %d\n", panel_data->tp_type);
 		if (panel_data->tp_type == TP_JDI) {
 			memcpy(panel_data->manufacture_info.version, "AA869_DS_NT_", 12);
 			panel_data->firmware_headfile.firmware_data = FW_17951_NT36672C_JDI;
@@ -187,7 +187,7 @@ int tp_util_get_vendor(struct hw_resource *hw_res, struct panel_info *panel_data
 		panel_data->manufacture_info.fw_path = panel_data->fw_name;
 	}
 
-	pr_info("[TP]vendor:%s fw:%s limit:%s\n",
+	pr_debug("[TP]vendor:%s fw:%s limit:%s\n",
 		vendor,
 		panel_data->fw_name,
 		panel_data->test_limit_name == NULL?"NO Limit":panel_data->test_limit_name);
@@ -207,17 +207,17 @@ int reconfig_power_control(struct touchpanel_data *ts)
 	prj_id = get_project();
 
 	if ((prj_id == 20135 || prj_id == 20137 || prj_id == 20139 || prj_id == 20235) && !strstr(saved_command_line, "20135samsung_amb655xl08_1080_2400_cmd_dvt")) {
-		pr_err("[TP]pcb is old version, need to reconfig the regulator.\n");
+		pr_debug("[TP]pcb is old version, need to reconfig the regulator.\n");
 		if (!IS_ERR_OR_NULL(ts->hw_res.vdd_2v8)) {
 			regulator_put(ts->hw_res.vdd_2v8);
 			ts->hw_res.vdd_2v8 = NULL;
 		}
 		ts->hw_res.vdd_2v8 = regulator_get(ts->dev, "vdd_dvt_2v8");
 		if (IS_ERR_OR_NULL(ts->hw_res.vdd_2v8)) {
-			pr_err("[TP]Regulator vdd2v8 get failed, ret = %d\n", ret);
+			pr_debug("[TP]Regulator vdd2v8 get failed, ret = %d\n", ret);
 		} else {
 			if (regulator_count_voltages(ts->hw_res.vdd_2v8) > 0) {
-				pr_err("[TP]set avdd voltage to %d uV\n", ts->hw_res.vdd_volt);
+				pr_debug("[TP]set avdd voltage to %d uV\n", ts->hw_res.vdd_volt);
 				if (ts->hw_res.vdd_volt) {
 					ret = regulator_set_voltage(ts->hw_res.vdd_2v8, ts->hw_res.vdd_volt, ts->hw_res.vdd_volt);
 				} else {
