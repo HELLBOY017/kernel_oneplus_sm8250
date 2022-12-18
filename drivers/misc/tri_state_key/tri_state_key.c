@@ -34,13 +34,13 @@
 
 #define TRI_KEY_TAG    "[tri_state_key] "
 #define TRI_KEY_ERR(fmt, args...)\
-	pr_info(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
+	pr_debug(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
 #define TRI_KEY_LOG(fmt, args...)\
-	pr_info(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
+	pr_debug(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
 #define TRI_KEY_DEBUG(fmt, args...)\
 	do {\
 		if (tri_key_debug == LEVEL_DEBUG)\
-			pr_info(TRI_KEY_TAG " %s: " fmt, __func__, ##args);\
+			pr_debug(TRI_KEY_TAG " %s: " fmt, __func__, ##args);\
 	} while (0)
 
 /*
@@ -72,13 +72,13 @@ struct trikey_dev_data {
 
 static struct trikey_dev_data *trikey_data;
 
-static int set_gpio_by_pinctrl(void)
+static inline int set_gpio_by_pinctrl(void)
 {
 	return pinctrl_select_state(trikey_data->key_pinctrl,
 		trikey_data->set_state);
 }
 
-static void tri_key_dev_work(struct work_struct *work)
+static inline void tri_key_dev_work(struct work_struct *work)
 {
 	int key[3] = {0, 0, 0};
 	/*op add to fix ISTRACKING-34823 begin*/
@@ -176,19 +176,19 @@ static void tri_key_dev_work(struct work_struct *work)
 }
 
 
-static irqreturn_t tri_key_dev_interrupt(int irq, void *_dev)
+static inline irqreturn_t tri_key_dev_interrupt(int irq, void *_dev)
 {
 	schedule_work(&trikey_data->work);
 	return IRQ_HANDLED;
 }
 
-static void timer_handle(struct timer_list *t)
+static inline void timer_handle(struct timer_list *t)
 {
 	schedule_work(&trikey_data->work);
 }
 
 #ifdef CONFIG_OF
-static int dev_get_devtree_pdata(struct device *dev)
+static inline int dev_get_devtree_pdata(struct device *dev)
 {
 	struct device_node *node;
 
@@ -225,7 +225,7 @@ dev_get_devtree_pdata(struct device *dev)
 }
 #endif
 
-static ssize_t proc_tri_state_read(struct file *file, char __user *user_buf,
+static inline ssize_t proc_tri_state_read(struct file *file, char __user *user_buf,
 		size_t count, loff_t *ppos)
 {
 	int ret = 0;
@@ -242,7 +242,7 @@ static const struct file_operations proc_tri_state_ops = {
 	.owner = THIS_MODULE,
 };
 
-static int init_trikey_proc(struct trikey_dev_data *trikey_data)
+static inline int init_trikey_proc(struct trikey_dev_data *trikey_data)
 {
 	int ret = 0;
 	struct proc_dir_entry *prEntry_trikey = NULL;
@@ -264,7 +264,7 @@ static int init_trikey_proc(struct trikey_dev_data *trikey_data)
 	return ret;
 }
 
-static int tri_key_dev_probe(struct platform_device *pdev)
+static inline int tri_key_dev_probe(struct platform_device *pdev)
 {
 	struct device *dev;
 	int ret = 0;
@@ -419,7 +419,7 @@ fail:
 	return ret;
 }
 
-static int tri_key_dev_remove(struct platform_device *pdev)
+static inline int tri_key_dev_remove(struct platform_device *pdev)
 {
 	cancel_work_sync(&trikey_data->work);
 	gpio_free(trikey_data->key1_gpio);
@@ -446,13 +446,13 @@ static struct platform_driver tristate_dev_driver = {
 		.of_match_table = tri_key_dev_of_match,
 	},
 };
-static int __init tri_state_key_init(void)
+static inline int __init tri_state_key_init(void)
 {
 	return platform_driver_register(&tristate_dev_driver);
 }
 module_init(tri_state_key_init);
 
-static void __exit tri_state_key_exit(void)
+static inline void __exit tri_state_key_exit(void)
 {
 	platform_driver_unregister(&tristate_dev_driver);
 }

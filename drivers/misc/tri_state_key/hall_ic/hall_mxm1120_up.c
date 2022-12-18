@@ -59,9 +59,9 @@
 
 #define TRI_KEY_TAG                  "[tri_state_key] "
 #define TRI_KEY_ERR(fmt, args...)\
-	pr_info(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
+	pr_debug(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
 #define TRI_KEY_LOG(fmt, args...)\
-	pr_info(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
+	pr_debug(TRI_KEY_TAG" %s : "fmt, __func__, ##args)
 
 static struct m1120_data_t *p_m1120_data;
 
@@ -92,7 +92,7 @@ static int m1120_get_data(short *data);
 #define M1120_I2C_BUF_SIZE		(17)
 
 
-static int m1120_i2c_read_block(struct m1120_data_t *m1120_data, u8 addr, u8 *data, u8 len)
+static inline int m1120_i2c_read_block(struct m1120_data_t *m1120_data, u8 addr, u8 *data, u8 len)
 {
 	u8 reg_addr = addr;
 	int err = 0;
@@ -138,7 +138,7 @@ static int m1120_i2c_read_block(struct m1120_data_t *m1120_data, u8 addr, u8 *da
 
 }
 
-static int m1120_i2c_write_block(struct m1120_data_t *m1120_data, u8 addr, u8 *data, u8 len)
+static inline int m1120_i2c_write_block(struct m1120_data_t *m1120_data, u8 addr, u8 *data, u8 len)
 {
 	int err = 0;
 	int idx = 0;
@@ -207,7 +207,7 @@ static int m1120_i2c_write_block(struct m1120_data_t *m1120_data, u8 addr, u8 *d
 	return err;
 }
 
-static void m1120_short_to_2byte(struct m1120_data_t *m1120_data, short x, u8 *hbyte, u8 *lbyte)
+static inline void m1120_short_to_2byte(struct m1120_data_t *m1120_data, short x, u8 *hbyte, u8 *lbyte)
 {
 	if (!m1120_data) {
 		TRI_KEY_ERR("m1120_data == NULL\n");
@@ -243,7 +243,7 @@ static void m1120_short_to_2byte(struct m1120_data_t *m1120_data, short x, u8 *h
 	}
 }
 
-static short m1120_2byte_to_short(struct m1120_data_t *m1120_data, u8 hbyte, u8 lbyte)
+static inline short m1120_2byte_to_short(struct m1120_data_t *m1120_data, u8 hbyte, u8 lbyte)
 {
 	short x = 0;
 
@@ -267,14 +267,14 @@ static short m1120_2byte_to_short(struct m1120_data_t *m1120_data, u8 hbyte, u8 
 	return x;
 }
 
-static int m1120_set_power(bool on)
+static inline int m1120_set_power(bool on)
 {
 	m1120_power_ctl(p_m1120_data, on);
 
 	return 0;
 }
 
-static irqreturn_t m1120_up_irq_handler(int irq, void *dev_id)
+static inline irqreturn_t m1120_up_irq_handler(int irq, void *dev_id)
 {
 	TRI_KEY_LOG("call\n");
 
@@ -291,13 +291,13 @@ static irqreturn_t m1120_up_irq_handler(int irq, void *dev_id)
 }
 
 
-static int m1120_get_enable(struct m1120_data_t *p_data)
+static inline int m1120_get_enable(struct m1120_data_t *p_data)
 {
 	return atomic_read(&p_data->atm.enable);
 }
 
 
-static void m1120_set_enable(struct m1120_data_t *p_data, int enable)
+static inline void m1120_set_enable(struct m1120_data_t *p_data, int enable)
 {
 	mutex_lock(&p_data->mtx.enable);
 	TRI_KEY_LOG("enable : %d\n", enable);
@@ -314,7 +314,7 @@ static void m1120_set_enable(struct m1120_data_t *p_data, int enable)
 }
 
 
-static void m1120_set_delay(struct m1120_data_t *p_data, int delay)
+static inline void m1120_set_delay(struct m1120_data_t *p_data, int delay)
 {
 	if (delay < M1120_DELAY_MIN)
 		delay = M1120_DELAY_MIN;
@@ -333,12 +333,12 @@ static void m1120_set_delay(struct m1120_data_t *p_data, int delay)
 }
 
 
-static void m1120_set_debug(struct m1120_data_t *p_data, int debug)
+static inline void m1120_set_debug(struct m1120_data_t *p_data, int debug)
 {
 	atomic_set(&p_data->atm.debug, debug);
 }
 
-static int m1120_clear_interrupt(struct m1120_data_t *p_data)
+static inline int m1120_clear_interrupt(struct m1120_data_t *p_data)
 {
 	int ret = 0;
 	u8 data = 0x00;
@@ -349,7 +349,7 @@ static int m1120_clear_interrupt(struct m1120_data_t *p_data)
 	return ret;
 }
 
-static int m1120_set_operation_mode(struct m1120_data_t *p_data, int mode)
+static inline int m1120_set_operation_mode(struct m1120_data_t *p_data, int mode)
 {
 	u8 opf = p_data->reg.map.opf;
 	int err = -1;
@@ -378,7 +378,7 @@ static int m1120_set_operation_mode(struct m1120_data_t *p_data, int mode)
 	return err;
 }
 
-static int m1120_init_device(struct m1120_data_t *p_data)
+static inline int m1120_init_device(struct m1120_data_t *p_data)
 {
 	int err = -1;
 
@@ -418,7 +418,7 @@ static int m1120_init_device(struct m1120_data_t *p_data)
 	return 0;
 }
 
-static int m1120_reset_device(struct m1120_data_t *p_data)
+static inline int m1120_reset_device(struct m1120_data_t *p_data)
 {
 	int err = 0;
 	u8  id = 0xFF, data = 0x00;
@@ -481,7 +481,7 @@ static int m1120_reset_device(struct m1120_data_t *p_data)
 	return err;
 }
 
-static int m1120_input_dev_init(struct m1120_data_t *p_data)
+static inline int m1120_input_dev_init(struct m1120_data_t *p_data)
 {
 	struct input_dev *dev;
 	int err;
@@ -516,7 +516,7 @@ static int m1120_input_dev_init(struct m1120_data_t *p_data)
 	return 0;
 }
 
-static void m1120_input_dev_terminate(struct m1120_data_t *p_data)
+static inline void m1120_input_dev_terminate(struct m1120_data_t *p_data)
 {
 	struct input_dev *dev = p_data->input_dev;
 
@@ -524,7 +524,7 @@ static void m1120_input_dev_terminate(struct m1120_data_t *p_data)
 	input_free_device(dev);
 }
 
-static int m1120_power_ctl(struct m1120_data_t *data, bool on)
+static inline int m1120_power_ctl(struct m1120_data_t *data, bool on)
 {
 	int ret = 0;
 	int err = 0;
@@ -567,7 +567,7 @@ static int m1120_power_ctl(struct m1120_data_t *data, bool on)
 return ret;
 }
 
-static int m1120_power_init(struct m1120_data_t *data)
+static inline int m1120_power_init(struct m1120_data_t *data)
 {
 	int ret;
 
@@ -618,7 +618,7 @@ reg_vdd_put:
 }
 
 
-static int tri_key_m1120_parse_dt(struct device *dev,
+static inline int tri_key_m1120_parse_dt(struct device *dev,
 		struct m1120_data_t *p_data)
 {
 	struct device_node *np = dev->of_node;
@@ -663,7 +663,7 @@ static int tri_key_m1120_parse_dt(struct device *dev,
 	return 0;
 }
 
-static int m1120_get_data(short *data)
+static inline int m1120_get_data(short *data)
 {
 	int err = 0;
 	u8 buf[3] = {0};
@@ -689,7 +689,7 @@ static int m1120_get_data(short *data)
 	return 0;
 }
 
-static int m1120_enable_irq(bool enable)
+static inline int m1120_enable_irq(bool enable)
 {
 	TRI_KEY_LOG("%s", __func__);
 
@@ -706,7 +706,7 @@ static int m1120_enable_irq(bool enable)
 	return 0;
 }
 
-static int m1120_clear_irq(void)
+static inline int m1120_clear_irq(void)
 {
 	TRI_KEY_LOG("%s", __func__);
 	if (p_m1120_data == NULL) {
@@ -718,7 +718,7 @@ static int m1120_clear_irq(void)
 	return 0;
 }
 
-static int m1120_get_irq_state(void)
+static inline int m1120_get_irq_state(void)
 {
 	TRI_KEY_LOG("%s", __func__);
 	if (p_m1120_data == NULL) {
@@ -729,7 +729,7 @@ static int m1120_get_irq_state(void)
 	return ((p_m1120_data->reg.map.intsrs & M1120_DETECTION_MODE_INTERRUPT) ? 1 : 0);
 }
 
-static bool m1120_update_threshold(int position, short lowthd, short highthd)
+static inline bool m1120_update_threshold(int position, short lowthd, short highthd)
 {
 
 	u8 lthh, lthl, hthh, hthl;
@@ -766,7 +766,7 @@ static bool m1120_update_threshold(int position, short lowthd, short highthd)
 	return true;
 }
 
-static void m1120_dump_reg(u8 *buf)
+static inline void m1120_dump_reg(u8 *buf)
 {
 	int i, err;
 	u8 val;
@@ -795,7 +795,7 @@ static void m1120_dump_reg(u8 *buf)
 	TRI_KEY_LOG("%s\n", buf);
 }
 
-static bool m1120_is_power_on(void)
+static inline bool m1120_is_power_on(void)
 {
 	TRI_KEY_LOG("%s", __func__);
 	if (p_m1120_data == NULL) {
@@ -806,7 +806,7 @@ static bool m1120_is_power_on(void)
 	return p_m1120_data->power_enabled > 0 ? true : false;
 }
 
-static int m1120_set_detection_mode_1(u8 mode)
+static inline int m1120_set_detection_mode_1(u8 mode)
 {
 	u8 data = 0;
 	int err = 0;
@@ -868,7 +868,7 @@ static int m1120_set_detection_mode_1(u8 mode)
 	return 0;
 }
 
-static int m1120_set_reg_1(int reg, int val)
+static inline int m1120_set_reg_1(int reg, int val)
 {
 
 	u8 data = (u8)val;
@@ -895,7 +895,7 @@ struct dhall_operations  m1120_ups_ops = {
 	.is_power_on = m1120_is_power_on
 };
 
-static int tri_key_m1120_i2c_drv_probe(struct i2c_client *client, const struct i2c_device_id *id)
+static inline int tri_key_m1120_i2c_drv_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct m1120_data_t            *p_data;
 	struct extcon_dev_data	*hall_dev = NULL;
@@ -1007,7 +1007,7 @@ error_0:
 	return err;
 }
 
-static int m1120_i2c_drv_remove(struct i2c_client *client)
+static inline int m1120_i2c_drv_remove(struct i2c_client *client)
 {
 	struct m1120_data_t *p_data = i2c_get_clientdata(client);
 
@@ -1044,7 +1044,7 @@ struct i2c_driver m1120_i2c_up_driver = {
 };
 
 
-static int __init tri_key_m1120_driver_init_up(void)
+static inline int __init tri_key_m1120_driver_init_up(void)
 {
 	int res = 0;
 
@@ -1055,7 +1055,7 @@ static int __init tri_key_m1120_driver_init_up(void)
 }
 late_initcall(tri_key_m1120_driver_init_up);
 
-static void __exit m1120_driver_exit_up(void)
+static inline void __exit m1120_driver_exit_up(void)
 {
 	TRI_KEY_LOG("%s\n", __func__);
 	i2c_del_driver(&m1120_i2c_up_driver);
