@@ -24,7 +24,8 @@
 &qupv3_se6_4uart {
 	status = "ok";
 };
-
+/* #ifdef OPLUS_ARCH_EXTENDS */
+/* delete for audio pa
 &dai_mi2s2 {
 	qcom,msm-mi2s-tx-lines = <1>;
 };
@@ -39,7 +40,8 @@
 				&tert_mi2s_sd0_sleep>;
 	};
 };
-
+*/
+/* #endif OPLUS_ARCH_EXTENDS */
 &kona_snd {
 	qcom,model = "kona-qrd-snd-card";
 	qcom,audio-routing =
@@ -615,10 +617,11 @@
 	qcom,platform-reset-gpio = <&tlmm 75 0>;
 };
 
+//#ifdef OPLUS_BUG_STABILITY
 &sde_dsi {
-	qcom,dsi-default-panel = <&dsi_sw43404_amoled_cmd>;
+	qcom,dsi-default-panel = <&dsi_oplus19065_samsung_1440_3168_dsc_cmd>;
 };
-
+//#endif /*OPLUS_BUG_STABILITY*/
 &thermal_zones {
 	conn-therm-usr {
 		polling-delay-passive = <0>;

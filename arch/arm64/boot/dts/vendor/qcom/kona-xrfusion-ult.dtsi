@@ -5,7 +5,6 @@
 #include "kona-audio-overlay-ar.dtsi"
 #include "kona-thermal-overlay.dtsi"
 #include "kona-xr-pinctrl-overlay.dtsi"
-#include "camera/kona-camera-sensor-xrfusion.dtsi"
 
 &tlmm {
 	mag_rst_gpio_default: mag_rst_gpio_default {
