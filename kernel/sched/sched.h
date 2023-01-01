@@ -3045,9 +3045,6 @@ void note_task_waking(struct task_struct *p, u64 wallclock);
 
 static inline bool task_placement_boost_enabled(struct task_struct *p)
 {
-	if (task_sched_boost(p))
-		return sched_boost_policy() != SCHED_BOOST_NONE;
-
 	return false;
 }
 
@@ -3109,7 +3106,7 @@ static inline bool is_full_throttle_boost(void)
 
 static inline enum sched_boost_policy task_boost_policy(struct task_struct *p)
 {
-	return SCHED_BOOST_NONE;
+	return false;
 }
 
 static inline bool
