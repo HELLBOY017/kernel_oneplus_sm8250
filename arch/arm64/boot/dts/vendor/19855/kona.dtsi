@@ -352,7 +352,7 @@
 	};
 
 	chosen {
-		bootargs = "rcupdate.rcu_expedited=1 rcu_nocbs=0-7 kasan_multi_shot";
+		bootargs = "noirqdebug nodebugmon rcu_nocbs=0-7 kpti=off nosoftlockup mce=ignore_ce";
 	};
 
 	firmware: firmware {
