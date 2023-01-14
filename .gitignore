@@ -136,5 +136,8 @@ all.config
 # fetched Android config fragments
 kernel/configs/android-*.cfg
 
-# Tech package directories
-techpack/
+# Ignore output dir
+/out
+
+# Ignore build script
+/horizon_build.sh
