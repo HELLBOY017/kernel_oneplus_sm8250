@@ -136,8 +136,8 @@ all.config
 # fetched Android config fragments
 kernel/configs/android-*.cfg
 
-# vendor device tree directories
-arch/arm64/boot/dts/vendor/
+# Ignore output dir
+/out
 
-# Tech package directories
-techpack/
+# Ignore build script
+/build.sh
