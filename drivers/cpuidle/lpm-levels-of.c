@@ -565,9 +565,6 @@ static int parse_cpu_levels(struct device_node *dn, struct lpm_cluster *c)
 	if (ret)
 		return ret;
 
-	cpu->ipi_prediction = !(of_property_read_bool(dn,
-					"qcom,disable-ipi-prediction"));
-
 	cpu->lpm_prediction = !(of_property_read_bool(dn,
 					"qcom,disable-prediction"));
 
