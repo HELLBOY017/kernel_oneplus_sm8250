@@ -16,7 +16,7 @@
 #include "oplus_onscreenfingerprint.h"
 #include "oplus_display_private_api.h"
 
-int aod_light_mode = 0;
+int aod_light_mode = 1;
 DEFINE_MUTEX(oplus_aod_light_mode_lock);
 #ifdef OPLUS_FEATURE_AOD_RAMLESS
 int oplus_display_mode = 1;
@@ -142,7 +142,8 @@ int oplus_panel_get_aod_light_mode(void *buf)
 	unsigned int *aod_mode = buf;
 	(*aod_mode) = aod_light_mode;
 
-	printk(KERN_INFO "oplus_get_aod_light_mode = %d\n",aod_light_mode);
+	printk(KERN_INFO "oplus_get_aod_
+light_mode = %d\n",aod_light_mode);
 
 	return 0;
 }
