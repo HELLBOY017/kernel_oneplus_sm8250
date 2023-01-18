@@ -984,6 +984,7 @@ int acc_ctrlrequest_composite(struct usb_composite_dev *cdev,
 	return acc_ctrlrequest(cdev, ctrl);
 }
 EXPORT_SYMBOL_GPL(acc_ctrlrequest_composite);
+
 static int
 __acc_function_bind(struct usb_configuration *c,
 			struct usb_function *f, bool configfs)
