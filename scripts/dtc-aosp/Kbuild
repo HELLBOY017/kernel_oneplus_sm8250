@@ -26,16 +26,37 @@ HOSTCFLAGS_util.o := $(HOSTCFLAGS_DTC)
 HOSTCFLAGS_dtc-lexer.lex.o := $(HOSTCFLAGS_DTC)
 HOSTCFLAGS_dtc-parser.tab.o := $(HOSTCFLAGS_DTC)
 
+# FIXME: fix the ambiguous grammar in parse.y and delete this hack
+#
+# Suppress shift/reduce, reduce/reduce conflicts warnings
+# unless W=1 is specified.
+#
+# Just in case, run "$(YACC) --version" without suppressing stderr
+# so that 'bison: not found' will be displayed if it is missing.
+ifeq ($(findstring 1,$(KBUILD_ENABLE_EXTRA_GCC_CHECKS)),)
+
+quiet_cmd_bison_no_warn = $(quiet_cmd_bison)
+      cmd_bison_no_warn = $(YACC) --version >/dev/null; \
+			  $(cmd_bison) 2>/dev/null
+
+$(obj)/dtc-parser.tab.c: $(src)/dtc-parser.y FORCE
+	$(call if_changed,bison_no_warn)
+
+quiet_cmd_bison_h_no_warn = $(quiet_cmd_bison_h)
+      cmd_bison_h_no_warn = $(YACC) --version >/dev/null; \
+			    $(cmd_bison_h) 2>/dev/null
+
+$(obj)/dtc-parser.h: $(src)/dtc-parser.y FORCE
+	$(call if_changed,bison_h_no_warn)
+
+endif
+
 # Dependencies on generated files need to be listed explicitly.
 $(obj)/dtc-lexer.lex.o: $(obj)/dtc-parser.h
 
 # The kernel build supports flex and bison now
 %.lex.c: %.l FORCE
 	$(call if_changed,flex)
-%.tab.c: %.y FORCE
-	$(call if_changed,bison)
-%.h: %.y FORCE
-	$(call if_changed,bison_h)
 
 # Generated files need to be cleaned explicitly.
 clean-files	:= dtc/dtc-lexer.lex.c dtc/dtc-parser.tab.c dtc/dtc-parser.h
