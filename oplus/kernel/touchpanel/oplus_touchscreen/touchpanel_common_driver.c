@@ -583,6 +583,10 @@ static void tp_gesture_handle(struct touchpanel_data *ts)
 		input_sync(ts->input_dev);
 		input_report_key(ts->input_dev, KEY_GESTURE_START + gesture_info_temp.gesture_type, 0);
 		input_sync(ts->input_dev);
+		input_report_key(ts->input_dev, KEY_F4, 1);
+		input_sync(ts->input_dev);
+		input_report_key(ts->input_dev, KEY_F4, 0);
+		input_sync(ts->input_dev);
 	} else if (gesture_info_temp.gesture_type == FingerprintDown) {
 		ts->fp_info.touch_state = 1;
 		if (ts->screenoff_fingerprint_info_support) {
