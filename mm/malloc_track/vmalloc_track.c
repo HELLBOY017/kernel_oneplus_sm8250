@@ -565,7 +565,7 @@ static const struct file_operations vmalloc_used_fops = {
 	.read = vmalloc_used_read,
 };
 
-int __init create_vmalloc_debug(struct proc_dir_entry *parent)
+int create_vmalloc_debug(struct proc_dir_entry *parent)
 {
 	struct proc_dir_entry *vpentry;
 	struct proc_dir_entry *spentry;

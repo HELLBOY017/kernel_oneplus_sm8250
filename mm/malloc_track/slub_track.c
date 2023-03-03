@@ -917,7 +917,7 @@ static const struct file_operations kmalloc_origin_operations = {
 	.release	= seq_release_private,
 };
 
-int __init create_kmalloc_debug(struct proc_dir_entry *parent)
+int create_kmalloc_debug(struct proc_dir_entry *parent)
 {
 	struct proc_dir_entry *dpentry;
 	struct proc_dir_entry *opentry;
