@@ -146,6 +146,3 @@ build.sh
 
 # Ignore out directory
 out/
-
-# Ignore AnyKernel3 directory
-AnyKernel3/
