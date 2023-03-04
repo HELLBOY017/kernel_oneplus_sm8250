@@ -310,21 +310,16 @@ cfg80211_add_nontrans_list(struct cfg80211_bss *trans_bss,
 	}
 	ssid_len = ssid[1];
 	ssid = ssid + 2;
-	rcu_read_unlock();
 
 	/* check if nontrans_bss is in the list */
 	list_for_each_entry(bss, &trans_bss->nontrans_list, nontrans_list) {
-		if (is_bss(bss, nontrans_bss->bssid, ssid, ssid_len))
+		if (is_bss(bss, nontrans_bss->bssid, ssid, ssid_len)) {
+			rcu_read_unlock();
 			return 0;
+		}
 	}
 
-	/* This is a bit weird - it's not on the list, but already on another
-	 * one! The only way that could happen is if there's some BSSID/SSID
-	 * shared by multiple APs in their multi-BSSID profiles, potentially
-	 * with hidden SSID mixed in ... ignore it.
-	 */
-	if (!list_empty(&nontrans_bss->nontrans_list))
-		return -EINVAL;
+	rcu_read_unlock();
 
 	/* add to the list */
 	list_add_tail(&nontrans_bss->nontrans_list, &trans_bss->nontrans_list);
