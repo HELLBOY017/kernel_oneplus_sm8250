@@ -2070,8 +2070,8 @@ void fw_update_thread(struct work_struct *work)
 		} while((ret < 0) && (--retry > 0));
 		chg_debug(" retry times %d, chip->fw_path[%s]\n", 5 - retry, chip->fw_path);
 		if(!ret) {
-			chip->firmware_data =  fw->data + 80 /* header */;
-			chip->fw_data_count =  fw->size - 80 /* header */ - 128 /* footer */;
+			chip->firmware_data =  fw->data;
+			chip->fw_data_count =  fw->size;
 			chip->fw_data_version = chip->firmware_data[chip->fw_data_count - 4];
 			if(!strncmp(chip->firmware_data, "FwUp", 4)) {
 			        // header and footer likely present. Do some pointer arithmetic and decrease
@@ -2140,8 +2140,8 @@ void fw_update_thread_fix(struct work_struct *work)
 		} while ((ret < 0) && (--retry > 0));
 		chg_debug(" retry times %d, chip->fw_path[%s]\n", 5 - retry, chip->fw_path);
 		if(!ret) {
-			chip->firmware_data =  fw->data + 80 /* header */;
-			chip->fw_data_count =  fw->size - 80 /* header */ - 128 /* footer */;
+			chip->firmware_data =  fw->data;
+			chip->fw_data_count =  fw->size;
 			chip->fw_data_version = chip->firmware_data[chip->fw_data_count - 4];
 			if(!strncmp(chip->firmware_data, "FwUp", 4)) {
 			        // header and footer likely present. Do some pointer arithmetic and decrease
