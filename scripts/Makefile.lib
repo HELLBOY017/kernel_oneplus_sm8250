@@ -302,7 +302,7 @@ $(obj)/%.dtb.S: $(obj)/%.dtb FORCE
 ifneq ($(DTC_EXT),)
 DTC = $(DTC_EXT)
 else
-DTC = $(objtree)/scripts/dtc-aosp/dtc-aosp
+DTC = $(objtree)/scripts/dtc/dtc
 endif
 
 quiet_cmd_dtc = DTC     $@
@@ -317,11 +317,6 @@ $(obj)/%.dtb: $(src)/%.dts $(DTC) FORCE
 	$(call if_changed_dep,dtc)
 
 dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
-
-# mkdtboimg
-#----------------------------------------------------------------------------
-quiet_cmd_mkdtboimg = DTBOIMG $@
-cmd_mkdtboimg = python3 $(srctree)/scripts/mkdtboimg.py create $@ --page_size=4096 $(filter-out FORCE,$^)
 
 # cat
 # ---------------------------------------------------------------------------
