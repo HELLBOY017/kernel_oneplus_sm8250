@@ -2073,6 +2073,13 @@ void fw_update_thread(struct work_struct *work)
 			chip->firmware_data =  fw->data + 80 /* header */;
 			chip->fw_data_count =  fw->size - 80 /* header */ - 128 /* footer */;
 			chip->fw_data_version = chip->firmware_data[chip->fw_data_count - 4];
+			if(!strncmp(chip->firmware_data, "FwUp", 4)) {
+			        // header and footer likely present. Do some pointer arithmetic and decrease
+			        // the count to exclude the header and footer.
+			        chip->firmware_data =  fw->data + 80 /* header */;
+			        chip->fw_data_count =  fw->size - 80 /* header */ - 128 /* footer */;
+			        chip->fw_data_version = chip->firmware_data[chip->fw_data_count - 4];
+			}
 			chg_debug("count:0x%x, version:0x%x\n",
 				chip->fw_data_count,chip->fw_data_version);
 			if(chip->vops->fw_check_then_recover) {
@@ -2136,6 +2143,13 @@ void fw_update_thread_fix(struct work_struct *work)
 			chip->firmware_data =  fw->data + 80 /* header */;
 			chip->fw_data_count =  fw->size - 80 /* header */ - 128 /* footer */;
 			chip->fw_data_version = chip->firmware_data[chip->fw_data_count - 4];
+			if(!strncmp(chip->firmware_data, "FwUp", 4)) {
+			        // header and footer likely present. Do some pointer arithmetic and decrease
+			        // the count to exclude the header and footer.
+			        chip->firmware_data =  fw->data + 80 /* header */;
+			        chip->fw_data_count =  fw->size - 80 /* header */ - 128 /* footer */;
+			        chip->fw_data_version = chip->firmware_data[chip->fw_data_count - 4];
+			}
 			chg_debug("count:0x%x, version:0x%x\n",
 				chip->fw_data_count, chip->fw_data_version);
 			if(chip->vops->fw_check_then_recover_fix) {
