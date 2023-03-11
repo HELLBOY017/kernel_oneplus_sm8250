@@ -196,6 +196,7 @@ gen_headers_out_arm64 = [
     "linux/dlmconstants.h",
     "linux/dm-ioctl.h",
     "linux/dm-log-userspace.h",
+    "linux/dm-user.h",
     "linux/dma-buf.h",
     "linux/dn.h",
     "linux/dqblk_xfs.h",
@@ -1020,7 +1021,6 @@ gen_headers_out_arm64 = [
     "linux/msm_audio.h",
     "sound/wcd-dsp-glink.h",
     "linux/msm_audio_sbc.h",
-    "drm/msm_drm_iris.h",
 ]
 
 genrule {
