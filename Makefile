@@ -802,6 +802,7 @@ POLLY_FLAGS	+= -mllvm -polly-loopfusion-greedy=1 \
 else
 POLLY_FLAGS	+= -mllvm -polly-opt-fusion=max
 endif
+endif
 
 # Polly may optimise loops with dead paths beyound what the linker
 # can understand. This may negate the effect of the linker's DCE
