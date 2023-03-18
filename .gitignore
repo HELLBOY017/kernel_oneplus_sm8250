@@ -138,6 +138,7 @@ kernel/configs/android-*.cfg
 
 # Ignore build script
 build.sh
+fast-oss.sh
 
 # Ignore out directory
 out/
