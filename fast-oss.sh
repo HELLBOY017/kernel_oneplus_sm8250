@@ -9,11 +9,11 @@ rm -rfv /mnt/Android/kernel_oneplus_sm8250-meteoric/anykernel/dtbo.img
 #make O=out clean
 #make O=out mrproper
 #rm -rfv out
-export PATH="/mnt/Android/toolchains/neutron-clang/bin:$PATH"
+export PATH="/mnt/Android/toolchains/proton-clang-16/bin:$PATH"
 export USE_CCACHE=1
-export CLANG_PATH="/mnt/Android/toolchains/neutron-clang/bin/clang"
+export CLANG_PATH="/mnt/Android/toolchains/proton-clang-16/bin/clang"
 export ARCH=arm64
-export VARIANT="aurora-oss-r09"
+export VARIANT="aurora-alt-r01"
 export HASH=`git rev-parse --short=8 HEAD`
 export KERNEL_ZIP="$VARIANT-$HASH"
 export LOCALVERSION="~'$VARIANT-$HASH'"
