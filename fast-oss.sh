@@ -1,20 +1,20 @@
 #!/bin/bash
 #### UNIFIED BUILDS ####
-export KERNEL_DIR="/mnt/Android/kernel_oneplus_sm8250-meteoric"
-export KBUILD_OUTPUT="/mnt/Android/kernel_oneplus_sm8250-meteoric/out"
-export ZIP_DIR="/mnt/Android/anykernel"
+export KERNEL_DIR="/mnt/Android/meteoric_sm8250"
+export KBUILD_OUTPUT="/mnt/Android/meteoric_sm8250/out"
+export ZIP_DIR="/mnt/Android/meteoric_sm8250/anykernel"
 export ZIP_OUT_DIR="/mnt/Android/Out_Zips"
-rm -rfv /mnt/Android/anykernel/Image.gz
-rm -rfv /mnt/Android/anykernel/dtbo.img
-#make O=out clean
-#make O=out mrproper
-#rm -rfv out
+rm -rfv /mnt/Android/meteoric_sm8250/anykernel/Image.gz
+rm -rfv /mnt/Android/meteoric_sm8250/dtbo.img
+make O=out clean
+make O=out mrproper
+rm -rfv out
 export PATH="/mnt/Android/toolchains/neutron-clang/bin:$PATH"
 export USE_CCACHE=1
 export CLANG_PATH="/mnt/Android/toolchains/neutron-clang/bin/clang"
 export ARCH=arm64
-export VARIANT="aurora-alt-r02"
-export HASH=`git rev-parse --short=8 HEAD`
+export VARIANT="aurora-hell-r01"
+export HASH=`git rev-parse --short=6 HEAD`
 export KERNEL_ZIP="$VARIANT-$HASH"
 export LOCALVERSION="~'$VARIANT-$HASH'"
 export KBUILD_COMPILER_STRING=$($CLANG_PATH --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
