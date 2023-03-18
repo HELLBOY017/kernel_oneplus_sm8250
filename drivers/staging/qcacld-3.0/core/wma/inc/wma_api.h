@@ -821,11 +821,4 @@ QDF_STATUS wma_vdev_self_peer_create(struct vdev_mlme_obj *vdev_mlme);
  */
 void wma_cleanup_vdev(struct wlan_objmgr_vdev *vdev);
 
-/**
- * wma_get_rssi_offset() -  Get rssi offset to adjust for a vdev
- * @vdev_id:     vdev id
- *
- * Return: rssi offset to adjust
- */
-int8_t wma_get_rssi_offset(uint8_t vdev_id);
 #endif /* WMA_API_H */

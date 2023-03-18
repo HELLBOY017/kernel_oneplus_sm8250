@@ -1829,7 +1829,7 @@ static uint32_t util_gen_new_ie(uint8_t *ie, uint32_t ielen,
 				pos += tmp_new[1] + 2;
 			}
 		}
-		if (((tmp_new + tmp_new[1] + 2) - sub_copy) >= subie_len)
+		if (tmp_new + tmp_new[1] + 2 - sub_copy == subie_len)
 			break;
 		tmp_new += tmp_new[1] + 2;
 	}

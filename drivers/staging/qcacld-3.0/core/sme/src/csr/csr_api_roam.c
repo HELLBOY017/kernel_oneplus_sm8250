@@ -104,21 +104,6 @@
 /* variable. */
 #define SNR_HACK_BMPS                         (127)
 
-
-#ifdef OPLUS_FEATURE_WIFI_DUALSTA_AP_BLACKLIST
-//Add for: hotspot management
-#ifndef MAC_ADDRESS_STR
-#define MAC_ADDRESS_STR "%02x:%02x:%02x:%02x:%02x:%02x"
-#endif /* MAC_ADDRESS_STR */
-#ifndef MAC_ADDR_ARRAY
-#define MAC_ADDR_ARRAY(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
-#endif /* MAC_ADDR_ARRAY */
-
-#define MAC_MASK(addr) addr[0], \
-    addr[1], \
-    addr[4], \
-    addr[5]
-#endif
 /*
  * ROAMING_OFFLOAD_TIMER_START - Indicates the action to start the timer
  * ROAMING_OFFLOAD_TIMER_STOP - Indicates the action to stop the timer
@@ -139,10 +124,6 @@
  * received from firmware
  */
 #define ROAM_REASON_MASK 0x0F
-#ifdef OPLUS_FEATURE_WIFI_DUALSTA_AP_BLACKLIST
-extern int is1x1IOTRouter;
-extern char routerBssid[32];
-#endif /*OPLUS_FEATURE_WIFI_DUALSTA_AP_BLACKLIST*/
 /**
  * csr_get_ielen_from_bss_description() - to get IE length
  *             from struct bss_description structure
@@ -6954,8 +6935,6 @@ static QDF_STATUS csr_roam_save_params(struct mac_context *mac_ctx,
 					wapi_ie->akm_suite_count * 4);
 				pIeBuf += wapi_ie->akm_suite_count * 4;
 			}
-			sme_debug("wapi_ie->unicast_cipher_suite_count %d",
-				wapi_ie->unicast_cipher_suite_count);
 			qdf_mem_copy(pIeBuf,
 				&wapi_ie->unicast_cipher_suite_count, 2);
 			pIeBuf += 2;
@@ -7481,7 +7460,9 @@ static void csr_roam_process_start_bss_success(struct mac_context *mac_ctx,
 	tDot11fBeaconIEs *ies_ptr = NULL;
 	tSirMacAddr bcast_mac = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 	QDF_STATUS status;
+#ifdef FEATURE_WLAN_DIAG_SUPPORT_CSR
 	host_log_ibss_pkt_type *ibss_log;
+#endif
 #ifdef FEATURE_WLAN_MCC_TO_SCC_SWITCH
 	struct ht_profile *src_profile = NULL;
 	tCsrRoamHTProfile *dst_profile = NULL;
@@ -7585,8 +7566,8 @@ static void csr_roam_process_start_bss_success(struct mac_context *mac_ctx,
 			ibss_log->beaconInterval = (uint8_t) bi;
 		WLAN_HOST_DIAG_LOG_REPORT(ibss_log);
 	}
-#endif
 	ibss_log = NULL;
+#endif
 	/*
 	 * Only set context for non-WDS_STA. We don't even need it for
 	 * WDS_AP. But since the encryption.
@@ -8288,7 +8269,9 @@ static bool csr_roam_process_results(struct mac_context *mac_ctx, tSmeCmd *cmd,
 	struct csr_roam_profile *profile = &cmd->u.roamCmd.roamProfile;
 	eRoamCmdStatus roam_status;
 	eCsrRoamResult roam_result;
+#ifdef FEATURE_WLAN_DIAG_SUPPORT_CSR
 	host_log_ibss_pkt_type *ibss_log;
+#endif
 	struct start_bss_rsp  *start_bss_rsp = NULL;
 
 	if (!session) {
@@ -8317,8 +8300,8 @@ static bool csr_roam_process_results(struct mac_context *mac_ctx, tSmeCmd *cmd,
 			ibss_log->status = WLAN_IBSS_STATUS_FAILURE;
 			WLAN_HOST_DIAG_LOG_REPORT(ibss_log);
 		}
-#endif
 		ibss_log = NULL;
+#endif
 		start_bss_rsp = (struct start_bss_rsp *)context;
 		roam_status = eCSR_ROAM_IBSS_IND;
 		roam_result = eCSR_ROAM_RESULT_IBSS_STARTED;
@@ -13654,16 +13637,20 @@ static QDF_STATUS csr_roam_start_wait_for_key_timer(
 {
 	QDF_STATUS status;
 	uint8_t session_id = mac->roam.WaitForKeyTimerInfo.vdev_id;
+#ifdef WLAN_DEBUG
 	tpCsrNeighborRoamControlInfo pNeighborRoamInfo =
 		&mac->roam.neighborRoamInfo[session_id];
+#endif
 
 	if (csr_neighbor_roam_is_handoff_in_progress(mac, session_id)) {
 		/* Disable heartbeat timer when hand-off is in progress */
+#ifdef WLAN_DEBUG
 		sme_debug("disabling HB timer in state: %s sub-state: %s",
 			mac_trace_get_neighbour_roam_state(
 				pNeighborRoamInfo->neighborRoamState),
 			mac_trace_getcsr_roam_sub_state(
 				mac->roam.curSubState[session_id]));
+#endif
 		mac->mlme_cfg->timeouts.heart_beat_threshold = 0;
 	}
 	sme_debug("csrScanStartWaitForKeyTimer");
@@ -16238,15 +16225,7 @@ QDF_STATUS csr_send_join_req_msg(struct mac_context *mac, uint32_t sessionId,
 			if (is_vendor_ap_present)
 				sme_debug("1x1 with 1 Chain AP");
 		}
-        #ifdef OPLUS_FEATURE_WIFI_DUALSTA_AP_BLACKLIST
-        if (is_vendor_ap_present) {
-            is1x1IOTRouter = 1;
-        } else {
-            is1x1IOTRouter = 0;
-        }
-         sprintf(routerBssid, MAC_ADDRESS_STR, MAC_ADDR_ARRAY(pBssDescription->bssId));
-         sme_debug("csr 1x1IOTRouter=%d, %02x:%02x:***:***:%02x:%02x\n",is1x1IOTRouter,MAC_MASK(routerBssid));
-        #endif
+
 		if (is_vendor_ap_present &&
 		    !policy_mgr_is_hw_dbs_2x2_capable(mac->psoc) &&
 		    ((mac->roam.configParam.is_force_1x1 ==
@@ -16289,9 +16268,7 @@ QDF_STATUS csr_send_join_req_msg(struct mac_context *mac, uint32_t sessionId,
 					       &vendor_ap_search_attr,
 					       ACTION_OUI_SWITCH_TO_11N_MODE);
 		if (mac->roam.configParam.is_force_1x1 &&
-                    #ifndef OPLUS_FEATURE_WIFI_DUALSTA
 		    mac->lteCoexAntShare &&
-		    #endif /* OPLUS_FEATURE_WIFI_DUALSTA */
 		    is_vendor_ap_present &&
 		    (dot11mode == MLME_DOT11_MODE_ALL ||
 		     dot11mode == MLME_DOT11_MODE_11AC ||
@@ -16422,13 +16399,6 @@ QDF_STATUS csr_send_join_req_msg(struct mac_context *mac, uint32_t sessionId,
 				csr_join_req->rsnIE.length = ieLen;
 				qdf_mem_copy(&csr_join_req->rsnIE.rsnIEdata,
 						 wpaRsnIE, ieLen);
-				sme_debug("csr_join_req->rsnIE.length %d",
-					csr_join_req->rsnIE.length);
-				QDF_TRACE_HEX_DUMP(QDF_MODULE_ID_SME,
-					QDF_TRACE_LEVEL_DEBUG,
-					&csr_join_req->rsnIE.rsnIEdata,
-					csr_join_req->rsnIE.length);
-
 			} else  /* should be WPA/WPA2 otherwise */
 #endif /* FEATURE_WLAN_WAPI */
 			{
