@@ -206,14 +206,12 @@ struct hdd_ll_stats {
  * @request_id: userspace-assigned link layer stats request id
  * @request_bitmap: userspace-assigned link layer stats request bitmap
  * @ll_stats_lock: Lock to serially access request_bitmap
- * @vdev_id: id of vdev handle
  */
 struct hdd_ll_stats_priv {
 	qdf_list_t ll_stats_q;
 	uint32_t request_id;
 	uint32_t request_bitmap;
 	qdf_spinlock_t ll_stats_lock;
-	uint8_t vdev_id;
 };
 
 /*
@@ -1252,6 +1250,15 @@ void wlan_hdd_cfg80211_link_layer_stats_callback(hdd_handle_t hdd_handle,
 	if (status)
 		return;
 
+	adapter = hdd_get_adapter_by_vdev(hdd_ctx,
+					   results->ifaceId);
+
+	if (!adapter) {
+		hdd_err("vdev_id %d does not exist with host",
+			results->ifaceId);
+		return;
+	}
+
 	switch (indication_type) {
 	case SIR_HAL_LL_STATS_RESULTS_RSP:
 	{
@@ -1274,12 +1281,6 @@ void wlan_hdd_cfg80211_link_layer_stats_callback(hdd_handle_t hdd_handle,
 				priv->request_id, results->rspId,
 				priv->request_bitmap, results->paramId);
 			osif_request_put(request);
-			return;
-		}
-
-		adapter = hdd_get_adapter_by_vdev(hdd_ctx, priv->vdev_id);
-		if (!adapter) {
-			hdd_err("invalid vdev %d", priv->vdev_id);
 			return;
 		}
 
@@ -1585,7 +1586,6 @@ static int wlan_hdd_send_ll_stats_req(struct hdd_adapter *adapter,
 
 	priv->request_id = req->reqId;
 	priv->request_bitmap = req->paramIdMask;
-	priv->vdev_id = adapter->vdev_id;
 	qdf_spinlock_create(&priv->ll_stats_lock);
 	qdf_list_create(&priv->ll_stats_q, HDD_LINK_STATS_MAX);
 
@@ -4750,7 +4750,6 @@ static int wlan_hdd_get_sta_stats(struct wiphy *wiphy,
 	int link_speed_rssi_mid = 0;
 	int link_speed_rssi_low = 0;
 	uint32_t link_speed_rssi_report = 0;
-	int8_t rssi_offset;
 
 	qdf_mtrace(QDF_MODULE_ID_HDD, QDF_MODULE_ID_HDD,
 		   TRACE_CODE_HDD_CFG80211_GET_STA,
@@ -4802,12 +4801,6 @@ static int wlan_hdd_get_sta_stats(struct wiphy *wiphy,
 		adapter->rssi = 0;
 		adapter->hdd_stats.summary_stat.rssi = 0;
 	}
-	/* Adjust RSSI of connected AP per customer's requirement */
-	rssi_offset = wma_get_rssi_offset(adapter->vdev_id);
-	adapter->rssi += rssi_offset;
-	snr += rssi_offset;
-	hdd_debug("vdev %d, adjust rssi offset: %d, snr: %d, rssi: %d",
-		adapter->vdev_id, rssi_offset, snr, adapter->rssi);
 
 	sinfo->signal = adapter->rssi;
 	hdd_debug("snr: %d, rssi: %d",

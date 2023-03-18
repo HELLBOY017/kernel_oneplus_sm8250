@@ -5252,28 +5252,6 @@ QDF_STATUS wma_set_wlm_latency_level(void *wma_ptr,
 	return ret;
 }
 
-int8_t wma_get_rssi_offset(uint8_t vdev_id)
-{
-	tp_wma_handle wma;
-	enum phy_ch_width ch_width;
-
-	wma = cds_get_context(QDF_MODULE_ID_WMA);
-	if (!wma) {
-		WMA_LOGE("Invalid wma");
-		return 0;
-	}
-	ch_width = wma->interfaces[vdev_id].chan_width;
-	WMA_LOGD("ch wdith: %d", ch_width);
-	switch (ch_width) {
-	case CH_WIDTH_40MHZ:
-		return 3;
-	case CH_WIDTH_80MHZ:
-		return 6;
-	default:
-		return 0;
-	}
-}
-
 QDF_STATUS wma_add_bss_peer_sta(uint8_t *self_mac, uint8_t *bssid,
 				bool roam_synch)
 {

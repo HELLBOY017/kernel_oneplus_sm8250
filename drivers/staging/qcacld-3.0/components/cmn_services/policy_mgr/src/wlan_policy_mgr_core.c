@@ -2757,7 +2757,7 @@ bool policy_mgr_allow_new_home_channel(
 				 * and therefore a 3rd connection with the
 				 * same MAC is possible.
 				 */
-			} else if (wlan_reg_is_same_band_freqs(
+			} else if (wlan_reg_is_same_band_channels(
 				ch_freq, pm_conc_connection_list[0].freq) &&
 				policy_mgr_is_multi_ap_plus_sta_3vif_conc(
 					pm_conc_connection_list[0].mode,

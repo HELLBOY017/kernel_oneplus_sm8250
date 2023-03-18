@@ -54,9 +54,6 @@
 ** OL Rx thread.
 */
 #define CDS_MAX_OL_RX_PKT 4000
-
-#define CDS_ACTIVE_STAID_CLEANUP_DELAY		10
-#define CDS_ACTIVE_STAID_CLEANUP_TIMEOUT	200
 #endif
 
 typedef void (*cds_ol_rx_thread_cb)(void *context,
@@ -225,8 +222,6 @@ typedef struct _cds_sched_context {
 	/* affinity requied during uplink traffic*/
 	bool rx_affinity_required;
 	uint8_t conf_rx_thread_ul_affinity;
-
-	uint16_t active_staid;
 #endif
 
 #ifdef WLAN_FEATURE_PKT_CAPTURE

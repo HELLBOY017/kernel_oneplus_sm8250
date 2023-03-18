@@ -61,10 +61,6 @@ static uint8_t re_init_fail_cnt, probe_fail_cnt;
 /* An atomic flag to check if SSR cleanup has been done or not */
 static qdf_atomic_t is_recovery_cleanup_done;
 
-#ifdef OPLUS_FEATURE_WIFI_OPLUSWFD
-extern void oplus_wfd_set_hdd_ctx(struct hdd_context *hdd_ctx);
-extern void oplus_register_oplus_wfd_wlan_ops_qcom(void);
-#endif
 /*
  * In BMI Phase we are only sending small chunk (256 bytes) of the FW image at
  * a time, and wait for the completion interrupt to start the next transfer.
@@ -560,10 +556,7 @@ static int __hdd_soc_probe(struct device *dev,
 	cds_set_driver_loaded(true);
 	cds_set_load_in_progress(false);
 	hdd_start_complete(0);
-	#ifdef OPLUS_FEATURE_WIFI_OPLUSWFD
-	oplus_wfd_set_hdd_ctx(hdd_ctx);
-	oplus_register_oplus_wfd_wlan_ops_qcom();
-	#endif
+
 	hdd_soc_load_unlock(dev);
 
 	return 0;
@@ -734,9 +727,6 @@ static void __hdd_soc_remove(struct device *dev)
 	pr_info("%s: Removing driver v%s\n", WLAN_MODULE_NAME,
 		QWLAN_VERSIONSTR);
 
-#ifdef OPLUS_FEATURE_WIFI_OPLUSWFD
-	oplus_wfd_set_hdd_ctx(NULL);
-#endif
 	hif_ctx = cds_get_context(QDF_MODULE_ID_HIF);
 	if (hif_ctx) {
 		/*
@@ -1105,7 +1095,7 @@ static int __wlan_hdd_bus_suspend(struct wow_enable_params wow_params)
 	struct pmo_wow_enable_params pmo_params;
 	int pending;
 
-	hdd_info("starting bus suspend");
+	hdd_debug("starting bus suspend");
 
 	hdd_ctx = cds_get_context(QDF_MODULE_ID_HDD);
 
@@ -1183,7 +1173,7 @@ static int __wlan_hdd_bus_suspend(struct wow_enable_params wow_params)
 	 */
 	pld_request_bus_bandwidth(hdd_ctx->parent_dev, PLD_BUS_WIDTH_NONE);
 
-	hdd_info("bus suspend succeeded");
+	hdd_debug("bus suspend succeeded");
 	return 0;
 
 resume_hif:
@@ -1322,7 +1312,7 @@ int wlan_hdd_bus_resume(void)
 	if (cds_is_driver_recovering())
 		return 0;
 
-	hdd_info("starting bus resume");
+	hdd_debug("starting bus resume");
 
 	if (!hdd_ctx) {
 		hdd_err_rl("hdd context is NULL");
@@ -1391,7 +1381,7 @@ int wlan_hdd_bus_resume(void)
 		goto out;
 	}
 
-	hdd_info("bus resume succeeded");
+	hdd_debug("bus resume succeeded");
 	return 0;
 
 out:

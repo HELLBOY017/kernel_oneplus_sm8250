@@ -157,7 +157,7 @@ static inline bool dp_rx_mcast_echo_check(struct dp_soc *soc,
 	return false;
 }
 
-bool dp_rx_link_desc_refill_duplicate_check(
+void dp_rx_link_desc_refill_duplicate_check(
 				struct dp_soc *soc,
 				struct hal_buf_info *buf_info,
 				hal_buff_addrinfo_t ring_buf_info)
@@ -174,14 +174,7 @@ bool dp_rx_link_desc_refill_duplicate_check(
 			   current_link_desc_buf_info.sw_cookie);
 		DP_STATS_INC(soc, rx.err.dup_refill_link_desc, 1);
 	}
-
-	if (qdf_unlikely(!current_link_desc_buf_info.paddr)) {
-		dp_err_rl("NULL link desc addr found");
-		return true;
-	}
-
 	*buf_info = current_link_desc_buf_info;
-	return false;
 }
 
 /**
@@ -203,7 +196,6 @@ dp_rx_link_desc_return_by_addr(struct dp_soc *soc,
 	hal_soc_handle_t hal_soc = soc->hal_soc;
 	QDF_STATUS status = QDF_STATUS_E_FAILURE;
 	void *src_srng_desc;
-	bool ret;
 
 	if (!wbm_rel_srng) {
 		QDF_TRACE(QDF_MODULE_ID_DP, QDF_TRACE_LEVEL_ERROR,
@@ -212,13 +204,10 @@ dp_rx_link_desc_return_by_addr(struct dp_soc *soc,
 	}
 
 	/* do duplicate link desc address check */
-	ret = dp_rx_link_desc_refill_duplicate_check(
+	dp_rx_link_desc_refill_duplicate_check(
 				soc,
 				&soc->last_op_info.wbm_rel_link_desc,
 				link_desc_addr);
-
-	if (ret)
-		return QDF_STATUS_SUCCESS;
 
 	if (qdf_unlikely(hal_srng_access_start(hal_soc, wbm_rel_srng))) {
 
