@@ -2,18 +2,18 @@
 #### UNIFIED BUILDS ####
 export KERNEL_DIR="/mnt/Android/kernel_oneplus_sm8250-meteoric"
 export KBUILD_OUTPUT="/mnt/Android/kernel_oneplus_sm8250-meteoric/out"
-export ZIP_DIR="/mnt/Android/kernel_oneplus_sm8250-meteoric/anykernel"
+export ZIP_DIR="/mnt/Android/anykernel"
 export ZIP_OUT_DIR="/mnt/Android/Out_Zips"
-rm -rfv /mnt/Android/kernel_oneplus_sm8250-meteoric/anykernel/Image.gz
-rm -rfv /mnt/Android/kernel_oneplus_sm8250-meteoric/anykernel/dtbo.img
+rm -rfv /mnt/Android/anykernel/Image.gz
+rm -rfv /mnt/Android/anykernel/dtbo.img
 #make O=out clean
 #make O=out mrproper
 #rm -rfv out
-export PATH="/mnt/Android/toolchains/proton-clang-16/bin:$PATH"
+export PATH="/mnt/Android/toolchains/neutron-clang/bin:$PATH"
 export USE_CCACHE=1
-export CLANG_PATH="/mnt/Android/toolchains/proton-clang-16/bin/clang"
+export CLANG_PATH="/mnt/Android/toolchains/neutron-clang/bin/clang"
 export ARCH=arm64
-export VARIANT="aurora-alt-r01"
+export VARIANT="aurora-alt-r02"
 export HASH=`git rev-parse --short=8 HEAD`
 export KERNEL_ZIP="$VARIANT-$HASH"
 export LOCALVERSION="~'$VARIANT-$HASH'"
