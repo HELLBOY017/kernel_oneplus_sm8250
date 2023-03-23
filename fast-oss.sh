@@ -13,7 +13,7 @@ export PATH="/mnt/Android/toolchains/neutron-clang/bin:$PATH"
 export USE_CCACHE=1
 export CLANG_PATH="/mnt/Android/toolchains/neutron-clang/bin/clang"
 export ARCH=arm64
-export VARIANT="aurora-hell-r01"
+export VARIANT="aurora-hell-r02"
 export HASH=`git rev-parse --short=6 HEAD`
 export KERNEL_ZIP="$VARIANT-$HASH"
 export LOCALVERSION="~'$VARIANT-$HASH'"
