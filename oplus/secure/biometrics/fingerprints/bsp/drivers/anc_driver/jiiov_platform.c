@@ -25,20 +25,10 @@
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
-//#include <linux/wakelock.h>
-#include "../include/wakelock.h"
+#include <linux/pm_wakeup.h>
 #include <linux/cdev.h>
 #include <net/sock.h>
 #include "jiiov_platform.h"
-
-//#define ANC_CONFIG_PM_WAKELOCKS 0
-
-
-#ifdef ANC_CONFIG_PM_WAKELOCKS
-#include <linux/pm_wakeup.h>
-#else
-#include "../include/wakelock.h"
-#endif
 
 #ifdef ANC_USE_SPI
 #include <linux/spi/spi.h>
@@ -111,11 +101,7 @@ struct anc_data {
 #ifndef ANC_USE_POWER_GPIO
     struct regulator *vreg[ARRAY_SIZE(vreg_conf)];
 #endif
-#ifdef ANC_CONFIG_PM_WAKELOCKS
-    struct wakeup_source fp_wakelock;
-#else
-    struct wake_lock fp_wakelock;
-#endif
+    struct wakeup_source *fp_wakelock;
 #ifdef ANC_USE_IRQ
     struct work_struct work_queue;
     int irq_gpio;
@@ -228,11 +214,7 @@ static int anc_opticalfp_tp_handler(struct fp_underscreen_info *tp_info)
     if(tp_info->touch_state == lasttouchmode){
         return rc;
     }
-#ifdef ANC_CONFIG_PM_WAKELOCKS
-    __pm_wakeup_event(&g_anc_data->fp_wakelock, msecs_to_jiffies(ANC_WAKELOCK_HOLD_TIME));
-#else
-    wake_lock_timeout(&g_anc_data->fp_wakelock, msecs_to_jiffies(ANC_WAKELOCK_HOLD_TIME));
-#endif
+    __pm_wakeup_event(g_anc_data->fp_wakelock, msecs_to_jiffies(ANC_WAKELOCK_HOLD_TIME));
     netlink_msg.area_rate = tp_info->area_rate;
     netlink_msg.x = tp_info->x;
     netlink_msg.y = tp_info->y;
@@ -627,11 +609,7 @@ static irqreturn_t anc_irq_handler(int irq, void *handle)
     struct anc_data *data = handle;
 
     pr_info("irq handler\n");
-#ifdef ANC_CONFIG_PM_WAKELOCKS
-    __pm_wakeup_event(&data->fp_wakelock, msecs_to_jiffies(ANC_WAKELOCK_HOLD_TIME));
-#else
-    wake_lock_timeout(&data->fp_wakelock, msecs_to_jiffies(ANC_WAKELOCK_HOLD_TIME));
-#endif
+    __pm_wakeup_event(g_anc_data->fp_wakelock, msecs_to_jiffies(ANC_WAKELOCK_HOLD_TIME));
     schedule_work(&data->work_queue);
 
     return IRQ_HANDLED;
@@ -1051,11 +1029,7 @@ static int anc_probe(anc_device_t *pdev)
     INIT_WORK(&dev_data->work_queue, anc_do_irq_work);
 #endif
 
-#ifdef ANC_CONFIG_PM_WAKELOCKS
-    wakeup_source_init(&dev_data->fp_wakelock, "anc_fp_wakelock");
-#else
-    wake_lock_init(&dev_data->fp_wakelock, WAKE_LOCK_SUSPEND, "anc_fp_wakelock");
-#endif
+    g_anc_data->fp_wakelock = wakeup_source_register(NULL, "anc_fp_wakelock");
 
 #ifdef ANC_USE_NETLINK
     /* Register fb notifier callback */
@@ -1110,11 +1084,7 @@ static int anc_remove(anc_device_t *pdev)
 #ifdef ANC_USE_IRQ
     cancel_work_sync(&data->work_queue);
 #endif
-#ifdef ANC_CONFIG_PM_WAKELOCKS
-    wakeup_source_trash(&data->fp_wakelock);
-#else
-    wake_lock_destroy(&data->fp_wakelock);
-#endif
+    wakeup_source_unregister(g_anc_data->fp_wakelock);
 #ifdef ANC_USE_NETLINK
     msm_drm_unregister_client(&data->notifier);
 #endif
