@@ -481,7 +481,6 @@ export OPLUS_F2FS_DEBUG
 #Add for Debug Config, slub/kmemleak/kasan config
 ifeq ($(AGING_DEBUG_MASK),1)
 #Agingtest enable rtb
-OPLUS_MEMLEAK_DETECT := true
 OPLUS_AGING_TEST := true
 endif
 
@@ -498,8 +497,6 @@ endif
 ifeq ($(AGING_DEBUG_MASK),4)
 #enable rtb
 OPLUS_AGING_TEST := true
-#enable kasan
-OPLUS_SLUB_TEST := true
 endif
 
 ifeq ($(AGING_DEBUG_MASK),5)
@@ -509,20 +506,7 @@ OPLUS_AGING_TEST := true
 OPLUS_PAGEOWNER_TEST := true
 endif
 
-export OPLUS_AGING_TEST OPLUS_KASAN_TEST OPLUS_KMEMLEAK_TEST OPLUS_SLUB_TEST OPLUS_PAGEOWNER_TEST
-#endif
-
-#ifdef OPLUS_FEATURE_MEMLEAK_DETECT
-#Add for memleak test
-ifeq ($(TARGET_MEMLEAK_DETECT_TEST),0)
-OPLUS_MEMLEAK_DETECT := false
-else ifeq ($(TARGET_MEMLEAK_DETECT_TEST),1)
-OPLUS_MEMLEAK_DETECT := true
-OPLUS_SLUB_TEST := true
-endif
-
-#Add for memleak test
-export OPLUS_MEMLEAK_DETECT
+export OPLUS_AGING_TEST OPLUS_KASAN_TEST OPLUS_KMEMLEAK_TEST OPLUS_PAGEOWNER_TEST
 #endif
 
 export ARCH SRCARCH CONFIG_SHELL HOSTCC KBUILD_HOSTCFLAGS CROSS_COMPILE AS LD CC
