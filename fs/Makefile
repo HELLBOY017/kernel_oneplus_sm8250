@@ -138,6 +138,3 @@ obj-$(CONFIG_CEPH_FS)		+= ceph/
 obj-$(CONFIG_PSTORE)		+= pstore/
 obj-$(CONFIG_EFIVAR_FS)		+= efivarfs/
 obj-$(CONFIG_EROFS_FS)          += erofs/
-#ifdef OPLUS_FEATURE_EXFAT_SUPPORT
-obj-$(CONFIG_EXFAT_FS)		+= exfat/
-#endif /*OPLUS_FEATURE_EXFAT_SUPPORT*/
