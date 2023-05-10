@@ -325,9 +325,6 @@ endif # NETWORK_FILESYSTEMS
 source "fs/nls/Kconfig"
 source "fs/dlm/Kconfig"
 
-#ifdef OPLUS_FEATURE_EXFAT_SUPPORT
-source "fs/exfat/Kconfig"
-#endif /*OPLUS_FEATURE_EXFAT_SUPPORT*/
 source "fs/unicode/Kconfig"
 
 endmenu
