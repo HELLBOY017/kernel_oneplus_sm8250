@@ -4,7 +4,7 @@
 ### AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=Horizon kernel by LibXZR (xzr467706992 @ xda-developers)
+kernel.string= Meteoric kernel by HELLBOY017
 do.devicecheck=0
 do.modules=0
 do.systemless=0
@@ -16,7 +16,7 @@ supported.patchlevels=
 
 # shell variables
 block=boot;
-is_slot_device=1;
+is_slot_device=auto;
 ramdisk_compression=auto;
 patch_vbmeta_flag=auto;
 
