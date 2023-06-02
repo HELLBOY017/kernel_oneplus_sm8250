@@ -34,17 +34,9 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
 
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-#include <linux/sched_assist/sched_assist_common.h>
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
-
 #if defined(OPLUS_FEATURE_TASK_CPUSTATS) && defined(CONFIG_OPLUS_SCHED)
 #include <linux/task_sched_info.h>
 #endif /* defined(OPLUS_FEATURE_TASK_CPUSTATS) && defined(CONFIG_OPLUS_SCHED) */
-
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-#include <linux/tuning/frame_info.h>
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 
 #ifdef CONFIG_OPLUS_FEATURE_GAME_OPT
 #include "../../drivers/soc/oplus/game_opt/game_ctrl.h"
@@ -1480,17 +1472,6 @@ void check_preempt_curr(struct rq *rq, struct task_struct *p, int flags)
 {
 	const struct sched_class *class;
 
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-//#ifdef CONFIG_UXCHAIN_V2
-	u64 wallclock = sched_clock();
-
-	if (sysctl_uxchain_v2 &&
-		wallclock - rq->curr->get_mmlock_ts < PREEMPT_DISABLE_RWSEM &&
-		rq->curr->get_mmlock &&
-		!(p->flags & PF_WQ_WORKER) && !task_has_rt_policy(p))
-		return;
-#endif
-
 	if (p->sched_class == rq->curr->sched_class) {
 		rq->curr->sched_class->check_preempt_curr(rq, p, flags);
 	} else {
@@ -2750,16 +2731,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags,
 {
 	unsigned long flags;
 	int cpu, success = 0;
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	bool in_grp = false;
-	struct frame_boost_group *grp = NULL;
-	rcu_read_lock();
-	grp = task_frame_boost_group(p);
-	rcu_read_unlock();
-	if (grp) {
-		in_grp = true;
-	}
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 
 	/*
 	 * If we are going to wake up a thread waiting for CONDITION we
@@ -2778,9 +2749,6 @@ try_to_wake_up(struct task_struct *p, unsigned int state, int wake_flags,
 	update_wake_tid(p, current, other_runnable);
 #endif /* defined(OPLUS_FEATURE_TASK_CPUSTATS) && defined(CONFIG_OPLUS_SCHED) */
 
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	trace_sched_in_fbg(p, in_grp);
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 #ifdef CONFIG_OPLUS_FEATURE_RT_INFO
     if (rt_handler != NULL)
         rt_handler(p);
@@ -3573,10 +3541,6 @@ static struct rq *finish_task_switch(struct task_struct *prev)
 		g_rt_task_dead(prev);
 #endif
 
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	        sched_set_frame_boost_group(prev, false);
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
-
 		/* Task is done with its stack. */
 		put_task_stack(prev);
 
@@ -3908,50 +3872,6 @@ unsigned long long task_sched_runtime(struct task_struct *p)
 }
 
 unsigned int capacity_margin_freq = 1280; /* ~20% margin */
-#ifndef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-extern int sysctl_frame_rate;
-extern unsigned int sched_ravg_window;
-extern bool ux_task_misfit(struct task_struct *p, int cpu);
-u64 ux_task_load[NR_CPUS] = {0};
-u64 ux_load_ts[NR_CPUS] = {0};
-static u64 calc_freq_ux_load(struct task_struct *p, u64 wallclock)
-{
-	unsigned int maxtime = 0, factor = 0;
-	unsigned int window_size = sched_ravg_window / NSEC_PER_MSEC;
-	u64 timeline = 0, freq_exec_load = 0, freq_ravg_load = 0;
-	u64 wakeclock = p->last_wake_ts;
-
-	if (wallclock < wakeclock)
-		return 0;
-
-	switch (sysctl_frame_rate) {
-		case 60:
-		case 90:
-			maxtime = 5;
-			break;
-		case 120:
-			maxtime = 4;
-			break;
-		default:
-			return 0;
-	}
-
-	timeline = wallclock - wakeclock;
-	factor = window_size / maxtime;
-	freq_exec_load = timeline * factor;
-
-	if (freq_exec_load > sched_ravg_window)
-		freq_exec_load = sched_ravg_window;
-
-	freq_ravg_load = (p->ravg.prev_window + p->ravg.curr_window) << 1;
-	if (freq_ravg_load > sched_ravg_window)
-		freq_ravg_load = sched_ravg_window;
-
-	return max(freq_exec_load, freq_ravg_load);
-}
-#endif
-#endif
 /*
  * This function gets called by the timer code, with HZ frequency.
  * We call it with interrupts disabled.
@@ -3986,29 +3906,7 @@ void scheduler_tick(void)
 	if (early_notif)
 		flag = SCHED_CPUFREQ_WALT | SCHED_CPUFREQ_EARLY_DET;
 
-#ifndef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-	if (sched_assist_scene(SA_SLIDE)) {
-		if(rq->curr && is_heavy_ux_task(rq->curr) && !ux_task_misfit(rq->curr, cpu)) {
-			ux_task_load[cpu] = calc_freq_ux_load(rq->curr, wallclock);
-			ux_load_ts[cpu] = wallclock;
-			flag |= (SCHED_CPUFREQ_WALT | SCHED_CPUFREQ_BOOST);
-		}
-		else if (ux_task_load[cpu] != 0) {
-			ux_task_load[cpu] = 0;
-			ux_load_ts[cpu] = wallclock;
-			flag |= (SCHED_CPUFREQ_WALT | SCHED_CPUFREQ_RESET);
-		}
-	} else {
-		ux_task_load[cpu] = 0;
-		ux_load_ts[cpu] = 0;
-	}
-#endif
-#endif
 	cpufreq_update_util(rq, flag);
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	sched_update_fbg_tick(rq->curr, wallclock);
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 	rq_unlock(rq, &rf);
 
 	perf_event_task_tick();
@@ -4026,9 +3924,6 @@ void scheduler_tick(void)
 
 	if (curr->sched_class == &fair_sched_class)
 		check_for_migration(rq, curr);
-#if defined(OPLUS_FEATURE_SCHED_ASSIST) && defined(CONFIG_OPLUS_FEATURE_SCHED_SPREAD)
-	update_rq_nr_imbalance(cpu);
-#endif
 }
 
 #ifdef CONFIG_NO_HZ_FULL
@@ -4459,10 +4354,6 @@ static void __sched notrace __schedule(bool preempt)
 		}
 		switch_count = &prev->nvcsw;
 	}
-
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-	prev->enqueue_time = rq->clock;
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
 
 	next = pick_next_task(rq, prev, &rf);
 	clear_tsk_need_resched(prev);
@@ -7326,9 +7217,6 @@ void __init sched_init_smp(void)
 	cpumask_copy(&current->cpus_requested, cpu_possible_mask);
 	sched_init_granularity();
 
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-	ux_init_cpu_data();
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
 	init_sched_rt_class();
 	init_sched_dl_class();
 
@@ -7370,17 +7258,6 @@ static struct kmem_cache *task_group_cache __read_mostly;
 
 DECLARE_PER_CPU(cpumask_var_t, load_balance_mask);
 DECLARE_PER_CPU(cpumask_var_t, select_idle_mask);
-
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-void set_random_uxchain_v2(void)
-{
-	int rand = 1;
-
-	get_random_bytes(&rand, 1);
-	printk("get_random_bytes %d\n", rand);
-	sysctl_uxchain_v2 = rand % 2;
-}
-#endif
 
 void __init sched_init(void)
 {
@@ -7458,9 +7335,6 @@ void __init sched_init(void)
 		init_cfs_rq(&rq->cfs);
 		init_rt_rq(&rq->rt);
 		init_dl_rq(&rq->dl);
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-		ux_init_rq_data(rq);
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
 #ifdef CONFIG_FAIR_GROUP_SCHED
 		root_task_group.shares = ROOT_TASK_GROUP_LOAD;
 		INIT_LIST_HEAD(&rq->leaf_cfs_rq_list);
@@ -7556,10 +7430,6 @@ void __init sched_init(void)
 	psi_init();
 
 	init_uclamp();
-
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-	set_random_uxchain_v2();
-#endif
 
 	scheduler_running = 1;
 }

@@ -39,14 +39,6 @@
 extern void show_regs(struct pt_regs *);
 #endif /* VENDOR_EDIT */
 
-#ifdef CONFIG_OPLUS_FEATURE_AUDIO_OPT
-#include <linux/sched_assist/sched_assist_status.h>
-#endif
-
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-#include <linux/tuning/frame_boost_group.h>
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
-
 /* task_struct member predeclarations (sorted alphabetically): */
 struct audit_context;
 struct backing_dev_info;
@@ -243,22 +235,6 @@ enum fps {
 
 #endif
 
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-extern int sysctl_sched_assist_enabled;
-extern int sysctl_sched_assist_scene;
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-extern int sysctl_cpu_multi_thread;
-#endif
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-extern int sysctl_slide_boost_enabled;
-extern int sysctl_boost_task_threshold;
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-extern int sysctl_prefer_silver;
-extern int sysctl_heavy_task_thresh;
-extern int sysctl_cpu_util_thresh;
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
 /* Task command name length: */
 #define TASK_COMM_LEN			16
 
@@ -671,12 +647,6 @@ struct ravg {
 	u16 pred_demand_scaled;
 	u64 active_time;
 	u64 last_win_size;
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	u64 curr_window_exec;
-	u64 prev_window_exec;
-	u64 curr_window_scale;
-	u64 prev_window_scale;
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 };
 #else
 static inline void sched_exit(struct task_struct *p) { }
@@ -1568,30 +1538,6 @@ struct task_struct {
 	/* Used by LSM modules for access restriction: */
 	void				*security;
 #endif
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-	int ux_state;
-	atomic64_t inherit_ux;
-	struct list_head ux_entry;
-	int ux_depth;
-	u64 enqueue_time;
-	u64 inherit_ux_start;
-#ifdef CONFIG_OPLUS_UX_IM_FLAG
-	int ux_im_flag;
-#endif
-#ifdef CONFIG_OPLUS_FEATURE_SCHED_SPREAD
-        int lb_state;
-        int ld_flag;
-#endif
-#endif /* OPLUS_FEATURE_SCHED_ASSIST */
-#ifdef OPLUS_FEATURE_SCHED_ASSIST
-//#ifdef CONFIG_UXCHAIN_V2
-	int ux_once;
-	u64 get_mmlock_ts;
-	int get_mmlock;
-#endif
-#ifdef CONFIG_OPLUS_FEATURE_AUDIO_OPT
-	struct task_info oplus_task_info;
-#endif
 
 #if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
 	struct task_record record[OPLUS_NR_CPUS];	/* 2*u64 */
@@ -1624,11 +1570,6 @@ struct task_struct {
 	int dtpdg; /* dynamic tpd task group */
 	int tpd_st; /* affinity decision from im */
 #endif
-#ifdef CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4
-	struct frame_boost_group *fbg;
-	struct list_head fbg_list;
-	int fbg_depth;
-#endif /* CONFIG_OPLUS_FEATURE_INPUT_BOOST_V4 */
 #if IS_ENABLED(CONFIG_OPLUS_FEATURE_FDLEAK_CHECK)
 	unsigned int fdleak_flag;
 #endif
