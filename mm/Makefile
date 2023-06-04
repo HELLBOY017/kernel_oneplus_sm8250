@@ -111,10 +111,6 @@ obj-$(CONFIG_MEMFD_CREATE) += memfd.o
 obj-$(CONFIG_PROCESS_RECLAIM)	+= process_reclaim.o
 obj-$(CONFIG_DAMON) += damon/
 
-#ifdef OPLUS_FEATURE_HEALTHINFO
-obj-y += healthinfo/
-#endif /* OPLUS_FEATURE_HEALTHINFO */
-
 #ifdef OPLUS_FEATURE_MULTI_KSWAPD
 obj-$(CONFIG_OPLUS_MULTI_KSWAPD) += multi_kswapd/
 #endif /*OPLUS_FEATURE_MULTI_KSWAPD*/
