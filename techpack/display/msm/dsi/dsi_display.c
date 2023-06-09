@@ -34,7 +34,6 @@
 #include "iris/dsi_iris5_api.h"
 #endif
 #ifdef OPLUS_BUG_STABILITY
-#include <soc/oplus/system/oplus_mm_kevent_fb.h>
 #include <linux/msm_drm_notify.h>
 #include <linux/notifier.h>
 #include "oplus_display_private_api.h"
@@ -824,7 +823,6 @@ static bool dsi_display_validate_reg_read(struct dsi_panel *panel)
 		for (i = 0; i < len; ++i)
 			cnt += scnprintf(payload + cnt, sizeof(payload) - cnt, "[%02x] ", config->return_buf[i]);
 		DRM_ERROR("ESD check failed: %s\n", payload);
-		mm_fb_display_kevent(payload, MM_FB_KEY_RATELIMIT_1H, "ESD check failed");
 	}
 #endif  /*OPLUS_BUG_STABILITY*/
 
@@ -1291,8 +1289,6 @@ int dsi_display_check_status(struct drm_connector *connector, void *display,
 						dsi_panel_need_rewrite_reg = 1;
 						dsi_panel_err_flag_continue_count = 0;
 						count++;
-						mm_fb_display_kevent_named(MM_FB_KEY_RATELIMIT_1H,
-							"DisplayDriverID@@424$$ err flag continue 3 times. count = %d\n", count);
 					}
 
 					/*10 times in 1 hour trigger rewrite*/
@@ -1311,9 +1307,6 @@ int dsi_display_check_status(struct drm_connector *connector, void *display,
 							dsi_panel_need_rewrite_reg = 1;
 							count++;
 							DSI_INFO("panel rewrite ++++++ \n");
-							mm_fb_display_kevent_named(MM_FB_KEY_RATELIMIT_1H,
-								"DisplayDriverID@@425$$ 10 times ESD occurred in one hour. count = %d, ESD total - %d\n",
-								count, esd_occurred_count);
 						}
 						store_index = (store_index + 1) % record_count_occurr;
 						DSI_INFO("panel >10 store_index =%d\n", store_index);
@@ -1331,8 +1324,6 @@ int dsi_display_check_status(struct drm_connector *connector, void *display,
 						DSI_INFO("3 times continue error set dsi_panel_need_rewrite_reg = 2\n");
 						dsi_panel_need_rewrite_reg = 2;
 						count++;
-						mm_fb_display_kevent_named(MM_FB_KEY_RATELIMIT_1H,
-							"DisplayDriverID@@426$$ err flag continue 3 times. count = %d\n", count);
 					}
 				}
 			}
