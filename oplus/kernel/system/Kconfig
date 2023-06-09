@@ -74,10 +74,6 @@ source "drivers/soc/oplus/system/misc/Kconfig"
 source "drivers/soc/oplus/system/mdmfeature/Kconfig"
 #endif /*OPLUS_FEATURE_MDMFEATURE*/
 
-#ifdef OPLUS_FEATURE_LOG_CORE
-source "drivers/soc/oplus/system/olc/Kconfig"
-#endif /* OPLUS_FEATURE_LOG_CORE */
-
 #ifdef OPLUS_FEATURE_LAST_BOOT_REASON
 source "drivers/soc/oplus/system/last_boot_reason/Kconfig"
 #endif /*OPLUS_FEATURE_LAST_BOOT_REASON*/
