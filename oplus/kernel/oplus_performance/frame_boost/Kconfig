@@ -1,0 +1,7 @@
+config OPLUS_FEATURE_FRAME_BOOST
+	bool "config frame boost3.0"
+	default n
+	depends on SCHED_WALT
+	help
+		track key thread information during frame drawing, opt task placement and frequency selection
+

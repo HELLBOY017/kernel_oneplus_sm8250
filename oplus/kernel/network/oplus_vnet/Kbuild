@@ -1,0 +1,1 @@
+obj-$(CONFIG_OPLUS_FEATURE_VIRTUAL_NET) += oplus_vnet.o

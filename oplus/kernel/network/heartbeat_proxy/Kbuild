@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2018-2020 Oplus. All rights reserved.
+
+ifeq ($(CONFIG_OPLUS_FEATURE_HEARTBEAT_MTK), m)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+endif
+
+MODULE = heartbeat_proxy
+obj-$(CONFIG_OPLUS_FEATURE_HEARTBEAT_MTK) += $(MODULE).o
+
+ifeq ($(CONFIG_OPLUS_FEATURE_HEARTBEAT_MTK), m)
+$(MODULE)-objs := mediatek/heartbeat_proxy_mtk.o mediatek/mipc_hashmap.o mediatek/mipc_list.o mediatek/mipc_msg.o
+endif

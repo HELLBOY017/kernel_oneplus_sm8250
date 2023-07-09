@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2022-2030 Oplus. All rights reserved.
+config OPLUS_FEATURE_INIT_WATCHDOG
+    tristate "init watchdog"
+    default n
+    help
+      define this config to enable init watchdog monitor feature.
+
