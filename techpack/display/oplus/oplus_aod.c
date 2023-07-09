@@ -142,8 +142,7 @@ int oplus_panel_get_aod_light_mode(void *buf)
 	unsigned int *aod_mode = buf;
 	(*aod_mode) = aod_light_mode;
 
-	printk(KERN_INFO "oplus_get_aod_
-light_mode = %d\n",aod_light_mode);
+	printk(KERN_INFO "oplus_get_aod_light_mode = %d\n",aod_light_mode);
 
 	return 0;
 }
