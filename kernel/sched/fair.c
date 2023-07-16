@@ -6952,7 +6952,6 @@ static void find_best_target(struct sched_domain *sd, cpumask_t *cpus,
 	unsigned int target_nr_rtg_high_prio = UINT_MAX;
 	bool rtg_high_prio_task = task_rtg_high_prio(p);
 	cpumask_t new_allowed_cpus;
-	bool skip_big_cluster = false;
 
 	/*
 	 * In most cases, target_capacity tracks capacity_orig of the most
