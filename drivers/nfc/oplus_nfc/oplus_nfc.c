@@ -19,7 +19,7 @@
 static char current_chipset[32];
 static bool support_nfc = false;
 
-bool is_nfc_support()
+bool is_nfc_support(void)
 {
 	return support_nfc;
 }
@@ -72,7 +72,7 @@ static int nfc_read_func(struct seq_file *s, void *v)
 {
 	void *p = s->private;
 
-	switch((uint32_t)(p)) {
+	switch((uintptr_t)(p)) {
 	case NFC_CHIPSET_VERSION:
 		seq_printf(s, "%s", current_chipset);
 		break;
