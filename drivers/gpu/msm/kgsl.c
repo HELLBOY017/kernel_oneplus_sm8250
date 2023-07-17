@@ -28,9 +28,6 @@
 #include "kgsl_reclaim.h"
 #include "kgsl_sync.h"
 #include "kgsl_trace.h"
-#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
-#include "kgsl_reserve.h"
-#endif
 
 #ifndef arch_mmap_check
 #define arch_mmap_check(addr, len, flags)	(0)
@@ -5011,11 +5008,6 @@ static unsigned long _get_svm_area(struct kgsl_process_private *private,
 	 * Search downwards from the hint first. If that fails we
 	 * must try to search above it.
 	 */
-#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
-	result = kgsl_get_unmmaped_area_from_anti_fragment(private, entry, len, align);
-	if (result > 0)
-		return result;
-#endif
 	result = _search_range(private, entry, start, addr, len, align);
 	if (IS_ERR_VALUE(result) && hint != 0)
 		result = _search_range(private, entry, addr, end, len, align);
@@ -5070,9 +5062,6 @@ kgsl_get_unmapped_area(struct file *file, unsigned long addr,
 					       pgoff, len, (int) val);
 
 	}
-#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
-	update_oom_pid_and_time(len, val, flags);
-#endif
 
 put:
 	kgsl_mem_entry_put(entry);

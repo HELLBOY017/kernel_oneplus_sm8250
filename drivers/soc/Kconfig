@@ -35,7 +35,4 @@ source "drivers/soc/oplus/sensor/Kconfig"
 source "drivers/soc/oplus/misc/Kconfig"
 #endif /* OPLUS_FEATURE_ESIM */
 
-#Add for NandSwap
-source "drivers/soc/oplus/oplus_nandswap/Kconfig"
-
 endmenu

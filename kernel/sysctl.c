@@ -97,10 +97,6 @@
 #include <linux/nmi.h>
 #endif
 
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_OPLUS_MULTI_KSWAPD)
-#include <linux/multi_kswapd.h>
-#endif
-
 #if defined(CONFIG_SYSCTL)
 
 #if defined(CONFIG_OPLUS_FEATURE_HUNG_TASK_ENHANCE) && defined(CONFIG_OPLUS_FEATURE_DEATH_HEALER)
@@ -148,10 +144,7 @@ static unsigned long zero_ul;
 static unsigned long one_ul = 1;
 static unsigned long long_max = LONG_MAX;
 static int one_hundred = 100;
-#if defined(OPLUS_FEATURE_ZRAM_OPT) && defined(CONFIG_OPLUS_ZRAM_OPT)
-extern int direct_vm_swappiness;
 static int two_hundred = 200;
-#endif /*OPLUS_FEATURE_ZRAM_OPT*/
 
 #ifdef OPLUS_FEATURE_EDTASK_IMPROVE
 int sysctl_ed_task_enabled = 1;
@@ -1808,59 +1801,8 @@ static struct ctl_table vm_table[] = {
 		.mode		= 0444,
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
-#if defined(OPLUS_FEATURE_ZRAM_OPT) && defined(CONFIG_OPLUS_ZRAM_OPT)
-		.extra2		= &two_hundred,
-#else
-		.extra2		= &one_hundred,
-#endif /*OPLUS_FEATURE_ZRAM_OPT*/
-	},
-#ifdef CONFIG_DYNAMIC_TUNNING_SWAPPINESS
-	{
-		.procname	= "vm_swappiness_threshold1",
-		.data		= &vm_swappiness_threshold1,
-		.maxlen		= sizeof(vm_swappiness_threshold1),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1		= &zero,
 		.extra2		= &two_hundred,
 	},
-	{
-		.procname	= "vm_swappiness_threshold2",
-		.data		= &vm_swappiness_threshold2,
-		.maxlen		= sizeof(vm_swappiness_threshold2),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1		= &zero,
-		.extra2		= &two_hundred,
-	},
-	{
-		.procname	= "swappiness_threshold1_size",
-		.data		= &swappiness_threshold1_size,
-		.maxlen		= sizeof(swappiness_threshold1_size),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1		= &zero,
-	},
-	{
-		.procname	= "swappiness_threshold2_size",
-		.data		= &swappiness_threshold2_size,
-		.maxlen		= sizeof(swappiness_threshold2_size),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1		= &zero,
-	},
-#endif
-#if defined(OPLUS_FEATURE_ZRAM_OPT) && defined(CONFIG_OPLUS_ZRAM_OPT)
-	{
-		.procname	= "direct_swappiness",
-		.data		= &direct_vm_swappiness,
-		.maxlen 	= sizeof(direct_vm_swappiness),
-		.mode		= 0444,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1 	= &zero,
-		.extra2 	= &two_hundred,
-	},
-#endif
 	{
 		.procname       = "want_old_faultaround_pte",
 		.data           = &want_old_faultaround_pte,
@@ -1932,12 +1874,7 @@ static struct ctl_table vm_table[] = {
 		.procname	= "compact_memory",
 		.data		= &sysctl_compact_memory,
 		.maxlen		= sizeof(int),
-#ifdef OPLUS_FEATURE_PERFORMANCE
-		.mode		= 0222,
-#else
 		.mode		= 0200,
-
-#endif /*OPLUS_FEATURE_PERFORMANCE*/
 		.proc_handler	= sysctl_compaction_handler,
 	},
 	{
@@ -1976,17 +1913,6 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= watermark_boost_factor_sysctl_handler,
 		.extra1		= &zero,
 	},
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_OPLUS_MULTI_KSWAPD)
-	{
-		.procname	= "kswapd_threads",
-		.data		= &kswapd_threads,
-		.maxlen		= sizeof(kswapd_threads),
-		.mode		= 0644,
-		.proc_handler	= kswapd_threads_sysctl_handler,
-		.extra1		= &one,
-		.extra2		= &max_kswapd_threads,
-	},
-#endif
 	{
 		.procname	= "watermark_scale_factor",
 		.data		= &watermark_scale_factor,

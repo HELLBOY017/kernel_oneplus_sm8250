@@ -100,10 +100,6 @@ static atomic_t swapin_readahead_hits = ATOMIC_INIT(4);
 void show_swap_cache_info(void)
 {
 	unsigned long totalswap = total_swap_pages;
-#if defined(CONFIG_NANDSWAP)
-	if (nandswap_si)
-		totalswap -= nandswap_si->pages;
-#endif
 
 	printk("%lu pages in swap cache\n", total_swapcache_pages());
 	printk("Swap cache stats: add %lu, delete %lu, find %lu/%lu\n",
