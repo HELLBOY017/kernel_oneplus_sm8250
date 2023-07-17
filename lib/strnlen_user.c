@@ -3,6 +3,7 @@
 #include <linux/export.h>
 #include <linux/uaccess.h>
 #include <linux/mm.h>
+#include <linux/bitops.h>
 
 #include <asm/word-at-a-time.h>
 
