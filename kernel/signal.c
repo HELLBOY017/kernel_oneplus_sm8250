@@ -1447,20 +1447,6 @@ int group_send_sig_info(int sig, struct siginfo *info, struct task_struct *p,
 	if (!ret && sig) {
 		check_panic_on_foreground_kill(p);
 		ret = do_send_sig_info(sig, info, p, type);
-#ifdef CONFIG_OOM_REAPER_RECLAIM_MEMORY
-		if (!ret && sig == SIGKILL) {
-			unsigned long pages = 0;
-
-			task_lock(p);
-			if (p->mm)
-				pages = get_mm_counter(p->mm, MM_ANONPAGES) +
-					get_mm_counter(p->mm, MM_SWAPENTS);
-			task_unlock(p);
-
-			if (pages > REAPER_SZ)
-				add_to_oom_reaper(p);
-		}
-#endif /* CONFIG_OOM_REAPER_RECLAIM_MEMORY */
 		if (capable(CAP_KILL) && sig == SIGKILL) {
 			if (!strcmp(current->comm, ULMK_MAGIC) ||
 			    !strcmp(current->comm, ATHENA_KILLER_MAGIC))

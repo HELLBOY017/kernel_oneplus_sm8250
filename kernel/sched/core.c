@@ -20,10 +20,6 @@
 #include <asm/tlb.h>
 
 #include <soc/qcom/minidump.h>
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_KSWAPD_UNBIND_MAX_CPU)
-/*add multi kswapd support*/
-#include <linux/multi_kswapd.h>
-#endif
 
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
@@ -1620,10 +1616,6 @@ void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
 	bool queued, running;
 
 	lockdep_assert_held(&p->pi_lock);
-#if defined(OPLUS_FEATURE_MULTI_KSWAPD) && defined(CONFIG_KSWAPD_UNBIND_MAX_CPU)
-	if (kswapd_affinity_check(p, new_mask))
-		return;
-#endif
 
 	queued = task_on_rq_queued(p);
 	running = task_current(rq, p);

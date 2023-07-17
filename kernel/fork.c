@@ -995,11 +995,6 @@ static struct mm_struct *mm_init(struct mm_struct *mm, struct task_struct *p,
 	mm->mmap = NULL;
 	mm->mm_rb = RB_ROOT;
 	mm->vmacache_seqnum = 0;
-#if defined(OPLUS_FEATURE_VIRTUAL_RESERVE_MEMORY) && defined(CONFIG_VIRTUAL_RESERVE_MEMORY)
-	mm->va_feature = 0;
-	mm->va_feature_rnd = 0;
-	mm->zygoteheap_in_MB = 0;
-#endif
 #ifdef CONFIG_SPECULATIVE_PAGE_FAULT
 	rwlock_init(&mm->mm_rb_lock);
 #endif
@@ -2467,14 +2462,14 @@ long _do_fork(unsigned long clone_flags,
 		p->vfork_done = &vfork;
 		init_completion(&vfork);
 		get_task_struct(p);
-
-		if (IS_ENABLED(CONFIG_LRU_GEN) && !(clone_flags & CLONE_VM)) {
-			/* lock the task to synchronize with memcg migration */
-			task_lock(p);
-			lru_gen_add_mm(p->mm);
-			task_unlock(p);
-		}
 	}
+
+	if (IS_ENABLED(CONFIG_LRU_GEN) && !(clone_flags & CLONE_VM)) {
+        /* lock the task to synchronize with memcg migration */
+                task_lock(p);
+                lru_gen_add_mm(p->mm);
+                task_unlock(p);
+        }
 
 	wake_up_new_task(p);
 

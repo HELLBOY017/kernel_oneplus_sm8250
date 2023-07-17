@@ -44,6 +44,3 @@ obj-$(CONFIG_OPLUS_WAKELOCK_PROFILER) += oplus/owakelock/
 #ifdef OPLUS_FEATURE_ESIM
 obj-y += oplus/misc/
 #endif /* OPLUS_FEATURE_ESIM */
-
-#Add for NandSwap
-obj-$(CONFIG_NANDSWAP)		+= oplus/oplus_nandswap/
