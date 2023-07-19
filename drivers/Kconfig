@@ -235,4 +235,10 @@ source "drivers/energy_model/Kconfig"
 
 source "techpack/data/drivers/Kconfig"
 
+menu "KernelSU"
+config KERNELSU
+	bool "Ship kernelsu with kernel"
+	default n
+endmenu
+
 endmenu
