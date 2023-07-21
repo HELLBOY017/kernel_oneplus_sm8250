@@ -189,7 +189,7 @@ int kswapd_threads_current = DEF_KSWAPD_THREADS_PER_NODE;
 /*
  * From 0 .. 100.  Higher means more swappy.
  */
-int vm_swappiness = 160;
+int vm_swappiness = 100;
 
 /*
  * The total number of pages which are beyond the high watermark within all
@@ -6359,7 +6359,9 @@ static int balance_pgdat(pg_data_t *pgdat, int order, int classzone_idx)
 		.gfp_mask = GFP_KERNEL,
 		.order = order,
 		.may_unmap = 1,
+#ifdef OPLUS_FEATURE_PERFORMANCE
 		.may_swap = 1,
+#endif
 	};
 
 	psi_memstall_enter(&pflags);
@@ -6446,8 +6448,9 @@ restart:
 		 * reclaim will be aborted.
 		 */
 		sc.may_writepage = !laptop_mode && !nr_boost_reclaim;
+#ifndef OPLUS_FEATURE_PERFORMANCE
 		sc.may_swap = !nr_boost_reclaim;
-
+#endif
 		/*
 		 * Do some background aging of the anon list, to give
 		 * pages a chance to be referenced before reclaiming. All

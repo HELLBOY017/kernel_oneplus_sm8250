@@ -850,6 +850,24 @@ static int show_smap(struct seq_file *m, void *v)
 
 	smap_gather_stats(vma, &mss);
 
+	#ifdef OPLUS_FEATURE_PERFORMANCE
+	if (strcmp(current->comm, "android.bg") == 0) {
+		if ((unsigned long)(mss.pss >> (10 + PSS_SHIFT)) > 0) {
+			SEQ_PUT_DEC(" kB\nPss:            ", mss.pss >> PSS_SHIFT);
+		}
+		if ((mss.private_clean >> 10) > 0) {
+			SEQ_PUT_DEC(" kB\nPrivate_Clean:  ", mss.private_clean);
+		}
+		if ((mss.private_dirty >> 10) > 0) {
+			SEQ_PUT_DEC(" kB\nPrivate_Dirty:  ", mss.private_dirty);
+		}
+
+		seq_puts(m, " kB\n");
+		m_cache_vma(m, vma);
+		return 0;
+	}
+	#endif /*OPLUS_FEATURE_PERFORMANCE*/
+
 	show_map_vma(m, vma);
 	if (vma_get_anon_name(vma)) {
 		seq_puts(m, "Name:           ");
