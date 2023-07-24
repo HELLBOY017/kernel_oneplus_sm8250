@@ -955,6 +955,7 @@ void oplus_vooc_fw_type_dt(struct oplus_vooc_chip *chip)
 
 	chip->parse_fw_from_dt = of_property_read_bool(node, "qcom,parse_fw_from_dt");
 	chg_debug("qcom,parse_fw_from_dt is %d\n", chip->parse_fw_from_dt);
+	chip->fw_update_on_chargering_reboot = of_property_read_bool(node, "qcom,fw_update_on_chargering_reboot");
 
 	chip->abnormal_adapter_current_cnt = of_property_count_elems_of_size(node,
 				"qcom,abnormal_adapter_current", sizeof(*chip->abnormal_adapter_current));
@@ -1456,6 +1457,10 @@ bool oplus_is_charger_reboot(struct oplus_vooc_chip *chip)
 #ifdef CONFIG_OPLUS_CHARGER_MTK
 	int charger_type;
 
+	if (chip->fw_update_on_chargering_reboot) {
+		chg_debug("need check fw_update\n");
+		return false;
+	}
 	charger_type = oplus_chg_get_chg_type();
 	if (charger_type == 5) {
 		chg_debug("dont need check fw_update\n");

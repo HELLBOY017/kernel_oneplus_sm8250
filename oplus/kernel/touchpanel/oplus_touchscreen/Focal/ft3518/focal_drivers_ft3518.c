@@ -1873,6 +1873,7 @@ static void fts_enable_gesture_mask(void *chip_data, uint32_t enable)
     int config2 = 0;
     int config4 = 0;
     struct fts_ts_data *ts_data = (struct fts_ts_data *)chip_data;
+	int state = ts_data->gesture_state;
 
     if (enable) {
         config1 = 0xff;
@@ -1881,6 +1882,30 @@ static void fts_enable_gesture_mask(void *chip_data, uint32_t enable)
     } else if (!enable) {
 
     }
+	if (ts_data->black_gesture_indep) {
+        if (enable) {
+                SET_FTS_GESTURE(state, Right2LeftSwip, config1, 0)
+                SET_FTS_GESTURE(state, Left2RightSwip, config1, 1)
+                SET_FTS_GESTURE(state, Down2UpSwip, config1, 2)
+                SET_FTS_GESTURE(state, Up2DownSwip, config1, 3)
+                SET_FTS_GESTURE(state, DouTap, config1, 4)
+                SET_FTS_GESTURE(state, DouSwip, config1, 5)
+                SET_FTS_GESTURE(state, SingleTap, config1, 7)
+                SET_FTS_GESTURE(state, Circle, config2, 0)
+                SET_FTS_GESTURE(state, Wgestrue, config2, 1)
+                SET_FTS_GESTURE(state, Mgestrue, config2, 2)
+                SET_FTS_GESTURE(state, RightVee, config4, 1)
+                SET_FTS_GESTURE(state, LeftVee, config4, 2)
+                SET_FTS_GESTURE(state, DownVee, config4, 3)
+                SET_FTS_GESTURE(state, UpVee, config4, 4)
+                SET_GESTURE_BIT(state, Heart, config4, 5)
+	}	else {
+                config1 = 0;
+                config2 = 0;
+                config4 = 0;
+        }
+	}
+	TPD_INFO("%s: config1:%x, config2:%x config4:%x\n", __func__, config1, config2, config4);
     ret = touch_i2c_write_byte(ts_data->client, FTS_REG_GESTURE_CONFIG1, config1);
     if (ret < 0) {
         TPD_INFO("%s: write FTS_REG_GESTURE_CONFIG1 enable(%x=%x) fail", __func__, FTS_REG_GESTURE_CONFIG1, config1);

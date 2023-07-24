@@ -599,8 +599,6 @@ struct oplus_voocphy_manager {
 	unsigned int vooc_cool_down_num;
 	unsigned int current_default;
 	unsigned int current_expect;
-	unsigned int current_bcc_max;
-	unsigned int current_bcc_min;
 	unsigned int current_bcc_ext;
 	unsigned int current_max;
 	unsigned int current_spec;
@@ -865,6 +863,7 @@ struct oplus_voocphy_operations {
 	int (*clear_interrupts)(struct oplus_voocphy_manager *chip);
 	int (*get_voocphy_enable)(struct oplus_voocphy_manager *chip, u8 *data);
 	void (*dump_voocphy_reg)(struct oplus_voocphy_manager *chip);
+	int (*upload_cp_error)(struct oplus_voocphy_manager *chip, int err_type);
 	int (*set_dpdm_enable)(struct oplus_voocphy_manager *chip, bool enable);
 	int (*adsp_reset_voocphy)(void);
 	int (*get_chip_id)(void);
@@ -956,7 +955,7 @@ void oplus_voocphy_set_detach_unexpectly(bool val);
 int oplus_voocphy_enter_ship_mode(void);
 int oplus_voocphy_adjust_current_by_cool_down(int val);
 bool oplus_voocphy_get_btb_temp_over(void);
-
+int oplus_voocphy_upload_cp_error(int err_type);
 bool oplus_is_voocphy_charging(void);
 void oplus_voocphy_set_bcc_current(int val);
 int oplus_voocphy_get_bcc_max_curr(void);
@@ -969,5 +968,6 @@ int oplus_voocphy_get_batt_curve_current(void);
 void oplus_adsp_voocphy_force_svooc(int enable);
 int oplus_get_adsp_voocphy_enable(void);
 int oplus_voocphy_get_last_fast_chg_type(void);
+int oplus_voocphy_chg_out_check_event_handle(unsigned long data);
 void oplus_voocphy_clear_last_fast_chg_type(void);
 #endif /* _OPLUS_VOOCPHY_H_ */

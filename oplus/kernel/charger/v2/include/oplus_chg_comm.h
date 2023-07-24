@@ -69,6 +69,7 @@ enum comm_topic_item {
 	COMM_ITEM_RECHGING,
 	COMM_ITEM_FFC_STEP,
 	COMM_ITEM_SMOOTH_SOC,
+	COMM_ITEM_CHG_CYCLE_STATUS,
 };
 
 enum oplus_chg_ffc_status {
@@ -83,6 +84,12 @@ enum aging_ffc_version {
 	AGING_FFC_V1,
 	AGING_FFC_VERSION_MAX
 };
+
+typedef enum {
+	CHG_CYCLE_VOTER__NONE		= 0,
+	CHG_CYCLE_VOTER__ENGINEER	= (1 << 0),
+	CHG_CYCLE_VOTER__USER		= (1 << 1),
+}OPLUS_CHG_CYCLE_VOTER;
 
 int oplus_comm_get_vbatt_over_threshold(struct oplus_mms *topic);
 int oplus_comm_switch_ffc(struct oplus_mms *topic);

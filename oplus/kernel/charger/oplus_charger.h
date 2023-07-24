@@ -441,6 +441,12 @@ typedef enum {
 } OPLUS_CHG_STOP_VOTER;
 
 typedef enum {
+	CHG_CYCLE_VOTER__NONE		= 0,
+	CHG_CYCLE_VOTER__ENGINEER	= (1 << 0),
+	CHG_CYCLE_VOTER__USER		= (1 << 1),
+}OPLUS_CHG_CYCLE_VOTER;
+
+typedef enum {
 	CHARGER_STATUS__GOOD,
 	CHARGER_STATUS__VOL_HIGH,
 	CHARGER_STATUS__VOL_LOW,
@@ -928,7 +934,6 @@ struct oplus_chg_full_data {
 	int clear_full_check_count;
 };
 
-struct reserve_soc_data {
 #define SMOOTH_SOC_MAX_FIFO_LEN	4
 #define SMOOTH_SOC_MIN_FIFO_LEN	1
 #define RESERVE_SOC_MIN		1
@@ -936,20 +941,16 @@ struct reserve_soc_data {
 #define RESERVE_SOC_MAX		5
 #define RESERVE_SOC_OFF		0
 #define OPLUS_FULL_SOC		100
-#define OPLUS_FULL_CNT		36 /* 180S/5 */
-
+#define SOC_JUMP_RANGE_VAL	1
+struct reserve_soc_data {
 	bool smooth_switch_v2;
-	int reserve_chg_soc;
-	int reserve_dis_soc;
+	bool is_soc_jump_range;
 	int reserve_soc;
-	int rus_chg_soc;
-	int rus_dis_soc;
+	int rus_reserve_soc;
 
 	int smooth_soc_fifo[SMOOTH_SOC_MAX_FIFO_LEN];
 	int smooth_soc_index;
 	int smooth_soc_avg_cnt;
-	int soc_jump_array[RESERVE_SOC_MAX];
-	bool is_soc_jump_range;
 };
 
 typedef enum {
@@ -1407,6 +1408,7 @@ struct oplus_chg_chip {
 	int usb_present_vbus0_count;
 
 	int bms_heat_temp_compensation;
+	int chg_cycle_status;
 };
 
 #define SOFT_REST_VOL_THRESHOLD		4300

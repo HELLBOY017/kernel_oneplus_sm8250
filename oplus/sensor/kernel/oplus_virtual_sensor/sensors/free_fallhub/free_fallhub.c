@@ -162,5 +162,5 @@ module_init(free_fallhub_init);
 module_exit(free_fallhub_exit);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("ACTIVITYHUB driver");
-MODULE_AUTHOR("zhq@oplus.com");
+MODULE_AUTHOR("zhq");
 

@@ -503,12 +503,15 @@ static int oplus_wired_current_set(struct oplus_chg_wired *chip,
 	else
 		vote(chip->icl_votable, COOL_DOWN_VOTER, false, 0, true);
 
-	if (led_on)
-		vote(chip->fcc_votable, LED_ON_VOTER, true,
-		     spec->led_on_fcc_max_ma[chip->temp_region], false);
-	else
+	if (led_on) {
+		if (chip->chg_type == OPLUS_CHG_USB_TYPE_VOOC)
+			vote(chip->fcc_votable, LED_ON_VOTER, false, 0, false);
+		else
+			vote(chip->fcc_votable, LED_ON_VOTER, true,
+			     spec->led_on_fcc_max_ma[chip->temp_region], false);
+	} else {
 		vote(chip->fcc_votable, LED_ON_VOTER, false, 0, false);
-
+	}
 	icl_changed = (icl_tmp_ma != get_effective_result(chip->icl_votable));
 	chg_info("vbus_changed=%s, icl_changed=%s\n",
 		 true_or_false_str(vbus_changed),

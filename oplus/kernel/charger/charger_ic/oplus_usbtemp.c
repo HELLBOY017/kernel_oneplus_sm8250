@@ -1309,6 +1309,7 @@ bool oplus_usbtemp_trigger_for_rise_fast_without_temp(struct oplus_chg_chip *chi
 			current_temp_r = chip->usb_temp_r;
 			if ((count_l >= retry_cnt &&  chip->usb_temp_l > USB_30C && chip->usb_temp_l < USB_100C)
 					|| (count_r >= retry_cnt &&  chip->usb_temp_r > USB_30C  && chip->usb_temp_r < USB_100C))  {
+					count = 0;
 					return true;
 			}
 			count_r = 1;

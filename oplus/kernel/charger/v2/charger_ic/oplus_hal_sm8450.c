@@ -441,7 +441,7 @@ void oplus_typec_disable(void)
 	pst = &bcdev->psy_list[PSY_TYPE_USB];
 
 	/* set disable typec mode */
-	rc = write_property_id(bcdev, pst, USB_TYPEC_MODE, TYPEC_PORT_ROLE_TRY_SNK);
+	rc = write_property_id(bcdev, pst, USB_TYPEC_MODE, QCOM_TYPEC_PORT_ROLE_DRP);
 	if (rc < 0) {
 		chg_info("Couldn't write 0x2b44[3] rc=%d\n", rc);
 	}
@@ -703,7 +703,7 @@ static void oplus_ccdetect_enable(struct battery_chg_dev *bcdev)
 	}
 
 	/* set DRP mode */
-	rc = write_property_id(bcdev, pst, USB_TYPEC_MODE, TYPEC_PORT_ROLE_DRP);
+	rc = write_property_id(bcdev, pst, USB_TYPEC_MODE, QCOM_TYPEC_PORT_ROLE_DRP);
 	if (rc < 0) {
 		chg_err("Couldn't clear 0x2b44[0] rc=%d\n", rc);
 	}
@@ -4206,7 +4206,6 @@ static int  oplus_chg_8350_smt_test(struct oplus_chg_ic_dev *ic_dev, char buf[],
 static int oplus_chg_8350_input_present(struct oplus_chg_ic_dev *ic_dev, bool *present)
 {
 	struct battery_chg_dev *bcdev;
-	int prop_id = 0;
 	bool vbus_rising = false;
 	struct psy_state *pst = NULL;
 	int rc = 0;
@@ -4219,24 +4218,16 @@ static int oplus_chg_8350_input_present(struct oplus_chg_ic_dev *ic_dev, bool *p
 	bcdev = oplus_chg_ic_get_drvdata(ic_dev);
 	pst = &bcdev->psy_list[PSY_TYPE_USB];
 
-	prop_id = get_property_id(pst, POWER_SUPPLY_PROP_ONLINE);
-	rc = read_property_id(bcdev, pst, prop_id);
+	rc = read_property_id(bcdev, pst, USB_IN_STATUS);
 	if (rc < 0) {
 		chg_err("read usb vbus_rising fail, rc=%d\n", rc);
 		return rc;
 	}
-	vbus_rising = pst->prop[prop_id];
-
-	chg_info("vbus_rising=%d\n", vbus_rising);
-
-	if (vbus_rising == false && pst->prop[prop_id] == 2) {
-		chg_err("USBIN low but svooc/vooc started\n");
-		vbus_rising = true;
-	}
+	vbus_rising = pst->prop[USB_IN_STATUS];
 
 	*present = vbus_rising;
-
-	return rc;
+	chg_info("vbus_rising=%d\n", vbus_rising);
+	return vbus_rising;
 }
 
 static int oplus_chg_8350_input_suspend(struct oplus_chg_ic_dev *ic_dev, bool suspend)
@@ -5042,6 +5033,15 @@ static int oplus_chg_8350_set_qc_config(struct oplus_chg_ic_dev *ic_dev, enum op
 			chg_err("set QC to %d mV fail, rc=%d\n", vol_mv, rc);
 		else
 			chg_err("set QC to %d mV, rc=%d\n", vol_mv, rc);
+		msleep(350);
+		if (qpnp_get_prop_charger_voltage_now(bcdev) < 8000) {
+			chg_err("Non-standard QC-liked adapter detected,unabled to request 9V,falls back to 5V");
+			rc = write_property_id(bcdev, pst, BATT_SET_QC, 5000);
+			if (rc)
+				chg_err("Fall back to QC 5V fail, rc=%d\n", rc);
+			else
+				chg_err("Fall back to QC 5V OK\n");
+		}
 		break;
 	case OPLUS_CHG_QC_3_0:
 	default:
@@ -5295,7 +5295,11 @@ static int oplus_chg_8350_set_typec_mode(struct oplus_chg_ic_dev *ic_dev,
 	bcdev = oplus_chg_ic_get_drvdata(ic_dev);
 	pst = &bcdev->psy_list[PSY_TYPE_USB];
 
-	rc = write_property_id(bcdev, pst, USB_TYPEC_MODE, mode);
+	if (mode >= ARRAY_SIZE(qcom_typec_port_role)) {
+		chg_err("typec mode(=%d) error\n", mode);
+		return -EINVAL;
+	}
+	rc = write_property_id(bcdev, pst, USB_TYPEC_MODE, qcom_typec_port_role[mode]);
 	if (rc < 0)
 		chg_err("set typec mode(=%d) error\n", mode);
 

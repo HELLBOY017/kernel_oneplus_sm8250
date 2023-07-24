@@ -136,7 +136,7 @@ static inline ssize_t spi_sync_read_internal(struct spidev_data *spidev, char *t
 
 static ssize_t fingerprint_read(struct file * f, char __user *buf, size_t count, loff_t *offset)
 {
-    struct fingerprint_message_t *rcv_msg = NULL;
+    struct fingerprint_message_t rcv_msg = {0};
     if (buf == NULL || f == NULL || count != sizeof(struct fingerprint_message_t)) {
         return -1;
     }
@@ -144,10 +144,7 @@ static ssize_t fingerprint_read(struct file * f, char __user *buf, size_t count,
     if (wait_fp_event(NULL, 0, &rcv_msg)) {
         return -2;
     }
-    if (rcv_msg == NULL) {
-        return -3;
-    }
-    if (copy_to_user(buf, rcv_msg, count)) {
+    if (copy_to_user(buf, &rcv_msg, count)) {
         return -EFAULT;
     }
     FP_LOGI("end wait for driver event");

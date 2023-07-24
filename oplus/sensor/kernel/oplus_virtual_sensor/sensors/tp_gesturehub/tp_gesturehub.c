@@ -182,5 +182,5 @@ module_init(tp_gesturehub_init);
 module_exit(tp_gesturehub_exit);
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("ACTIVITYHUB driver");
-MODULE_AUTHOR("zhq@oplus.com");
+MODULE_AUTHOR("zhq");
 

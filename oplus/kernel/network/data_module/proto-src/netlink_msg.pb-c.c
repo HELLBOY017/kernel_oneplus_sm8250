@@ -187,6 +187,96 @@ void   netlink__proto__request_set_log_steam_ip__free_unpacked
   assert(message->base.descriptor == &netlink__proto__request_set_log_steam_ip__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
+void   netlink__proto__request_get_all_uid_speed__init
+                     (ProtobufCMessage         *message)
+{
+  static const Netlink__Proto__RequestGetAllUidSpeed init_value = NETLINK__PROTO__REQUEST_GET_ALL_UID_SPEED__INIT;
+  *(Netlink__Proto__RequestGetAllUidSpeed*)message = init_value;
+}
+size_t netlink__proto__request_get_all_uid_speed__get_packed_size
+                     (const Netlink__Proto__RequestGetAllUidSpeed *message)
+{
+  assert(message->base.descriptor == &netlink__proto__request_get_all_uid_speed__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t netlink__proto__request_get_all_uid_speed__pack
+                     (const Netlink__Proto__RequestGetAllUidSpeed *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &netlink__proto__request_get_all_uid_speed__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t netlink__proto__request_get_all_uid_speed__pack_to_buffer
+                     (const Netlink__Proto__RequestGetAllUidSpeed *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &netlink__proto__request_get_all_uid_speed__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Netlink__Proto__RequestGetAllUidSpeed *
+       netlink__proto__request_get_all_uid_speed__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Netlink__Proto__RequestGetAllUidSpeed *)
+     protobuf_c_message_unpack (&netlink__proto__request_get_all_uid_speed__descriptor,
+                                allocator, len, data);
+}
+void   netlink__proto__request_get_all_uid_speed__free_unpacked
+                     (Netlink__Proto__RequestGetAllUidSpeed *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &netlink__proto__request_get_all_uid_speed__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
+void   netlink__proto__request_set_dpi_match_all_uid_eable__init
+                     (ProtobufCMessage         *message)
+{
+  static const Netlink__Proto__RequestSetDpiMatchAllUidEable init_value = NETLINK__PROTO__REQUEST_SET_DPI_MATCH_ALL_UID_EABLE__INIT;
+  *(Netlink__Proto__RequestSetDpiMatchAllUidEable*)message = init_value;
+}
+size_t netlink__proto__request_set_dpi_match_all_uid_eable__get_packed_size
+                     (const Netlink__Proto__RequestSetDpiMatchAllUidEable *message)
+{
+  assert(message->base.descriptor == &netlink__proto__request_set_dpi_match_all_uid_eable__descriptor);
+  return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
+}
+size_t netlink__proto__request_set_dpi_match_all_uid_eable__pack
+                     (const Netlink__Proto__RequestSetDpiMatchAllUidEable *message,
+                      uint8_t       *out)
+{
+  assert(message->base.descriptor == &netlink__proto__request_set_dpi_match_all_uid_eable__descriptor);
+  return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
+}
+size_t netlink__proto__request_set_dpi_match_all_uid_eable__pack_to_buffer
+                     (const Netlink__Proto__RequestSetDpiMatchAllUidEable *message,
+                      ProtobufCBuffer *buffer)
+{
+  assert(message->base.descriptor == &netlink__proto__request_set_dpi_match_all_uid_eable__descriptor);
+  return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
+}
+Netlink__Proto__RequestSetDpiMatchAllUidEable *
+       netlink__proto__request_set_dpi_match_all_uid_eable__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data)
+{
+  return (Netlink__Proto__RequestSetDpiMatchAllUidEable *)
+     protobuf_c_message_unpack (&netlink__proto__request_set_dpi_match_all_uid_eable__descriptor,
+                                allocator, len, data);
+}
+void   netlink__proto__request_set_dpi_match_all_uid_eable__free_unpacked
+                     (Netlink__Proto__RequestSetDpiMatchAllUidEable *message,
+                      ProtobufCAllocator *allocator)
+{
+  if(!message)
+    return;
+  assert(message->base.descriptor == &netlink__proto__request_set_dpi_match_all_uid_eable__descriptor);
+  protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
+}
 void   netlink__proto__request_message__init
                      (ProtobufCMessage         *message)
 {
@@ -880,7 +970,96 @@ const ProtobufCMessageDescriptor netlink__proto__request_set_log_steam_ip__descr
   (ProtobufCMessageInit) netlink__proto__request_set_log_steam_ip__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor netlink__proto__request_message__field_descriptors[4] =
+static const ProtobufCFieldDescriptor netlink__proto__request_get_all_uid_speed__field_descriptors[2] =
+{
+  {
+    "ifidx",
+    1,
+    PROTOBUF_C_LABEL_REPEATED,
+    PROTOBUF_C_TYPE_UINT32,
+    offsetof(Netlink__Proto__RequestGetAllUidSpeed, n_ifidx),
+    offsetof(Netlink__Proto__RequestGetAllUidSpeed, ifidx),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "speed_size",
+    2,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT64,
+    0,   /* quantifier_offset */
+    offsetof(Netlink__Proto__RequestGetAllUidSpeed, speed_size),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned netlink__proto__request_get_all_uid_speed__field_indices_by_name[] = {
+  0,   /* field[0] = ifidx */
+  1,   /* field[1] = speed_size */
+};
+static const ProtobufCIntRange netlink__proto__request_get_all_uid_speed__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 2 }
+};
+const ProtobufCMessageDescriptor netlink__proto__request_get_all_uid_speed__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "netlink.proto.RequestGetAllUidSpeed",
+  "RequestGetAllUidSpeed",
+  "Netlink__Proto__RequestGetAllUidSpeed",
+  "netlink.proto",
+  sizeof(Netlink__Proto__RequestGetAllUidSpeed),
+  2,
+  netlink__proto__request_get_all_uid_speed__field_descriptors,
+  netlink__proto__request_get_all_uid_speed__field_indices_by_name,
+  1,  netlink__proto__request_get_all_uid_speed__number_ranges,
+  (ProtobufCMessageInit) netlink__proto__request_get_all_uid_speed__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor netlink__proto__request_set_dpi_match_all_uid_eable__field_descriptors[1] =
+{
+  {
+    "enable",
+    1,
+    PROTOBUF_C_LABEL_REQUIRED,
+    PROTOBUF_C_TYPE_UINT32,
+    0,   /* quantifier_offset */
+    offsetof(Netlink__Proto__RequestSetDpiMatchAllUidEable, enable),
+    NULL,
+    NULL,
+    0,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+};
+static const unsigned netlink__proto__request_set_dpi_match_all_uid_eable__field_indices_by_name[] = {
+  0,   /* field[0] = enable */
+};
+static const ProtobufCIntRange netlink__proto__request_set_dpi_match_all_uid_eable__number_ranges[1 + 1] =
+{
+  { 1, 0 },
+  { 0, 1 }
+};
+const ProtobufCMessageDescriptor netlink__proto__request_set_dpi_match_all_uid_eable__descriptor =
+{
+  PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
+  "netlink.proto.RequestSetDpiMatchAllUidEable",
+  "RequestSetDpiMatchAllUidEable",
+  "Netlink__Proto__RequestSetDpiMatchAllUidEable",
+  "netlink.proto",
+  sizeof(Netlink__Proto__RequestSetDpiMatchAllUidEable),
+  1,
+  netlink__proto__request_set_dpi_match_all_uid_eable__field_descriptors,
+  netlink__proto__request_set_dpi_match_all_uid_eable__field_indices_by_name,
+  1,  netlink__proto__request_set_dpi_match_all_uid_eable__number_ranges,
+  (ProtobufCMessageInit) netlink__proto__request_set_dpi_match_all_uid_eable__init,
+  NULL,NULL,NULL    /* reserved[123] */
+};
+static const ProtobufCFieldDescriptor netlink__proto__request_message__field_descriptors[6] =
 {
   {
     "header",
@@ -930,10 +1109,36 @@ static const ProtobufCFieldDescriptor netlink__proto__request_message__field_des
     0 | PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
+  {
+    "requestGetAllUidSpeed",
+    14,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Netlink__Proto__RequestMessage, request_data_case),
+    offsetof(Netlink__Proto__RequestMessage, requestgetalluidspeed),
+    &netlink__proto__request_get_all_uid_speed__descriptor,
+    NULL,
+    0 | PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
+  {
+    "requestSetDpiMatchAllUidEable",
+    15,
+    PROTOBUF_C_LABEL_OPTIONAL,
+    PROTOBUF_C_TYPE_MESSAGE,
+    offsetof(Netlink__Proto__RequestMessage, request_data_case),
+    offsetof(Netlink__Proto__RequestMessage, requestsetdpimatchalluideable),
+    &netlink__proto__request_set_dpi_match_all_uid_eable__descriptor,
+    NULL,
+    0 | PROTOBUF_C_FIELD_FLAG_ONEOF,             /* flags */
+    0,NULL,NULL    /* reserved1,reserved2, etc */
+  },
 };
 static const unsigned netlink__proto__request_message__field_indices_by_name[] = {
   0,   /* field[0] = header */
+  4,   /* field[4] = requestGetAllUidSpeed */
   2,   /* field[2] = requestGetDpiStreamSpeed */
+  5,   /* field[5] = requestSetDpiMatchAllUidEable */
   3,   /* field[3] = requestSetLogSteamIp */
   1,   /* field[1] = requsetSetDpiUid */
 };
@@ -941,7 +1146,7 @@ static const ProtobufCIntRange netlink__proto__request_message__number_ranges[2 
 {
   { 1, 0 },
   { 11, 1 },
-  { 0, 4 }
+  { 0, 6 }
 };
 const ProtobufCMessageDescriptor netlink__proto__request_message__descriptor =
 {
@@ -951,7 +1156,7 @@ const ProtobufCMessageDescriptor netlink__proto__request_message__descriptor =
   "Netlink__Proto__RequestMessage",
   "netlink.proto",
   sizeof(Netlink__Proto__RequestMessage),
-  4,
+  6,
   netlink__proto__request_message__field_descriptors,
   netlink__proto__request_message__field_indices_by_name,
   2,  netlink__proto__request_message__number_ranges,
@@ -1536,11 +1741,13 @@ const ProtobufCMessageDescriptor netlink__proto__notify_message__descriptor =
   (ProtobufCMessageInit) netlink__proto__notify_message__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCEnumValue netlink__proto__netlink_msg_id__enum_values_by_number[8] =
+static const ProtobufCEnumValue netlink__proto__netlink_msg_id__enum_values_by_number[10] =
 {
   { "COMM_NETLINK_EVENT_UNSPEC", "NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_UNSPEC", 0 },
   { "COMM_NETLINK_EVENT_SET_DPI_UID", "NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_SET_DPI_UID", 11 },
   { "COMM_NETLINK_EVENT_GET_DPI_STREAM_SPEED", "NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_GET_DPI_STREAM_SPEED", 12 },
+  { "COMM_NETLINK_EVENT_GET_ALL_UID_DPI_SPEED", "NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_GET_ALL_UID_DPI_SPEED", 13 },
+  { "COMM_NETLINK_EVENT_SET_DPI_MATCH_ALL_UID", "NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_SET_DPI_MATCH_ALL_UID", 14 },
   { "COMM_NETLINK_EVENT_GET_WZRY_SERVER_IP", "NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_GET_WZRY_SERVER_IP", 51 },
   { "COMM_NETLINK_EVENT_NOTIFY_WZRY_SERVER_IP", "NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_NOTIFY_WZRY_SERVER_IP", 52 },
   { "COMM_NETLINK_EVENT_GET_WZRY_DATA", "NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_GET_WZRY_DATA", 53 },
@@ -1548,17 +1755,19 @@ static const ProtobufCEnumValue netlink__proto__netlink_msg_id__enum_values_by_n
   { "COMM_NETLINK_EVENT_SET_LOG_STREAM_IPADDR", "NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_SET_LOG_STREAM_IPADDR", 101 },
 };
 static const ProtobufCIntRange netlink__proto__netlink_msg_id__value_ranges[] = {
-{0, 0},{11, 1},{51, 3},{101, 7},{0, 8}
+{0, 0},{11, 1},{51, 5},{101, 9},{0, 10}
 };
-static const ProtobufCEnumValueIndex netlink__proto__netlink_msg_id__enum_values_by_name[8] =
+static const ProtobufCEnumValueIndex netlink__proto__netlink_msg_id__enum_values_by_name[10] =
 {
-  { "COMM_NETLINK_EVENT_GET_DELAY", 6 },
+  { "COMM_NETLINK_EVENT_GET_ALL_UID_DPI_SPEED", 3 },
+  { "COMM_NETLINK_EVENT_GET_DELAY", 8 },
   { "COMM_NETLINK_EVENT_GET_DPI_STREAM_SPEED", 2 },
-  { "COMM_NETLINK_EVENT_GET_WZRY_DATA", 5 },
-  { "COMM_NETLINK_EVENT_GET_WZRY_SERVER_IP", 3 },
-  { "COMM_NETLINK_EVENT_NOTIFY_WZRY_SERVER_IP", 4 },
+  { "COMM_NETLINK_EVENT_GET_WZRY_DATA", 7 },
+  { "COMM_NETLINK_EVENT_GET_WZRY_SERVER_IP", 5 },
+  { "COMM_NETLINK_EVENT_NOTIFY_WZRY_SERVER_IP", 6 },
+  { "COMM_NETLINK_EVENT_SET_DPI_MATCH_ALL_UID", 4 },
   { "COMM_NETLINK_EVENT_SET_DPI_UID", 1 },
-  { "COMM_NETLINK_EVENT_SET_LOG_STREAM_IPADDR", 7 },
+  { "COMM_NETLINK_EVENT_SET_LOG_STREAM_IPADDR", 9 },
   { "COMM_NETLINK_EVENT_UNSPEC", 0 },
 };
 const ProtobufCEnumDescriptor netlink__proto__netlink_msg_id__descriptor =
@@ -1568,29 +1777,31 @@ const ProtobufCEnumDescriptor netlink__proto__netlink_msg_id__descriptor =
   "NetlinkMsgId",
   "Netlink__Proto__NetlinkMsgId",
   "netlink.proto",
-  8,
+  10,
   netlink__proto__netlink_msg_id__enum_values_by_number,
-  8,
+  10,
   netlink__proto__netlink_msg_id__enum_values_by_name,
   4,
   netlink__proto__netlink_msg_id__value_ranges,
   NULL,NULL,NULL,NULL   /* reserved[1234] */
 };
-static const ProtobufCEnumValue netlink__proto__dpi_level_type__enum_values_by_number[4] =
+static const ProtobufCEnumValue netlink__proto__dpi_level_type__enum_values_by_number[5] =
 {
   { "DPI_LEVEL_UNSPEC", "NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_UNSPEC", 0 },
-  { "DPI_LEVEL_APP", "NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_APP", 1 },
-  { "DPI_LEVEL_FUNC", "NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_FUNC", 2 },
-  { "DPI_LEVEL_STREAM", "NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_STREAM", 3 },
+  { "DPI_LEVEL_UID", "NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_UID", 1 },
+  { "DPI_LEVEL_APP", "NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_APP", 2 },
+  { "DPI_LEVEL_FUNC", "NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_FUNC", 3 },
+  { "DPI_LEVEL_STREAM", "NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_STREAM", 4 },
 };
 static const ProtobufCIntRange netlink__proto__dpi_level_type__value_ranges[] = {
-{0, 0},{0, 4}
+{0, 0},{0, 5}
 };
-static const ProtobufCEnumValueIndex netlink__proto__dpi_level_type__enum_values_by_name[4] =
+static const ProtobufCEnumValueIndex netlink__proto__dpi_level_type__enum_values_by_name[5] =
 {
-  { "DPI_LEVEL_APP", 1 },
-  { "DPI_LEVEL_FUNC", 2 },
-  { "DPI_LEVEL_STREAM", 3 },
+  { "DPI_LEVEL_APP", 2 },
+  { "DPI_LEVEL_FUNC", 3 },
+  { "DPI_LEVEL_STREAM", 4 },
+  { "DPI_LEVEL_UID", 1 },
   { "DPI_LEVEL_UNSPEC", 0 },
 };
 const ProtobufCEnumDescriptor netlink__proto__dpi_level_type__descriptor =
@@ -1600,9 +1811,9 @@ const ProtobufCEnumDescriptor netlink__proto__dpi_level_type__descriptor =
   "dpiLevelType",
   "Netlink__Proto__DpiLevelType",
   "netlink.proto",
-  4,
+  5,
   netlink__proto__dpi_level_type__enum_values_by_number,
-  4,
+  5,
   netlink__proto__dpi_level_type__enum_values_by_name,
   1,
   netlink__proto__dpi_level_type__value_ranges,

@@ -2313,6 +2313,22 @@ static int oplus_mt6360_get_chg_current_step(void)
 	return 100;
 }
 
+static bool oplus_pd_without_usb(void)
+{
+	struct tcpc_device *tcpc;
+
+	tcpc = tcpc_dev_get_by_name("type_c_port0");
+	if (!tcpc) {
+		chg_err("get type_c_port0 fail\n");
+		return true;
+	}
+
+	if (!tcpm_inquire_pd_connected(tcpc))
+		return true;
+	return (tcpm_inquire_dpm_flags(tcpc) &
+			DPM_FLAGS_PARTNER_USB_COMM) ? false : true;
+}
+
 int mt_power_supply_type_check(void)
 {
 	int charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
@@ -2321,13 +2337,16 @@ int mt_power_supply_type_check(void)
 	case CHARGER_UNKNOWN:
 		break;
 	case STANDARD_HOST:
-		charger_type = POWER_SUPPLY_TYPE_USB;
+		if (!oplus_pd_without_usb())
+			charger_type = POWER_SUPPLY_TYPE_USB_PD_SDP;
+		else
+			charger_type = POWER_SUPPLY_TYPE_USB;
 		break;
 	case CHARGING_HOST:
 		charger_type = POWER_SUPPLY_TYPE_USB_CDP;
 		break;
 	case NONSTANDARD_CHARGER:
-	case STANDARD_CHARGER:	
+	case STANDARD_CHARGER:
 	case APPLE_2_1A_CHARGER:
 	case APPLE_1_0A_CHARGER:
 	case APPLE_0_5A_CHARGER:
@@ -2340,7 +2359,11 @@ int mt_power_supply_type_check(void)
 
 	if (g_oplus_chip) {
 		if ((g_oplus_chip->charger_type != charger_type) && g_oplus_chip->usb_psy) {
-			chg_debug("charger_type[%d] [%d] power_supply_changed.\n", charger_type, g_oplus_chip->charger_type);
+			if (g_oplus_chip->charger_type == POWER_SUPPLY_TYPE_USB &&
+			    charger_type == POWER_SUPPLY_TYPE_USB_PD_SDP) {
+				g_oplus_chip->charger_type = charger_type;
+				oplus_chg_turn_on_charging(g_oplus_chip);
+			}
 			power_supply_changed(g_oplus_chip->usb_psy);
 		}
 	}

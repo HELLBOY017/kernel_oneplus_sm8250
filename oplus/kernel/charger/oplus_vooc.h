@@ -389,6 +389,7 @@ struct oplus_vooc_chip {
 	int bcc_soc_range;
 	int bcc_temp_range;
 	int bcc_curr_count;
+	bool fw_update_on_chargering_reboot;
 };
 
 struct oplus_vooc_cp {

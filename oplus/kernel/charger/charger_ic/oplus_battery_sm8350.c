@@ -377,7 +377,7 @@ static void handle_oem_read_buffer(struct battery_chg_dev *bcdev,
 		bcdev->read_buffer_dump.data_buffer[3], bcdev->read_buffer_dump.data_buffer[4], bcdev->read_buffer_dump.data_buffer[5],
 		bcdev->read_buffer_dump.data_buffer[6], bcdev->read_buffer_dump.data_buffer[7], bcdev->read_buffer_dump.data_buffer[8],
 		bcdev->read_buffer_dump.data_buffer[9], bcdev->read_buffer_dump.data_buffer[10], bcdev->read_buffer_dump.data_buffer[11],
-		bcdev->read_buffer_dump.data_buffer[12]);*/
+		bcdev->read_buffer_dump.data_buffer[12],bcdev->read_buffer_dump.data_buffer[14]);*/
 	if (is_ext_chg_ops() && bcdev->read_buffer_dump.data_buffer[9] == 0) {
 		schedule_delayed_work(&bcdev->suspend_check_work, round_jiffies_relative(msecs_to_jiffies(0)));
 	}
@@ -1441,9 +1441,10 @@ static void oplus_check_charger_out_func(struct work_struct *work)
 			oplus_vooc_get_fastchg_dummy_started(), chg_vol);
 	if (chg_vol >= 0 && chg_vol < 2000) {
 		oplus_adsp_voocphy_clear_status();
+		oplus_chg_clear_abnormal_adapter_var();
 		if (pst_batt->psy)
 			power_supply_changed(pst_batt->psy);
-		printk(KERN_ERR, "charger out, chg_vol:%d\n", chg_vol);
+		chg_err("charger out, chg_vol:%d\n", chg_vol);
 	}
 }
 
@@ -2088,6 +2089,10 @@ static void handle_notification(struct battery_chg_dev *bcdev, void *data,
 		g_oplus_chip->pd_svooc = true;
 		printk(KERN_ERR "!!!:%s, pd_svooc[%d]\n", __func__, bcdev->pd_svooc);
 		break;
+	case BC_ABNORMAL_PD_SVOOC_ADAPTER:
+		printk(KERN_ERR "!!!:%s, is_abnormal_adapter\n", __func__);
+		g_oplus_chip->is_abnormal_adapter = true;
+		break;
 	case BC_VOOC_STATUS_GET:
 		schedule_delayed_work(&bcdev->adsp_voocphy_status_work, 0);
 		break;
@@ -2538,6 +2543,7 @@ static int usb_psy_get_prop(struct power_supply *psy,
 #ifdef OPLUS_FEATURE_CHG_BASIC
 	static int online = 0;
 	static int adap_type = 0;
+	struct oplus_chg_chip *chip = g_oplus_chip;
 #endif
 
 	pval->intval = -ENODATA;
@@ -2591,8 +2597,12 @@ static int usb_psy_get_prop(struct power_supply *psy,
 		if (online ^ pval->intval) {
 			bcdev->pre_current = -1;
 			online = pval->intval;
-			printk(KERN_ERR "!!!!! usb online: [%d]\n", online);
+			printk(KERN_ERR "!!!!! usb online: [%d], abnormal_adapter_info [%d %d]\n", online,
+			chip->is_abnormal_adapter, chip->support_abnormal_adapter);
 			oplus_chg_track_check_wired_charging_break(online);
+			if (chip->support_abnormal_adapter) {
+				oplus_chg_check_break(online);
+			}
 			bcdev->real_chg_type = POWER_SUPPLY_TYPE_UNKNOWN;
 			if (!is_ext_chg_ops() && oplus_chg_get_voocphy_support() == ADSP_VOOCPHY) {
 				oplus_chg_wake_update_work();
@@ -5077,6 +5087,7 @@ static void oplus_cid_status_change_work(struct work_struct *work)
 	if (cid_status == 0) {
 		bcdev->pre_current = -1;
 		chip->usbtemp_check = false;
+		oplus_chg_clear_abnormal_adapter_var();
 		usbtemp_reset_variables();
 	}
 
@@ -8495,10 +8506,10 @@ static void dump_regs(void)
 				bcdev->read_buffer_dump.data_buffer[extra_num + 33], bcdev->read_buffer_dump.data_buffer[extra_num + 34],
 				bcdev->read_buffer_dump.data_buffer[extra_num + 35], bcdev->read_buffer_dump.data_buffer[extra_num + 36]);
 		} else {
-			printk(KERN_ERR "sm8350_st_dump: [chg_en=%d, suspend=%d, pd_svooc=%d, subtype=0x%02x],\n",
+			printk(KERN_ERR "sm8350_st_dump: [chg_en=%d, suspend=%d, pd_svooc=%d, subtype=0x%02x, is_abnormal_adapter=%d],\n",
 				smbchg_get_charge_enable(),
 				bcdev->read_buffer_dump.data_buffer[9], bcdev->read_buffer_dump.data_buffer[11],
-				oplus_chg_get_charger_subtype());
+				oplus_chg_get_charger_subtype(), chip->is_abnormal_adapter);
 		}
 	}
 	dump_count++;

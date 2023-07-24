@@ -1011,4 +1011,4 @@ oplus_chg_module_register(sc8547_subsys);
 
 MODULE_DESCRIPTION("SC SC8547 Charge Pump Driver");
 MODULE_LICENSE("GPL v2");
-MODULE_AUTHOR("lukaili@oplus.com");
+MODULE_AUTHOR("lukaili");

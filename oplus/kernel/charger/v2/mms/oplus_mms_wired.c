@@ -3219,6 +3219,8 @@ static void oplus_mms_wired_init_work(struct work_struct *work)
 	chg_info("mms wired OPLUS_IC_FUNC_INIT success\n");
 
 	mutex_init(&chip->fcc_lock);
+	oplus_mms_wired_virq_register(chip);
+	g_mms_wired = chip;
 	oplus_wired_input_enable(false);
 	oplus_wired_output_enable(false);
 	cc_detect = oplus_wired_get_hw_detect();
@@ -3233,8 +3235,6 @@ static void oplus_mms_wired_init_work(struct work_struct *work)
 	}
 	if (oplus_usbtemp_check_is_support(chip))
 		oplus_usbtemp_thread_init(chip);
-	oplus_mms_wired_virq_register(chip);
-	g_mms_wired = chip;
 	(void)oplus_mms_wired_topic_init(chip);
 	oplus_mms_wait_topic("gauge", oplus_wired_subscribe_gauge_topic, chip);
 	oplus_mms_wait_topic("vooc", oplus_wired_subscribe_vooc_topic, chip);

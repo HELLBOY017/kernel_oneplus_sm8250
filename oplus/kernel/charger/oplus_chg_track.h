@@ -47,6 +47,7 @@ enum oplus_chg_track_wls_device_error {
 	TRACK_WLS_UPDATE_ERR_I2C,
 	TRACK_WLS_UPDATE_ERR_CRC,
 	TRACK_WLS_UPDATE_ERR_OTHER,
+	TRACK_WLS_TRX_VOUT_ABNORMAL,
 };
 
 #define OPLUS_CHG_TRACK_SCENE_CP_ERR "cp_work_err"
@@ -58,6 +59,23 @@ enum oplus_chg_track_cp_device_error {
 	TRACK_CP_ERR_IBAT_OCP,
 	TRACK_CP_ERR_VBUS_OVP,
 	TRACK_CP_ERR_IBUS_OCP,
+};
+
+#define OPLUS_CHG_TRACK_SCENE_BIDIRECT_CP_ERR "bidirect_cp_work_err"
+enum oplus_chg_track_bidirect_cp_device_error {
+	TRACK_BIDIRECT_CP_ERR_DEFAULT,
+	TRACK_BIDIRECT_CP_ERR_SC_EN_STAT,
+	TRACK_BIDIRECT_CP_ERR_V2X_OVP,
+	TRACK_BIDIRECT_CP_ERR_V1X_OVP,
+	TRACK_BIDIRECT_CP_ERR_VAC_OVP,
+	TRACK_BIDIRECT_CP_ERR_FWD_OCP,
+	TRACK_BIDIRECT_CP_ERR_RVS_OCP,
+	TRACK_BIDIRECT_CP_ERR_TSHUT,
+	TRACK_BIDIRECT_CP_ERR_VAC2V2X_OVP,
+	TRACK_BIDIRECT_CP_ERR_VAC2V2X_UVP,
+	TRACK_BIDIRECT_CP_ERR_V1X_ISS_OPP,
+	TRACK_BIDIRECT_CP_ERR_WD_TIMEOUT,
+	TRACK_BIDIRECT_CP_ERR_LNC_SS_TIMEOUT,
 };
 
 #define OPLUS_CHG_TRACK_SCENE_MOS_ERR "parallel_mos_err"
@@ -260,6 +278,7 @@ int oplus_chg_track_get_pmic_err_reason(int err_type, char *err_reason, int len)
 int oplus_chg_track_get_gague_err_reason(int err_type, char *err_reason, int len);
 int oplus_chg_track_obtain_wls_general_crux_info(char *crux_info, int len);
 int oplus_chg_track_get_cp_err_reason(int err_type, char *err_reason, int len);
+int oplus_chg_track_get_bidirect_cp_err_reason(int err_type, char * err_reason, int len);
 int oplus_chg_track_get_mos_err_reason(int err_type, char *err_reason, int len);
 void oplus_chg_track_record_chg_type_info(void);
 void oplus_chg_track_record_ffc_start_info(void);

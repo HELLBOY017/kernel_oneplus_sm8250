@@ -2203,12 +2203,12 @@ static void p9415_event_process(struct oplus_p9415 *chip)
 				val_buf[0], val_buf[1], val_buf[2], val_buf[3], val_buf[4], val_buf[5]);
 			if (chip->rx_msg.msg_call_back != NULL)
 					chip->rx_msg.msg_call_back(chip->rx_msg.dev_data, val_buf);
-			p9415_tx_track_info(chip);
+			p9415_rx_track_info(chip);
 		}
 	}
 	if (temp[0] & P9415_TRX_EVENT) {
 		pr_err("trx event\n");
-		p9415_rx_track_info(chip);
+		p9415_tx_track_info(chip);
 		if (is_wls_ocm_available(chip))
 			oplus_chg_anon_mod_event(chip->wls_ocm, OPLUS_CHG_EVENT_CHECK_TRX);
 		else

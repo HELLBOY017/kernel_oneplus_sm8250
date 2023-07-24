@@ -449,6 +449,7 @@ static void p9418_power_enable(struct oplus_p9418_ic *chip, bool enable)
 		return;
 	}
 
+	mutex_lock(&chip->power_enable_mutex);
 	if (enable) {
 		p9418_set_vbat_en_val(chip, NUM_1);
 		udelay(1000);
@@ -460,7 +461,7 @@ static void p9418_power_enable(struct oplus_p9418_ic *chip, bool enable)
 		p9418_set_vbat_en_val(chip, NUM_0);
 		chip->is_power_on = false;
 	}
-
+	mutex_unlock(&chip->power_enable_mutex);
 	return;
 }
 
@@ -2574,7 +2575,7 @@ static int p9418_driver_probe(struct i2c_client *client, const struct i2c_device
 	INIT_WORK(&chip->power_switch_work, p9418_power_switch_func);
 	p9418_chip = chip;
 	mutex_init(&chip->flow_mutex);
-
+	mutex_init(&chip->power_enable_mutex);
 	schedule_delayed_work(&chip->p9418_update_work, P9418_UPDATE_INTERVAL);
 #ifdef CONFIG_OPLUS_CHARGER_MTK
 	rc = wireless_register_notify(&p9418_notifier);

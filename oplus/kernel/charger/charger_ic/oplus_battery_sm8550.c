@@ -2050,14 +2050,14 @@ static void battery_chg_update_usb_type_work(struct work_struct *work)
 #ifdef OPLUS_FEATURE_CHG_BASIC
 	if (g_oplus_chip) {
 		if (usb_psy_desc.type != POWER_SUPPLY_TYPE_UNKNOWN) {
-			if (g_oplus_chip->charger_type == POWER_SUPPLY_TYPE_USB_DCP
+			if (chg_type == POWER_SUPPLY_TYPE_USB_DCP
 				&& pst->prop[USB_ADAP_TYPE] != POWER_SUPPLY_USB_TYPE_DCP
 				&& bcdev->hvdcp_disable == false) {
 				usb_psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
-			} else if (g_oplus_chip->charger_type == POWER_SUPPLY_TYPE_USB
+			} else if (chg_type == POWER_SUPPLY_TYPE_USB
 				&& pst->prop[USB_ADAP_TYPE] != POWER_SUPPLY_USB_TYPE_SDP) {
 				usb_psy_desc.type = POWER_SUPPLY_TYPE_USB;
-			} else if (g_oplus_chip->charger_type == POWER_SUPPLY_TYPE_USB_CDP
+			} else if (chg_type == POWER_SUPPLY_TYPE_USB_CDP
 				&& pst->prop[USB_ADAP_TYPE] != POWER_SUPPLY_USB_TYPE_CDP) {
 				usb_psy_desc.type = POWER_SUPPLY_TYPE_USB_CDP;
 			}

@@ -519,16 +519,13 @@ static int wireless_chg_init(struct op_chg_chip *chip)
 
 	chg_param->fastchg_fod_enable = of_property_read_bool(node, "op,fastchg-fod-enable");
 	if (chg_param->fastchg_fod_enable) {
-		rc = of_property_read_u8(node, "op,fastchg-match-q-new", &chg_param->fastchg_match_q_new);
-		if (rc < 0) {
-			pr_err("op,fastchg-match-q-new reading failed, rc=%d\n", rc);
-			chg_param->fastchg_match_q_new = 0x56;
-		}
-
-		rc = of_property_read_u8(node, "op,fastchg-match-q", &chg_param->fastchg_match_q);
+		rc = of_property_read_u8_array(node, "op,fastchg-match-q", (u8 *)&chg_param->fastchg_match_q,
+					       MATCH_Q_LENGTH);
 		if (rc < 0) {
 			pr_err("op,fastchg-match-q reading failed, rc=%d\n", rc);
-			chg_param->fastchg_match_q = 0x44;
+			chg_param->fastchg_match_q[0] = 0x44;
+			chg_param->fastchg_match_q[1] = 0x56;
+			chg_param->fastchg_match_q[2] = 0x56;
 		}
 
 		rc = of_property_read_u8_array(node, "op,fastchg-fod-parm-new", (u8 *)&chg_param->fastchg_fod_parm_new,
@@ -1485,8 +1482,70 @@ static int wlchg_init_wireless_psy(struct op_chg_chip *chip)
 	return 0;
 }
 
-static int wlchg_adapter_power_table[] = { 0, 12000, 12000, 35000, 50000 };
-static int wlchg_base_power_table[] = { 30000, 40000, 50000 };
+/*static int wlchg_adapter_power_table[] = { 0, 12000, 12000, 35000, 50000 };*/
+static struct wlchg_pwr_table oplus_chg_wlchg_pwr_table[] = {/*(f2_id, r_power, t_power)*/
+	{ 0x00, 12, 15 }, { 0x01, 12, 20 }, { 0x02, 12, 30 }, { 0x03, 35, 50 }, { 0x04, 45, 65 },
+	{ 0x05, 50, 75 }, { 0x06, 60, 85 }, { 0x07, 65, 95 }, { 0x08, 75, 105 }, { 0x09, 80, 115 },
+	{ 0x0A, 90, 125 }, { 0x0B, 20, 20 }, { 0x0C, 100, 140 }, { 0x0D, 115, 160 }, { 0x0E, 130, 180 },
+	{ 0x0F, 145, 200 },
+	{ 0x11, 35, 50 }, { 0x12, 35, 50 }, { 0x13, 12, 20 }, { 0x14, 45, 65 }, { 0x15, 12, 20 },
+	{ 0x16, 12, 20 }, { 0x17, 12, 30 }, { 0x18, 12, 30 }, { 0x19, 12, 30 }, { 0x1A, 12, 33 },
+	{ 0x1B, 12, 33 }, { 0x1C, 12, 44 }, { 0x1D, 12, 44 }, { 0x1E, 12, 44 },
+	{ 0x21, 35, 50 }, { 0x22, 12, 44 }, { 0x23, 35, 50 }, { 0x24, 35, 55 }, { 0x25, 35, 55 },
+	{ 0x26, 35, 55 }, { 0x27, 35, 55 }, { 0x28, 45, 65 }, { 0x29, 12, 30 }, { 0x2A, 45, 65 },
+	{ 0x2B, 45, 66 }, { 0x2C, 45, 67 }, { 0x2D, 45, 67 }, { 0x2E, 45, 67 },
+	{ 0x31, 35, 50 }, { 0x32, 90, 120 }, { 0x33, 35, 50 }, { 0x34, 12, 20 }, { 0x35, 45, 65 },
+	{ 0x36, 45, 66 }, { 0x37, 50, 88 }, { 0x38, 50, 88 }, { 0x39, 50, 88 }, { 0x3A, 50, 88 },
+	{ 0x3B, 75, 100 }, { 0x3C, 75, 100 }, { 0x3D, 75, 100 }, { 0x3E, 75, 100 },
+	{ 0x41, 12, 30 }, { 0x42, 12, 30 }, { 0x43, 12, 30 }, { 0x44, 12, 30 }, { 0x45, 12, 30 },
+	{ 0x46, 12, 30 }, { 0x47, 90, 120 }, { 0x48, 90, 120 }, { 0x49, 12, 33 }, { 0x4A, 12, 33 },
+	{ 0x4B, 50, 80 }, { 0x4C, 50, 80 }, { 0x4D, 50, 80 }, { 0x4E, 50, 80 },
+	{ 0x51, 90, 125 },
+	{ 0x61, 12, 33 }, { 0x62, 35, 50 }, { 0x63, 45, 65 }, { 0x64, 45, 66 }, { 0x65, 50, 80 },
+	{ 0x66, 45, 65 }, { 0x67, 90, 125 }, { 0x68, 90, 125 }, { 0x69, 75, 100 }, { 0x6A, 75, 100 },
+	{ 0x6B, 90, 120 }, { 0x6C, 45, 67 }, { 0x6D, 45, 67 }, { 0x6E, 45, 65 },
+	{ 0x7F, 30, 0 },
+};
+
+static struct wlchg_base_type wlchg_base_table[] = {
+	{ 0x00, 30000 }, { 0x01, 40000 }, { 0x02, 50000 }, { 0x03, 50000 }, { 0x04, 50000 },
+	{ 0x05, 50000 }, { 0x06, 50000 }, { 0x07, 50000 }, { 0x08, 50000 }, { 0x09, 50000 },
+	{ 0x0a, 100000 }, { 0x0b, 100000 }, { 0x10, 100000 }, { 0x11, 100000 }, { 0x12, 100000 },
+	{ 0x13, 100000 }, { 0x1f, 50000 },
+};
+
+static int oplus_chg_wlchg_get_base_power_max(u8 id)
+{
+	int i;
+	int pwr = WLCHG_VOOC_PWR_MAX_MW;
+
+	for (i = 0; i < ARRAY_SIZE(wlchg_base_table); i++) {
+		if (wlchg_base_table[i].id == id) {
+			pwr = wlchg_base_table[i].power_max_mw;
+			return pwr;
+		}
+	}
+
+	return pwr;
+}
+
+static int oplus_chg_wlchg_get_r_power(struct op_chg_chip *chip, u8 f2_data)
+{
+	int i = 0;
+	int r_pwr = WLCHG_RECEIVE_POWER_DEFAULT;
+	struct wpc_data *chg_status = &chip->wlchg_status;
+
+	for (i = 0; i < ARRAY_SIZE(oplus_chg_wlchg_pwr_table); i++) {
+		if (oplus_chg_wlchg_pwr_table[i].f2_id == (f2_data & 0x7F)) {
+			r_pwr = oplus_chg_wlchg_pwr_table[i].r_power * 1000;
+			break;
+		}
+	}
+
+	if (chg_status->adapter_type == ADAPTER_TYPE_FASTCHAGE_PD_65W)
+		return WLCHG_RECEIVE_POWER_PD65W;
+	return r_pwr;
+}
 
 int wlchg_send_msg(enum WLCHG_MSG_TYPE type, char data, char remark)
 {
@@ -1500,20 +1559,20 @@ int wlchg_send_msg(enum WLCHG_MSG_TYPE type, char data, char remark)
 	/* set the charging base id */
 	if (remark == WPC_RESPONE_ADAPTER_TYPE) {
 		g_op_chip->chg_base_id = (data & WPC_ADAPTER_ID_MASK) >> 3;
-		if (g_op_chip->chg_base_id >= ARRAY_SIZE(wlchg_base_power_table))
+		if (g_op_chip->chg_base_id >= ARRAY_SIZE(wlchg_base_table))
 			g_op_chip->chg_base_power = 0;
 		else
-			g_op_chip->chg_base_power = wlchg_base_power_table[g_op_chip->chg_base_id];
+			g_op_chip->chg_base_power = oplus_chg_wlchg_get_base_power_max(g_op_chip->chg_base_id);
 		chg_err("get the charging base id = %d", g_op_chip->chg_base_id);
 	}
 
 	/* set the charging adapter id */
 	if (remark == WPC_RESPONE_INTO_FASTCHAGE) {
 		g_op_chip->adapter_id = data;
-		if (g_op_chip->adapter_id >= ARRAY_SIZE(wlchg_adapter_power_table))
+		if (g_op_chip->adapter_id >= ARRAY_SIZE(oplus_chg_wlchg_pwr_table))
 			g_op_chip->adapter_power = 0;
 		else
-			g_op_chip->adapter_power = wlchg_adapter_power_table[g_op_chip->adapter_id];
+			g_op_chip->adapter_power = oplus_chg_wlchg_get_r_power(g_op_chip, g_op_chip->adapter_id);
 		chg_err("get the adapter id = %d", g_op_chip->adapter_id);
 	}
 
@@ -1637,10 +1696,33 @@ static long wlchg_dev_ioctl(struct file *filp, unsigned int cmd, unsigned long a
 			chg_status->adapter_type = ADAPTER_TYPE_FASTCHAGE_WARP;
 		if (chip->chg_param.fastchg_fod_enable && (chg_status->adapter_type == ADAPTER_TYPE_FASTCHAGE_DASH ||
 							   chg_status->adapter_type == ADAPTER_TYPE_FASTCHAGE_WARP)) {
-			if (chg_status->adapter_id == 0x00 || chg_status->adapter_id == 0x01)
-				wlchg_rx_set_match_q_parm(g_rx_chip, chip->chg_param.fastchg_match_q);
-			else
-				wlchg_rx_set_match_q_parm(g_rx_chip, chip->chg_param.fastchg_match_q_new);
+			switch(chg_status->adapter_id) {
+			case WLCHG_DOCK_OAWV00:
+			case WLCHG_DOCK_OAWV01:
+				wlchg_rx_set_match_q_parm(g_rx_chip, chip->chg_param.fastchg_match_q[0]);
+				break;
+			case WLCHG_DOCK_OAWV02:
+			case WLCHG_DOCK_OAWV03:
+			case WLCHG_DOCK_THIRD:
+				wlchg_rx_set_match_q_parm(g_rx_chip, chip->chg_param.fastchg_match_q[1]);
+				break;
+			case WLCHG_DOCK_OAWV05:
+			case WLCHG_DOCK_OAWV06:
+			case WLCHG_DOCK_OAWV07:
+			case WLCHG_DOCK_OAWV08:
+			case WLCHG_DOCK_OAWV09:
+			case WLCHG_DOCK_OAWV10:
+			case WLCHG_DOCK_OAWV11:
+			case WLCHG_DOCK_OAWV16:
+			case WLCHG_DOCK_OAWV17:
+			case WLCHG_DOCK_OAWV18:
+			case WLCHG_DOCK_OAWV19:
+				wlchg_rx_set_match_q_parm(g_rx_chip, chip->chg_param.fastchg_match_q[2]);
+				break;
+			default:
+				wlchg_rx_set_match_q_parm(g_rx_chip, chip->chg_param.fastchg_match_q[1]);
+				break;
+			}
 		}
 		chg_info("adapter arg is 0x%02x, adapter type is %d, adapter id is %d\n", arg, chg_status->adapter_type,
 			 chg_status->adapter_id);

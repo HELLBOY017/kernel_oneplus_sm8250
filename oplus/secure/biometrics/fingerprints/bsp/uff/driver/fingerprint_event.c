@@ -10,16 +10,35 @@
 #include <asm/uaccess.h>
 #include <linux/uaccess.h>
 #include <linux/version.h>
+#include <linux/kfifo.h>
+#include <linux/spinlock.h>
 
-static struct fingerprint_message_t g_fingerprint_msg = {0};
 int g_fp_driver_event_type = FP_DRIVER_INTERRUPT;
 int g_reporte_cond = 0;
 DECLARE_WAIT_QUEUE_HEAD(fp_wait_queue);
+static struct kfifo fpfifo;
+static int is_fingerprint_msg_empty(void);
+static int enqueue_fingerprint_msg(struct fingerprint_message_t* msg);
+static int dequeue_fingerprint_msg(struct fingerprint_message_t* msg);
+static DEFINE_SPINLOCK(fp_lock);
 
-void reset_fingerprint_msg(void)
+int init_fingerprint_msg(void)
 {
-   g_reporte_cond = 0;
-   memset(&g_fingerprint_msg, 0, sizeof(g_fingerprint_msg));
+    int ret = 0;
+    g_reporte_cond = 0;
+    deinit_fingerprint_msg();
+    ret = kfifo_alloc(&fpfifo, MAX_FPKFIFO_SIZE, GFP_KERNEL);
+    if (ret) {
+        pr_err("kfifo_alloc fail");
+    }
+    pr_debug("kfifo_size is %d", kfifo_size(&fpfifo));
+    return ret;
+}
+
+void deinit_fingerprint_msg(void)
+{
+    kfifo_free(&fpfifo);
+
 }
 
 static void set_event_condition(int state)
@@ -36,20 +55,21 @@ static int wake_up_fingerprint_event(int data) {
 }
 
 int wait_fp_event(void *data, unsigned int size,
-                           struct fingerprint_message_t **msg) {
+                           struct fingerprint_message_t *msg) {
     int ret;
     struct fingerprint_message_t rev_msg = {0};
     if (size == sizeof(rev_msg)) {
         memcpy(&rev_msg, data, size);
     }
-
-    if ((ret = wait_event_interruptible(fp_wait_queue, g_reporte_cond == 1)) !=
-        0) {
-        pr_info("fp driver wait event fail, %d", ret);
+    if (is_fingerprint_msg_empty()) {
+        pr_debug("wait_event in");
+        if ((ret = wait_event_interruptible(fp_wait_queue, g_reporte_cond == 1)) !=
+            0) {
+            pr_info("fp driver wait event fail, %d", ret);
+        }
+        pr_debug("wait_event out");
     }
-    if (msg != NULL) {
-        *msg = &g_fingerprint_msg;
-    }
+    ret = dequeue_fingerprint_msg(msg);
     set_event_condition(SEND_FINGERPRINT_EVENT_DISABLE);
     return ret;
 }
@@ -107,45 +127,117 @@ int get_fp_driver_evt_type(void)
 {
     return g_fp_driver_event_type;
 }
-
 int send_fingerprint_msg(int module, int event, void *data,
                              unsigned int size) {
     int ret = 0;
     int need_report = 0;
+    struct fingerprint_message_t fingerprint_msg = {0};
     if (get_fp_driver_evt_type() != FP_DRIVER_INTERRUPT) {
         return 0;
     }
-    memset(&g_fingerprint_msg, 0, sizeof(g_fingerprint_msg));
     switch (module) {
     case E_FP_TP:
-        g_fingerprint_msg.module = E_FP_TP;
-        g_fingerprint_msg.event = event == 1 ? E_FP_EVENT_TP_TOUCHDOWN : E_FP_EVENT_TP_TOUCHUP;
-        g_fingerprint_msg.out_size = size <= MAX_MESSAGE_SIZE ? size : MAX_MESSAGE_SIZE;
-        memcpy(g_fingerprint_msg.out_buf, data, g_fingerprint_msg.out_size);
+        fingerprint_msg.module = E_FP_TP;
+        fingerprint_msg.event = event == 1 ? E_FP_EVENT_TP_TOUCHDOWN : E_FP_EVENT_TP_TOUCHUP;
+        fingerprint_msg.out_size = size <= MAX_MESSAGE_SIZE ? size : MAX_MESSAGE_SIZE;
+        memcpy(fingerprint_msg.out_buf, data, fingerprint_msg.out_size);
         need_report = 1;
         break;
     case E_FP_LCD:
-        g_fingerprint_msg.module = E_FP_LCD;
-        g_fingerprint_msg.event =
+        fingerprint_msg.module = E_FP_LCD;
+        fingerprint_msg.event =
             event == 1 ? E_FP_EVENT_UI_READY : E_FP_EVENT_UI_DISAPPEAR;
         need_report = 1;
 
-        //pr_info("kernel module:%d event:%d - %d", g_fingerprint_msg.module, event, g_fingerprint_msg.event);
+        //pr_info("kernel module:%d event:%d - %d", fingerprint_msg.module, event, fingerprint_msg.event);
         break;
     case E_FP_HAL:
-        g_fingerprint_msg.module = E_FP_HAL;
-        g_fingerprint_msg.event = E_FP_EVENT_STOP_INTERRUPT;
+        fingerprint_msg.module = E_FP_HAL;
+        fingerprint_msg.event = E_FP_EVENT_STOP_INTERRUPT;
         need_report = 1;
         break;
     default:
-        g_fingerprint_msg.module = module;
-        g_fingerprint_msg.event = event;
+        fingerprint_msg.module = module;
+        fingerprint_msg.event = event;
         need_report = 1;
         pr_info("unknow module, ignored");
         break;
     }
     if (need_report) {
+        ret = enqueue_fingerprint_msg(&fingerprint_msg);
+        if (ret) {
+            pr_err("not enqueue, ignored");
+            ret = 0;
+            return ret;
+        }
         ret = wake_up_fingerprint_event(0);
     }
+    return ret;
+}
+
+static int is_fingerprint_msg_empty(void) {
+    int ret = 0;
+    spin_lock(&fp_lock);
+    // for init success but kfree and then use fifo
+    if (kfifo_size(&fpfifo) != MAX_FPKFIFO_SIZE) {
+        pr_err("kfifo_size is NULL");
+        ret = -1;
+        goto err;
+    }
+    if (kfifo_len(&fpfifo) < sizeof(struct fingerprint_message_t)) {
+        pr_err("msg is NULL");
+        ret = -2;
+        goto err;
+    }
+err:
+    spin_unlock(&fp_lock);
+    return ret;
+}
+
+static int enqueue_fingerprint_msg(struct fingerprint_message_t* msg) {
+    int  ret = -1;
+    int enqueuelen = 0;
+
+    spin_lock(&fp_lock);
+    if (kfifo_size(&fpfifo) != MAX_FPKFIFO_SIZE) {
+        pr_err("kfifo_size is NULL");
+        goto err;
+    }
+    //  sure the enqueues are effective
+    if (kfifo_avail(&fpfifo) < sizeof(struct fingerprint_message_t)) {
+        pr_err("kfifo_avail is not full throw module = %d, event = %d", msg->module, msg->event);
+        goto err;
+    }
+    enqueuelen = kfifo_in(&fpfifo, (void*)msg, sizeof(struct fingerprint_message_t));
+    if (enqueuelen == 0) {
+        pr_err("kfifo_in fail");
+        goto err;
+    }
+    ret = 0;
+err:
+    spin_unlock(&fp_lock);
+    return ret;
+}
+
+static int dequeue_fingerprint_msg(struct fingerprint_message_t *msg) {
+    int dequeuelen = 0;
+    int ret = -1;
+    if (is_fingerprint_msg_empty()) {
+        pr_err("msg is empty");
+        return -2;
+    }
+    spin_lock(&fp_lock);
+    dequeuelen = kfifo_out(&fpfifo, (void*)(msg), sizeof(struct fingerprint_message_t));
+    if (dequeuelen == 0) {
+        pr_err("no msg ");
+        ret = -2;
+        goto err;
+    }
+    if (sizeof(*msg) == dequeuelen) {
+        pr_err("msg ok current module = %d, event = %d", msg->module, msg->event);
+        ret = 0;
+    }
+err:
+    spin_unlock(&fp_lock);
     return ret;
 }

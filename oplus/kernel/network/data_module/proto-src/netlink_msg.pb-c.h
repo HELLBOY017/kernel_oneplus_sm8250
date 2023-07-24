@@ -23,6 +23,8 @@ typedef struct Netlink__Proto__MessageHeader Netlink__Proto__MessageHeader;
 typedef struct Netlink__Proto__RequestSetDpiUid Netlink__Proto__RequestSetDpiUid;
 typedef struct Netlink__Proto__RequestGetDpiStreamSpeed Netlink__Proto__RequestGetDpiStreamSpeed;
 typedef struct Netlink__Proto__RequestSetLogSteamIp Netlink__Proto__RequestSetLogSteamIp;
+typedef struct Netlink__Proto__RequestGetAllUidSpeed Netlink__Proto__RequestGetAllUidSpeed;
+typedef struct Netlink__Proto__RequestSetDpiMatchAllUidEable Netlink__Proto__RequestSetDpiMatchAllUidEable;
 typedef struct Netlink__Proto__RequestMessage Netlink__Proto__RequestMessage;
 typedef struct Netlink__Proto__DpiSpeedItem Netlink__Proto__DpiSpeedItem;
 typedef struct Netlink__Proto__ResponseGetDpiStreamSpeed Netlink__Proto__ResponseGetDpiStreamSpeed;
@@ -41,6 +43,8 @@ typedef enum _Netlink__Proto__NetlinkMsgId {
   NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_UNSPEC = 0,
   NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_SET_DPI_UID = 11,
   NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_GET_DPI_STREAM_SPEED = 12,
+  NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_GET_ALL_UID_DPI_SPEED = 13,
+  NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_SET_DPI_MATCH_ALL_UID = 14,
   NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_GET_WZRY_SERVER_IP = 51,
   NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_NOTIFY_WZRY_SERVER_IP = 52,
   NETLINK__PROTO__NETLINK_MSG_ID__COMM_NETLINK_EVENT_GET_WZRY_DATA = 53,
@@ -50,9 +54,10 @@ typedef enum _Netlink__Proto__NetlinkMsgId {
 } Netlink__Proto__NetlinkMsgId;
 typedef enum _Netlink__Proto__DpiLevelType {
   NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_UNSPEC = 0,
-  NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_APP = 1,
-  NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_FUNC = 2,
-  NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_STREAM = 3
+  NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_UID = 1,
+  NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_APP = 2,
+  NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_FUNC = 3,
+  NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_STREAM = 4
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(NETLINK__PROTO__DPI_LEVEL_TYPE)
 } Netlink__Proto__DpiLevelType;
 
@@ -108,11 +113,35 @@ struct  Netlink__Proto__RequestSetLogSteamIp
     , NULL, 0,NULL }
 
 
+struct  Netlink__Proto__RequestGetAllUidSpeed
+{
+  ProtobufCMessage base;
+  size_t n_ifidx;
+  uint32_t *ifidx;
+  uint64_t speed_size;
+};
+#define NETLINK__PROTO__REQUEST_GET_ALL_UID_SPEED__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&netlink__proto__request_get_all_uid_speed__descriptor) \
+    , 0,NULL, 0 }
+
+
+struct  Netlink__Proto__RequestSetDpiMatchAllUidEable
+{
+  ProtobufCMessage base;
+  uint32_t enable;
+};
+#define NETLINK__PROTO__REQUEST_SET_DPI_MATCH_ALL_UID_EABLE__INIT \
+ { PROTOBUF_C_MESSAGE_INIT (&netlink__proto__request_set_dpi_match_all_uid_eable__descriptor) \
+    , 0 }
+
+
 typedef enum {
   NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA__NOT_SET = 0,
   NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA_REQUSET_SET_DPI_UID = 11,
   NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA_REQUEST_GET_DPI_STREAM_SPEED = 12,
-  NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA_REQUEST_SET_LOG_STEAM_IP = 13
+  NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA_REQUEST_SET_LOG_STEAM_IP = 13,
+  NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA_REQUEST_GET_ALL_UID_SPEED = 14,
+  NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA_REQUEST_SET_DPI_MATCH_ALL_UID_EABLE = 15
     PROTOBUF_C__FORCE_ENUM_TO_BE_INT_SIZE(NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA__CASE)
 } Netlink__Proto__RequestMessage__RequestDataCase;
 
@@ -125,6 +154,8 @@ struct  Netlink__Proto__RequestMessage
     Netlink__Proto__RequestSetDpiUid *requsetsetdpiuid;
     Netlink__Proto__RequestGetDpiStreamSpeed *requestgetdpistreamspeed;
     Netlink__Proto__RequestSetLogSteamIp *requestsetlogsteamip;
+    Netlink__Proto__RequestGetAllUidSpeed *requestgetalluidspeed;
+    Netlink__Proto__RequestSetDpiMatchAllUidEable *requestsetdpimatchalluideable;
   };
 };
 #define NETLINK__PROTO__REQUEST_MESSAGE__INIT \
@@ -339,6 +370,44 @@ Netlink__Proto__RequestSetLogSteamIp *
 void   netlink__proto__request_set_log_steam_ip__free_unpacked
                      (Netlink__Proto__RequestSetLogSteamIp *message,
                       ProtobufCAllocator *allocator);
+/* Netlink__Proto__RequestGetAllUidSpeed methods */
+void   netlink__proto__request_get_all_uid_speed__init
+                     (ProtobufCMessage         *message);
+size_t netlink__proto__request_get_all_uid_speed__get_packed_size
+                     (const Netlink__Proto__RequestGetAllUidSpeed   *message);
+size_t netlink__proto__request_get_all_uid_speed__pack
+                     (const Netlink__Proto__RequestGetAllUidSpeed   *message,
+                      uint8_t             *out);
+size_t netlink__proto__request_get_all_uid_speed__pack_to_buffer
+                     (const Netlink__Proto__RequestGetAllUidSpeed   *message,
+                      ProtobufCBuffer     *buffer);
+Netlink__Proto__RequestGetAllUidSpeed *
+       netlink__proto__request_get_all_uid_speed__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   netlink__proto__request_get_all_uid_speed__free_unpacked
+                     (Netlink__Proto__RequestGetAllUidSpeed *message,
+                      ProtobufCAllocator *allocator);
+/* Netlink__Proto__RequestSetDpiMatchAllUidEable methods */
+void   netlink__proto__request_set_dpi_match_all_uid_eable__init
+                     (ProtobufCMessage         *message);
+size_t netlink__proto__request_set_dpi_match_all_uid_eable__get_packed_size
+                     (const Netlink__Proto__RequestSetDpiMatchAllUidEable   *message);
+size_t netlink__proto__request_set_dpi_match_all_uid_eable__pack
+                     (const Netlink__Proto__RequestSetDpiMatchAllUidEable   *message,
+                      uint8_t             *out);
+size_t netlink__proto__request_set_dpi_match_all_uid_eable__pack_to_buffer
+                     (const Netlink__Proto__RequestSetDpiMatchAllUidEable   *message,
+                      ProtobufCBuffer     *buffer);
+Netlink__Proto__RequestSetDpiMatchAllUidEable *
+       netlink__proto__request_set_dpi_match_all_uid_eable__unpack
+                     (ProtobufCAllocator  *allocator,
+                      size_t               len,
+                      const uint8_t       *data);
+void   netlink__proto__request_set_dpi_match_all_uid_eable__free_unpacked
+                     (Netlink__Proto__RequestSetDpiMatchAllUidEable *message,
+                      ProtobufCAllocator *allocator);
 /* Netlink__Proto__RequestMessage methods */
 void   netlink__proto__request_message__init
                      (ProtobufCMessage         *message);
@@ -543,6 +612,12 @@ typedef void (*Netlink__Proto__RequestGetDpiStreamSpeed_Closure)
 typedef void (*Netlink__Proto__RequestSetLogSteamIp_Closure)
                  (const Netlink__Proto__RequestSetLogSteamIp *message,
                   void *closure_data);
+typedef void (*Netlink__Proto__RequestGetAllUidSpeed_Closure)
+                 (const Netlink__Proto__RequestGetAllUidSpeed *message,
+                  void *closure_data);
+typedef void (*Netlink__Proto__RequestSetDpiMatchAllUidEable_Closure)
+                 (const Netlink__Proto__RequestSetDpiMatchAllUidEable *message,
+                  void *closure_data);
 typedef void (*Netlink__Proto__RequestMessage_Closure)
                  (const Netlink__Proto__RequestMessage *message,
                   void *closure_data);
@@ -585,6 +660,8 @@ extern const ProtobufCMessageDescriptor netlink__proto__message_header__descript
 extern const ProtobufCMessageDescriptor netlink__proto__request_set_dpi_uid__descriptor;
 extern const ProtobufCMessageDescriptor netlink__proto__request_get_dpi_stream_speed__descriptor;
 extern const ProtobufCMessageDescriptor netlink__proto__request_set_log_steam_ip__descriptor;
+extern const ProtobufCMessageDescriptor netlink__proto__request_get_all_uid_speed__descriptor;
+extern const ProtobufCMessageDescriptor netlink__proto__request_set_dpi_match_all_uid_eable__descriptor;
 extern const ProtobufCMessageDescriptor netlink__proto__request_message__descriptor;
 extern const ProtobufCMessageDescriptor netlink__proto__dpi_speed_item__descriptor;
 extern const ProtobufCMessageDescriptor netlink__proto__response_get_dpi_stream_speed__descriptor;

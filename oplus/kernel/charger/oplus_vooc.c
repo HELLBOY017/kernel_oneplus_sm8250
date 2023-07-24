@@ -1876,6 +1876,7 @@ static void oplus_vooc_fastchg_func(struct work_struct *work)
 			chip->fastchg_to_warm = false;
 			chip->fastchg_dummy_started = true;
 		}
+		oplus_chg_unsuspend_charger();
 	}
 	if (data == VOOC_NOTIFY_NORMAL_TEMP_FULL || data == VOOC_NOTIFY_BAD_CONNECTED ||
 	    (chip->support_fake_vooc_check && data == VOOC_NOTIFY_DATA_UNKNOWN)) {

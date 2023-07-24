@@ -573,7 +573,7 @@ static ssize_t uim_qmi_power_up_debug(struct file *file,
 		ret = -EFAULT;
 		return ret;
 	}
-
+	buf[7] = '\0';
 	slot = simple_strtol(buf, NULL, 0) / 10;
 	power_up = simple_strtol(buf, NULL, 0) % 10;
 

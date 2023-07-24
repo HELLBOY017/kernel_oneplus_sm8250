@@ -1440,7 +1440,10 @@ static void oplus_check_charger_out_func(struct work_struct *work)
 	pst_batt = &bcdev->psy_list[PSY_TYPE_BATTERY];
 
 	chg_vol = oplus_chg_get_charger_voltage();
+
 	if (chg_vol >= 0 && chg_vol < 2000) {
+		if (oplus_voocphy_get_bidirect_cp_support() && oplus_vooc_get_fastchg_started())
+			oplus_voocphy_chg_out_check_event_handle(true);
 		oplus_adsp_voocphy_clear_status();
 		oplus_chg_clear_abnormal_adapter_var();
 		if (pst_batt->psy)
@@ -1914,14 +1917,14 @@ static void battery_chg_update_usb_type_work(struct work_struct *work)
 #ifdef OPLUS_FEATURE_CHG_BASIC
 	if (g_oplus_chip) {
 		if (usb_psy_desc.type != POWER_SUPPLY_TYPE_UNKNOWN) {
-			if (g_oplus_chip->charger_type == POWER_SUPPLY_TYPE_USB_DCP
+			if (chg_type == POWER_SUPPLY_TYPE_USB_DCP
 				&& pst->prop[USB_ADAP_TYPE] != POWER_SUPPLY_USB_TYPE_DCP
 				&& bcdev->hvdcp_disable == false) {
 				usb_psy_desc.type = POWER_SUPPLY_TYPE_USB_DCP;
-			} else if (g_oplus_chip->charger_type == POWER_SUPPLY_TYPE_USB
+			} else if (chg_type == POWER_SUPPLY_TYPE_USB
 				&& pst->prop[USB_ADAP_TYPE] != POWER_SUPPLY_USB_TYPE_SDP) {
 				usb_psy_desc.type = POWER_SUPPLY_TYPE_USB;
-			} else if (g_oplus_chip->charger_type == POWER_SUPPLY_TYPE_USB_CDP
+			} else if (chg_type == POWER_SUPPLY_TYPE_USB_CDP
 				&& pst->prop[USB_ADAP_TYPE] != POWER_SUPPLY_USB_TYPE_CDP) {
 				usb_psy_desc.type = POWER_SUPPLY_TYPE_USB_CDP;
 			}
@@ -8090,7 +8093,14 @@ static void oplus_plugin_irq_work(struct work_struct *work)
 		chg_err("is_abnormal_adapter[%d]\n", chip->is_abnormal_adapter);
 		oplus_chg_check_break(usb_plugin_status);
 		if (!bcdev->usb_in_status) {
-			schedule_delayed_work(&bcdev->check_charger_out_work, round_jiffies_relative(msecs_to_jiffies(3000)));
+			if (oplus_vooc_get_fastchg_started() == true) {
+				chg_err("!!!Air charging happen,need check charger out\n");
+				schedule_delayed_work(&bcdev->check_charger_out_work,
+							round_jiffies_relative(msecs_to_jiffies(1500)));
+			} else {
+				schedule_delayed_work(&bcdev->check_charger_out_work,
+							round_jiffies_relative(msecs_to_jiffies(3000)));
+			}
 		}
 	}
 	bcdev->real_chg_type = POWER_SUPPLY_TYPE_UNKNOWN;

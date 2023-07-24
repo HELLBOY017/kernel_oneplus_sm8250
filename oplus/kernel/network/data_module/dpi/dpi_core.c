@@ -71,12 +71,13 @@ static spinlock_t s_match_lock;
 
 static struct hlist_head s_notify_head;
 static struct hlist_head s_match_app_head;
-static struct hlist_head s_match_result_head;
+static struct hlist_head s_match_app_result_head;
+static struct hlist_head s_match_uid_result_head;
 DEFINE_HASHTABLE(s_match_socket_map, (DPI_HASH_BIT + 1));
 
 static u32 s_notify_count = 0;
 static u32 s_match_app_count = 0;
-static u32 s_dpi_result_count[DPI_LEVEL_TYPE_MAX] = {0, 0, 0, 0};
+static u32 s_dpi_result_count[DPI_LEVEL_TYPE_MAX] = {0, 0, 0, 0, 0};
 static u32 s_match_socket_count = 0;
 
 
@@ -86,6 +87,7 @@ static u64 s_dpi_timeout = DEFAULT_DPI_TIMEOUT;
 
 static char *s_type_str[DPI_LEVEL_TYPE_MAX] = {
 	"unspec",
+	"uid",
 	"app",
 	"func",
 	"stream"
@@ -93,6 +95,7 @@ static char *s_type_str[DPI_LEVEL_TYPE_MAX] = {
 
 
 static struct timer_list s_check_timeout_timer;
+static int s_match_all_uid = 0;
 
 
 extern u32 s_tmgp_sgame_uid;
@@ -367,28 +370,41 @@ static int dpi_match_data_add_tree(dpi_socket_node *socket_node, u64 cur_time)
 	u64 app_result = socket_node->data.dpi_result & DPI_ID_APP_MASK;
 	u64 fun_result = socket_node->data.dpi_result & DPI_ID_FUNC_MASK;
 	u64 stream_result = socket_node->data.dpi_result;
+	u64 uid_result = socket_node->data.dpi_result & DPI_ID_UID_MASK;
 	dpi_result_node *app_node = NULL;
 	dpi_result_node *fun_node = NULL;
 	dpi_result_node *stream_node = NULL;
+	dpi_result_node *uid_node = NULL;
 
-	app_node = dpi_find_add_result_node(socket_node->data.uid, app_result, DPI_LEVEL_TYPE_APP, &s_match_result_head, NULL, cur_time);
-	if (!app_node) {
-		return -1;
-	}
+	if (uid_result != 0) {
+		uid_node = dpi_find_add_result_node(socket_node->data.uid, uid_result, DPI_LEVEL_TYPE_UID, &s_match_uid_result_head, NULL, cur_time);
+		if (!uid_node) {
+			return -1;
+		}
+		hlist_add_head(&socket_node->tree_node, &uid_node->child_list);
+		socket_node->result_node = uid_node;
+		uid_node->child_count++;
+		logi("add socket[%llu] for uid [%llx]", socket_node->data.socket_cookie, uid_result);
+	} else {
+		app_node = dpi_find_add_result_node(socket_node->data.uid, app_result, DPI_LEVEL_TYPE_APP, &s_match_app_result_head, NULL, cur_time);
+		if (!app_node) {
+			return -1;
+		}
 
-	fun_node = dpi_find_add_result_node(socket_node->data.uid, fun_result, DPI_LEVEL_TYPE_FUNCTION, &app_node->child_list, app_node, cur_time);
-	if (!fun_node) {
-		return -1;
-	}
+		fun_node = dpi_find_add_result_node(socket_node->data.uid, fun_result, DPI_LEVEL_TYPE_FUNCTION, &app_node->child_list, app_node, cur_time);
+		if (!fun_node) {
+			return -1;
+		}
 
-	stream_node = dpi_find_add_result_node(socket_node->data.uid, stream_result, DPI_LEVEL_TYPE_STREAM, &fun_node->child_list, fun_node, cur_time);
-	if (!stream_node) {
-		return -1;
+		stream_node = dpi_find_add_result_node(socket_node->data.uid, stream_result, DPI_LEVEL_TYPE_STREAM, &fun_node->child_list, fun_node, cur_time);
+		if (!stream_node) {
+			return -1;
+		}
+		hlist_add_head(&socket_node->tree_node, &stream_node->child_list);
+		socket_node->result_node = stream_node;
+		stream_node->child_count++;
+		logi("add socket[%llu] for stream [%llx]", socket_node->data.socket_cookie, stream_result);
 	}
-	hlist_add_head(&socket_node->tree_node, &stream_node->child_list);
-	socket_node->result_node = stream_node;
-	stream_node->child_count++;
-	logi("add socket[%llu] for stream [%llx]", socket_node->data.socket_cookie, stream_result);
 
 	return 0;
 }
@@ -406,35 +422,63 @@ static uid_t get_skb_uid(struct sk_buff *skb)
 }
 
 /* dir == 1 up  == 0 down */
-static int get_match_tuple_by_skb(struct sk_buff *skb, int dir, dpi_tuple_t *tuple)
+static int get_match_tuple_by_skb(struct sk_buff *skb, int dir, int in_dev, dpi_tuple_t *tuple)
 {
 	struct iphdr *iph = NULL;
+	struct ipv6hdr *ip6h = NULL;
 	struct udphdr *udph = NULL;
 	struct tcphdr *tcph = NULL;
+	u8 *end = skb_tail_pointer(skb);
+	int iph_len = 0;
 
-	/* TODO: ipv6 */
-	if (skb->protocol != htons(ETH_P_IP)) {
-		return -1;
-	}
-
-	iph = ip_hdr(skb);
-	if (iph == NULL) {
-		return -1;
-	}
-	if ((iph->protocol != IPPROTO_UDP) && (iph->protocol != IPPROTO_TCP)) {
-		return -1;
-	}
-	tuple->protocol = iph->protocol;
-	if (dir) {
-		tuple->local_ip = ntohl(iph->saddr);
-		tuple->peer_ip = ntohl(iph->daddr);
+	if (skb->protocol == htons(ETH_P_IP)) {
+		iph = ip_hdr(skb);
+		if (iph == NULL) {
+			return -1;
+		}
+		if ((iph->protocol != IPPROTO_UDP) && (iph->protocol != IPPROTO_TCP)) {
+			return -1;
+		}
+		tuple->protocol = iph->protocol;
+		if (dir) {
+			tuple->local_ip = ntohl(iph->saddr);
+			tuple->peer_ip = ntohl(iph->daddr);
+		} else {
+			tuple->local_ip = ntohl(iph->daddr);
+			tuple->peer_ip = ntohl(iph->saddr);
+		}
+		iph_len = (iph->ihl & 0x0F) * 4;
+	} else if (skb->protocol == htons(ETH_P_IPV6)) {
+		ip6h = ipv6_hdr(skb);
+		if (ip6h == NULL) {
+			return -1;
+		}
+		if ((ip6h->nexthdr != IPPROTO_UDP) && (ip6h->nexthdr != IPPROTO_TCP)) {
+			return -1;
+		}
+		tuple->protocol = ip6h->nexthdr;
+		tuple->is_ipv6 = 1;
+		if (dir) {
+			memcpy(tuple->local_ipv6, ip6h->saddr.s6_addr, sizeof(tuple->local_ipv6));
+			memcpy(tuple->peer_ipv6, ip6h->daddr.s6_addr, sizeof(tuple->peer_ipv6));
+		} else {
+			memcpy(tuple->peer_ipv6, ip6h->saddr.s6_addr, sizeof(tuple->local_ipv6));
+			memcpy(tuple->local_ipv6, ip6h->daddr.s6_addr, sizeof(tuple->peer_ipv6));
+		}
+		iph_len = sizeof(struct ipv6hdr);
 	} else {
-		tuple->local_ip = ntohl(iph->daddr);
-		tuple->peer_ip = ntohl(iph->saddr);
+		return -1;
 	}
 
-	if (iph->protocol == IPPROTO_UDP) {
-		udph = udp_hdr(skb);
+	if (tuple->protocol == IPPROTO_UDP) {
+		if (in_dev) {
+			if ((skb_network_header(skb) + iph_len + sizeof(struct udphdr)) > end) {
+				return -1;
+			}
+			udph = (struct udphdr *)(skb_network_header(skb) + iph_len);
+		} else {
+			udph = udp_hdr(skb);
+		}
 		if (udph == NULL) {
 			return -1;
 		}
@@ -445,8 +489,15 @@ static int get_match_tuple_by_skb(struct sk_buff *skb, int dir, dpi_tuple_t *tup
 			tuple->local_port = ntohs(udph->dest);
 			tuple->peer_port = ntohs(udph->source);
 		}
-	} else if (iph->protocol == IPPROTO_TCP) {
-		tcph = tcp_hdr(skb);
+	} else if (tuple->protocol == IPPROTO_TCP) {
+		if (in_dev) {
+			if ((skb_network_header(skb) + iph_len + sizeof(struct tcphdr)) > end) {
+				return -1;
+			}
+			tcph = (struct tcphdr *)(skb_network_header(skb) + iph_len);
+		} else {
+			tcph = tcp_hdr(skb);
+		}
 		if (tcph == NULL) {
 			return -1;
 		}
@@ -462,7 +513,7 @@ static int get_match_tuple_by_skb(struct sk_buff *skb, int dir, dpi_tuple_t *tup
 	return 0;
 }
 
-u64 get_skb_dpi_id(struct sk_buff *skb, int dir)
+u64 get_skb_dpi_id(struct sk_buff *skb, int dir, int in_dev)
 {
 #ifdef CONFIG_ANDROID_VENDOR_OEM_DATA
 	struct sock *sk = NULL;
@@ -487,7 +538,7 @@ u64 get_skb_dpi_id(struct sk_buff *skb, int dir)
 #endif
 		}
 	}
-	ret = get_match_tuple_by_skb(skb, dir, &tuple);
+	ret = get_match_tuple_by_skb(skb, dir, in_dev, &tuple);
 	if (ret) {
 		return 0;
 	}
@@ -553,13 +604,12 @@ static int dpi_handle_match(struct sk_buff *skb, int dir, int v6)
 	if (skb->dev == NULL) {
 		return -1;
 	}
-
 	match_fun = get_match_fun_by_uid(uid);
-	if (!match_fun) {
+	if (!match_fun && !s_match_all_uid) {
 		return -1;
 	}
 
-	ret = get_match_tuple_by_skb(skb, dir, &tuple);
+	ret = get_match_tuple_by_skb(skb, dir, 0, &tuple);
 	if (ret) {
 		return ret;
 	}
@@ -601,7 +651,12 @@ static int dpi_handle_match(struct sk_buff *skb, int dir, int v6)
 		}
 #endif
 	}
-	match_fun(skb, dir, &socket_node->data);
+	if (match_fun) {
+		match_fun(skb, dir, &socket_node->data);
+	} else {
+		socket_node->data.dpi_result = DPI_ID_UID_MASK & (((u64)uid) << DPI_ID_UID_BIT_OFFSET);
+		socket_node->data.state = DPI_MATCH_STATE_COMPLETE;
+	}
 	if (socket_node->data.state == DPI_MATCH_STATE_COMPLETE) {
 		dpi_match_data_add_tree(socket_node, cur_time);
 		dpi_update_stats(skb, dir, socket_node, cur_time);
@@ -645,8 +700,9 @@ static void dpi_clear_sock_list(void)
 	u64 curr_time = 0;
 	int i = 0;
 
-	logi("dpi_clear_sock_list start dpi count[%u-%u][%u-%u-%u-%u]", s_notify_count, s_match_app_count, s_dpi_result_count[DPI_LEVEL_TYPE_APP],
-		s_dpi_result_count[DPI_LEVEL_TYPE_FUNCTION], s_dpi_result_count[DPI_LEVEL_TYPE_STREAM], s_match_socket_count);
+	logi("dpi_clear_sock_list start dpi count[%u-%u][%u-%u-%u-%u-%u]", s_notify_count, s_match_app_count,
+		s_dpi_result_count[DPI_LEVEL_TYPE_APP], s_dpi_result_count[DPI_LEVEL_TYPE_FUNCTION],
+		s_dpi_result_count[DPI_LEVEL_TYPE_STREAM], s_dpi_result_count[DPI_LEVEL_TYPE_UID], s_match_socket_count);
 	ktime_get_raw_ts64(&time);
 	curr_time = time.tv_sec * NS_PER_SEC + time.tv_nsec;
 
@@ -816,6 +872,13 @@ static struct ctl_table oplus_dpi_sysctl_table[] = {
 		.mode = 0644,
 		.proc_handler = proc_dointvec,
 	},
+	{
+		.procname = "s_match_all_uid",
+		.data = &s_match_all_uid,
+		.maxlen = sizeof(u32),
+		.mode = 0644,
+		.proc_handler = proc_dointvec,
+	},
 	{}
 };
 
@@ -839,6 +902,7 @@ static int request_set_dpi_uid(u32 eventid, Netlink__Proto__RequestMessage *requ
 		size_t len = 0, pack_len = 0;
 		char *buf = NULL;
 		NETLINK_RSP_DATA_DECLARE(rsp_name, requestMsg->header->requestid, requestMsg->header->eventid, COMM_NETLINK_SUCC);
+
 		len = netlink__proto__response_message__get_packed_size(&rsp_name);
 		buf = kmalloc(len, GFP_ATOMIC);
 		if (!buf) {
@@ -847,6 +911,32 @@ static int request_set_dpi_uid(u32 eventid, Netlink__Proto__RequestMessage *requ
 		}
 		pack_len = netlink__proto__response_message__pack(&rsp_name, buf);
 		logi("request_set_dpi_uid pack len %lu  buf len %lu", pack_len, len);
+		*rsp_data = buf;
+		*rsp_len = len;
+	} while (0);
+
+	return COMM_NETLINK_SUCC;
+}
+
+
+static int request_set_match_all_uid_eable(u32 eventid, Netlink__Proto__RequestMessage *requestMsg, char **rsp_data, u32 *rsp_len) {
+	if ((requestMsg->request_data_case != NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA_REQUEST_SET_DPI_MATCH_ALL_UID_EABLE)
+		|| (!requestMsg->requsetsetdpiuid)) {
+		return COMM_NETLINK_ERR_PARAM;
+	}
+	s_match_all_uid = requestMsg->requestsetdpimatchalluideable->enable;
+	do {
+		size_t len = 0, pack_len = 0;
+		char *buf = NULL;
+		NETLINK_RSP_DATA_DECLARE(rsp_name, requestMsg->header->requestid, requestMsg->header->eventid, COMM_NETLINK_SUCC);
+		len = netlink__proto__response_message__get_packed_size(&rsp_name);
+		buf = kmalloc(len, GFP_ATOMIC);
+		if (!buf) {
+			logt("malloc size %lu failed", len);
+			return COMM_NETLINK_ERR_MEMORY;
+		}
+		pack_len = netlink__proto__response_message__pack(&rsp_name, buf);
+		logi("request_set_match_all_uid_eable pack len %lu  buf len %lu", pack_len, len);
 		*rsp_data = buf;
 		*rsp_len = len;
 	} while (0);
@@ -864,10 +954,9 @@ static int dpi_stats_valid(u64 cur_time, u64 expire, dpi_stats_t *pstats, u64 sp
 		if ((pstats->rx_stats.speed < speed_size) && (pstats->tx_stats.speed < speed_size)) {
 			return 0;
 		}
-	} else {
-		if ((pstats->rx_stats.speed == 0) && (pstats->tx_stats.speed == 0)) {
-			return 0;
-		}
+	}
+	if ((pstats->rx_stats.speed / 1000 == 0) && (pstats->tx_stats.speed / 1000 == 0)) {
+		return 0;
 	}
 	return 1;
 }
@@ -877,6 +966,9 @@ static void copy_data_to_dpi_speed(Netlink__Proto__DpiSpeedItem *item, dpi_resul
 										u64 cur_time, u64 expire, dpi_stats_t *pstats)
 {
 	switch (dpi_result->level_type) {
+	case DPI_LEVEL_TYPE_UID:
+		item->type = NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_UID;
+		break;
 	case DPI_LEVEL_TYPE_APP:
 		item->type = NETLINK__PROTO__DPI_LEVEL_TYPE__DPI_LEVEL_APP;
 		break;
@@ -914,7 +1006,6 @@ static int check_u32_array_match(u32 *array, size_t size, u32 value)
 	return 0;
 }
 
-
 static int get_dpi_stream_speed_uid_request(u32 eventid, Netlink__Proto__RequestMessage *requestMsg, char **rsp_data, u32 *rsp_len)
 {
 	u32 uid_size = 0;
@@ -946,7 +1037,7 @@ static int get_dpi_stream_speed_uid_request(u32 eventid, Netlink__Proto__Request
 
 	spin_lock_bh(&s_dpi_lock);
 	uid_count = 0;
-	hlist_for_each_entry(pos_app, &s_match_result_head, node) {
+	hlist_for_each_entry(pos_app, &s_match_app_result_head, node) {
 		if((uid_size == 0) || check_u32_array_match(requestMsg->requestgetdpistreamspeed->uid, uid_size, pos_app->uid)) {
 			hlist_for_each_entry(pos_func, &pos_app->child_list, node) {
 				hlist_for_each_entry(pos_stream, &pos_func->child_list, node) {
@@ -994,7 +1085,7 @@ static int get_dpi_stream_speed_uid_request(u32 eventid, Netlink__Proto__Request
 			netlink__proto__dpi_speed_item__init((ProtobufCMessage *)speedRsp.streamuidspeed[k]);
 		}
 		uid_count = 0;
-		hlist_for_each_entry(pos_app, &s_match_result_head, node) {
+		hlist_for_each_entry(pos_app, &s_match_app_result_head, node) {
 			if((uid_size == 0) || check_u32_array_match(requestMsg->requestgetdpistreamspeed->uid, uid_size, pos_app->uid)) {
 				hlist_for_each_entry(pos_func, &pos_app->child_list, node) {
 					hlist_for_each_entry(pos_stream, &pos_func->child_list, node) {
@@ -1071,6 +1162,168 @@ static int get_dpi_stream_speed_uid_request(u32 eventid, Netlink__Proto__Request
 	return 0;
 }
 
+static int get_all_uid_dpi_speed_request(u32 eventid, Netlink__Proto__RequestMessage *requestMsg, char **rsp_data, u32 *rsp_len) {
+	u32 stream_added = 0;
+	u32 stream_count = 0;
+	u32 buf_len = 0;
+	int i = 0, j = 0, k = 0;
+	int ifidx_count = 0;
+	u64 cur_time = 0;
+	u64 expire = s_speed_expire;
+	u64 speed_size = 0;
+	struct timespec64 time;
+	dpi_result_node *pos_all_uid = NULL;
+	dpi_result_node *pos_app = NULL;
+	Netlink__Proto__ResponseGetDpiStreamSpeed speedRsp = NETLINK__PROTO__RESPONSE_GET_DPI_STREAM_SPEED__INIT;
+	if ((requestMsg->request_data_case != NETLINK__PROTO__REQUEST_MESSAGE__REQUEST_DATA_REQUEST_GET_ALL_UID_SPEED)
+		|| (!requestMsg->requestgetalluidspeed)) {
+		return COMM_NETLINK_ERR_PARAM;
+	}
+	ifidx_count = requestMsg->requestgetalluidspeed->n_ifidx;
+	speed_size = requestMsg->requestgetalluidspeed->speed_size;
+	ktime_get_raw_ts64(&time);
+	cur_time = time.tv_sec * NS_PER_SEC + time.tv_nsec;
+
+	spin_lock_bh(&s_dpi_lock);
+	hlist_for_each_entry(pos_all_uid, &s_match_uid_result_head, node) {
+		if (ifidx_count == 0) {
+			if (dpi_stats_valid(cur_time, expire, &pos_all_uid->hash_stats.total_stats, speed_size)) {
+				stream_count++;
+			}
+		}
+		else {
+			dpi_stats_t *stats_pos = NULL;
+			for(i = 0; i < ifidx_count; i++) {
+				hash_for_each_possible(pos_all_uid->hash_stats.stats_map, stats_pos, node, requestMsg->requestgetalluidspeed->ifidx[i]) {
+					if (stats_pos->if_idx == requestMsg->requestgetalluidspeed->ifidx[i]) {
+						if (dpi_stats_valid(cur_time, expire, stats_pos, speed_size)) {
+							stream_count++;
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+	hlist_for_each_entry(pos_app, &s_match_app_result_head, node) {
+		if (ifidx_count == 0) {
+			if (dpi_stats_valid(cur_time, expire, &pos_app->hash_stats.total_stats, speed_size)) {
+				stream_count++;
+			}
+		}
+		else {
+			dpi_stats_t *stats_pos = NULL;
+			for(i = 0; i < ifidx_count; i++) {
+				hash_for_each_possible(pos_app->hash_stats.stats_map, stats_pos, node, requestMsg->requestgetalluidspeed->ifidx[i]) {
+					if (stats_pos->if_idx == requestMsg->requestgetalluidspeed->ifidx[i]) {
+						if (dpi_stats_valid(cur_time, expire, stats_pos, speed_size)) {
+							stream_count++;
+						}
+						break;
+					}
+				}
+			}
+		}
+	}
+	if (stream_count != 0) {
+		buf_len = (sizeof(void *) + sizeof(Netlink__Proto__DpiSpeedItem)) * stream_count;
+		speedRsp.n_streamuidspeed = stream_count;
+		speedRsp.streamuidspeed = kmalloc(buf_len, GFP_ATOMIC);
+		if (speedRsp.streamuidspeed == NULL) {
+			logt("malloc size %u failed!", buf_len);
+			spin_unlock_bh(&s_dpi_lock);
+			return COMM_NETLINK_ERR_MEMORY;
+		}
+		memset((char *)speedRsp.streamuidspeed, 0, buf_len);
+		for (k = 0; k < stream_count; k++) {
+			speedRsp.streamuidspeed[k] = (Netlink__Proto__DpiSpeedItem *)
+						((char *)speedRsp.streamuidspeed + sizeof(void *) * stream_count + sizeof(Netlink__Proto__DpiSpeedItem) * k);
+			netlink__proto__dpi_speed_item__init((ProtobufCMessage *)speedRsp.streamuidspeed[k]);
+		}
+		hlist_for_each_entry(pos_all_uid, &s_match_uid_result_head, node) {
+			if (ifidx_count == 0) {
+				if (dpi_stats_valid(cur_time, expire, &pos_all_uid->hash_stats.total_stats, speed_size)) {
+					if (stream_added >= stream_count) {
+						logt("get_dpi_stream_speed: stream_added >= stream_count, stream_added=%d, stream_count=%d ", stream_added, stream_count);
+						break;
+					}
+					copy_data_to_dpi_speed(speedRsp.streamuidspeed[stream_added], pos_all_uid, cur_time, expire, &pos_all_uid->hash_stats.total_stats);
+					stream_added++;
+				}
+			} else {
+				dpi_stats_t *stats_pos = NULL;
+				for(j = 0; j < ifidx_count; j++) {
+					hash_for_each_possible(pos_all_uid->hash_stats.stats_map, stats_pos, node, requestMsg->requestgetalluidspeed->ifidx[j]) {
+						if (stats_pos->if_idx == requestMsg->requestgetalluidspeed->ifidx[j]) {
+							if (dpi_stats_valid(cur_time, expire, stats_pos, speed_size)) {
+								if (stream_added >= stream_count) {
+									logt("get_dpi_stream_speed: stream_added >= stream_count, stream_added=%d, stream_count=%d ", stream_added, stream_count);
+									break;
+								}
+								copy_data_to_dpi_speed(speedRsp.streamuidspeed[stream_added], pos_all_uid, cur_time, expire, stats_pos);
+								stream_added++;
+							}
+							break;
+						}
+					}
+				}
+			}
+		}
+		hlist_for_each_entry(pos_app, &s_match_app_result_head, node) {
+			if (ifidx_count == 0) {
+				if (dpi_stats_valid(cur_time, expire, &pos_app->hash_stats.total_stats, speed_size)) {
+					if (stream_added >= stream_count) {
+						logt("get_dpi_stream_speed: stream_added >= stream_count, stream_added=%d, stream_count=%d ", stream_added, stream_count);
+						break;
+					}
+					copy_data_to_dpi_speed(speedRsp.streamuidspeed[stream_added], pos_app, cur_time, expire, &pos_app->hash_stats.total_stats);
+					stream_added++;
+				}
+			} else {
+				dpi_stats_t *stats_pos = NULL;
+				for(j = 0; j < ifidx_count; j++) {
+					hash_for_each_possible(pos_app->hash_stats.stats_map, stats_pos, node, requestMsg->requestgetalluidspeed->ifidx[j]) {
+						if (stats_pos->if_idx == requestMsg->requestgetalluidspeed->ifidx[j]) {
+							if (dpi_stats_valid(cur_time, expire, stats_pos, speed_size)) {
+								if (stream_added >= stream_count) {
+									logt("get_dpi_stream_speed: stream_added >= stream_count, stream_added=%d, stream_count=%d ", stream_added, stream_count);
+									break;
+								}
+								copy_data_to_dpi_speed(speedRsp.streamuidspeed[stream_added], pos_app, cur_time, expire, stats_pos);
+								stream_added++;
+							}
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+	spin_unlock_bh(&s_dpi_lock);
+	do {
+		size_t out_buf_len = 0, pack_len = 0;
+		char *out_buf = NULL;
+		NETLINK_RSP_DATA_DECLARE(rsp_name, requestMsg->header->requestid, requestMsg->header->eventid, COMM_NETLINK_SUCC);
+
+		rsp_name.response_data_case = NETLINK__PROTO__RESPONSE_MESSAGE__RESPONSE_DATA_RSP_GET_DPI_STREAM_SPEED;
+		rsp_name.rspgetdpistreamspeed = &speedRsp;
+		out_buf_len = netlink__proto__response_message__get_packed_size(&rsp_name);
+		out_buf = kmalloc(out_buf_len, GFP_ATOMIC);
+		if (!out_buf) {
+			logt("malloc speed out buf failed!");
+			kfree(speedRsp.streamuidspeed);
+			return COMM_NETLINK_ERR_MEMORY;
+		}
+
+		pack_len = netlink__proto__response_message__pack(&rsp_name, out_buf);
+		logi("get_all_uid_dpi_speed_request pack len %lu, buf len %lu", pack_len, out_buf_len);
+
+		*rsp_data = out_buf;
+		*rsp_len = out_buf_len;
+	} while (0);
+	kfree(speedRsp.streamuidspeed);
+	return 0;
+}
 
 int oplus_dpi_module_init(void)
 {
@@ -1081,7 +1334,8 @@ int oplus_dpi_module_init(void)
 	INIT_HLIST_HEAD(&s_notify_head);
 	INIT_HLIST_HEAD(&s_match_app_head);
 
-	INIT_HLIST_HEAD(&s_match_result_head);
+	INIT_HLIST_HEAD(&s_match_app_result_head);
+	INIT_HLIST_HEAD(&s_match_uid_result_head);
 
 	oplus_dpi_table_hdr = register_net_sysctl(&init_net, "net/oplus_dpi", oplus_dpi_sysctl_table);
 	logt("register_net_sysctl return %p", oplus_dpi_table_hdr);
@@ -1091,6 +1345,8 @@ int oplus_dpi_module_init(void)
 
 	ret |= register_netlink_request(COMM_NETLINK_EVENT_SET_DPI_UID, request_set_dpi_uid, data_free);
 	ret |= register_netlink_request(COMM_NETLINK_EVENT_GET_DPI_STREAM_SPEED, get_dpi_stream_speed_uid_request, data_free);
+	ret |= register_netlink_request(COMM_NETLINK_EVENT_GET_ALL_UID_DPI_SPEED, get_all_uid_dpi_speed_request, data_free);
+	ret |= register_netlink_request(COMM_NETLINK_EVENT_SET_DPI_MATCH_ALL_UID, request_set_match_all_uid_eable, data_free);
 
 	timer_setup(&s_check_timeout_timer, dpi_check_timeout_fun, 0);
 	mod_timer(&s_check_timeout_timer, jiffies + s_dpi_timeout * HZ / 1000);
@@ -1107,6 +1363,6 @@ void oplus_dpi_module_fini(void)
 	}
 	unregister_netlink_request(COMM_NETLINK_EVENT_SET_DPI_UID);
 	unregister_netlink_request(COMM_NETLINK_EVENT_GET_DPI_STREAM_SPEED);
+	unregister_netlink_request(COMM_NETLINK_EVENT_GET_ALL_UID_DPI_SPEED);
+	unregister_netlink_request(COMM_NETLINK_EVENT_SET_DPI_MATCH_ALL_UID);
 }
-
-

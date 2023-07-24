@@ -147,7 +147,7 @@ static void save_top_count_value(u64 *data, u64 delay, int size)
 
 static int check_wzry_data_skb(struct sk_buff * skb, int dir)
 {
-	u64 dpi_result = get_skb_dpi_id(skb, dir);
+	u64 dpi_result = get_skb_dpi_id(skb, dir, 0);
 
 	return (dpi_result == DPI_ID_TMGP_SGAME_STREAM_GAME_DATA) ? 1 : 0;
 }
@@ -377,9 +377,10 @@ static void probe_net_dev_queue(void *data, struct sk_buff *skb)
 #endif
 
 #ifdef USE_TRACE_FUNC
-static int skb_consume_udp_pre_handler(struct kprobe *kp, struct pt_regs *regs)
+static int __skb_recv_udp_ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
-	struct sk_buff *skb = (struct sk_buff *)regs->regs[1];
+	unsigned long ret = regs_return_value(regs);
+	struct sk_buff *skb = (struct sk_buff *)ret;
 
 	if (skb == NULL) {
 		return 0;
@@ -402,9 +403,9 @@ static int xmit_one_pre_handler(struct kprobe *kp, struct pt_regs *regs)
 }
 
 
-static struct kprobe kp_skb_consume_udp = {
-	.symbol_name = "skb_consume_udp",
-	.pre_handler = skb_consume_udp_pre_handler,
+static struct kretprobe kretp__skb_recv_udp = {
+	.kp.symbol_name = "__skb_recv_udp",
+	.handler = __skb_recv_udp_ret_handler,
 };
 
 static struct kprobe kp_xmit_one = {
@@ -424,9 +425,9 @@ static int probe_func_init(void)
 		return -1;
 	}
 
-	ret = register_kprobe(&kp_skb_consume_udp);
+	ret = register_kretprobe(&kretp__skb_recv_udp);
 	if (ret < 0) {
-		logt("register_kprobe register kp_skb_consume_udp failed with %d", ret);
+		logt("register_kretprobe register kretp__skb_recv_udp failed with %d", ret);
 		goto kprobe_recv_udp_failed;
 	}
 
@@ -447,7 +448,7 @@ static int probe_func_init(void)
 kprobe_recv_udp_failed:
 	unregister_trace_netif_rx(probe_netif_rx, NULL);
 net_dev_queue_fail:
-	unregister_kprobe(&kp_skb_consume_udp);
+	unregister_kretprobe(&kretp__skb_recv_udp);
 kprobe_dev_start_xmit_failed:
 	unregister_trace_net_dev_queue(probe_net_dev_queue, NULL);
 
@@ -465,8 +466,8 @@ static void probe_func_deinit(void)
 	ret = unregister_trace_netif_rx(probe_netif_rx, NULL);
 	logt("unregister_trace_netif_rx_entry return %d", ret);
 
-	unregister_kprobe(&kp_skb_consume_udp);
-	logt("unregister_kprobe kp_skb_consume_udp return %d", 0);
+	unregister_kretprobe(&kretp__skb_recv_udp);
+	logt("unregister_kretprobe kretp__skb_recv_udp return %d", 0);
 
 	ret = unregister_trace_net_dev_queue(probe_net_dev_queue, NULL);
 	logt("unregister_trace_net_dev_queue return %d", ret);

@@ -230,6 +230,7 @@ static ssize_t pmicwd_proc_read(struct file *file, char __user *buf,
 
 }
 
+#define BUFF_SIZE 64
 static ssize_t pmicwd_proc_write(struct file *file, const char __user *buf,
 		size_t count,loff_t *off)
 {
@@ -240,6 +241,10 @@ static ssize_t pmicwd_proc_write(struct file *file, const char __user *buf,
 	int ret = 0;
     char buffer[64] = {0};
 	unsigned int new_state;
+	int max_len[] = {BUFF_SIZE, BUFF_SIZE, BUFF_SIZE};
+	int part;
+	char delim[] = {' ', ' ', '\n'};
+	char *start, *end;
 
 	if(!pon){
 		return -EFAULT;
@@ -253,6 +258,17 @@ static ssize_t pmicwd_proc_write(struct file *file, const char __user *buf,
 		dev_err(pon->dev, "%s: read proc input error.\n", __func__);
 		return count;
     }
+
+	/* validate the length of each of the 3 parts */
+	start = buffer;
+	for (part = 0; part < 3; part++) {
+		end = strchr(start, delim[part]);
+		if (end == NULL || (end - start) > max_len[part]) {
+			return count;
+		}
+		start = end + 1;
+	}
+
 	ret = sscanf(buffer, "%d %d %d", &tmp_enable, &tmp_timeout, &tmp_rstypt);
 	if(ret <= 0){
 		dev_err(pon->dev, "%s: input error\n", __func__);

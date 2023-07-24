@@ -2407,16 +2407,22 @@ static void oplus_vooc_plugin_work(struct work_struct *work)
 	struct oplus_chg_vooc *chip =
 		container_of(work, struct oplus_chg_vooc, plugin_work);
 	union mms_msg_data data = { 0 };
+	int ret = 0;
 
 	oplus_mms_get_item_data(chip->wired_topic, WIRED_ITEM_ONLINE, &data,
 				false);
 	chip->wired_online = data.intval;
 	if (chip->wired_online) {
 		if (chip->comm_topic != NULL) {
-			oplus_mms_get_item_data(chip->comm_topic,
+			ret = oplus_mms_get_item_data(chip->comm_topic,
 						COMM_ITEM_TEMP_REGION, &data,
-						false);
-			chip->bat_temp_region = data.intval;
+						true);
+			if (ret < 0) {
+				chip->bat_temp_region = TEMP_REGION_NORMAL;
+				chg_err("can't get COMM_ITEM_TEMP_REGION status, ret=%d", ret);
+			} else {
+				chip->bat_temp_region = data.intval;
+			}
 		} else {
 			chip->bat_temp_region = TEMP_REGION_MAX;
 		}
@@ -2627,6 +2633,11 @@ static void oplus_vooc_subscribe_comm_topic(struct oplus_mms *topic,
 		return;
 	}
 
+	chg_err("init parameters");
+	oplus_mms_get_item_data(chip->comm_topic,
+				COMM_ITEM_TEMP_REGION, &data,
+				true);
+	chip->bat_temp_region = data.intval;
 	oplus_mms_get_item_data(chip->comm_topic, COMM_ITEM_COOL_DOWN, &data,
 				true);
 	chip->cool_down = data.intval;

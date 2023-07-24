@@ -13,6 +13,7 @@
 ****************************************************************/
 #include <linux/skbuff.h>
 #include <linux/ip.h>
+#include <linux/ipv6.h>
 #include <net/genetlink.h>
 
 #include "../include/dpi_api.h"
@@ -26,27 +27,35 @@
 
 u32 s_heytap_market_uid = 0;
 
-static int is_tcp(struct sk_buff *skb)
+static int is_tcp_or_udp(struct sk_buff *skb)
 {
 	struct iphdr *iph = NULL;
+	struct ipv6hdr *ip6h = NULL;
 
-	if (skb->protocol != htons(ETH_P_IP)) {
-		return 0;
+	if (skb->protocol == htons(ETH_P_IP)) {
+		iph = ip_hdr(skb);
+		if (iph && (iph->protocol == IPPROTO_TCP || iph->protocol == IPPROTO_UDP)) {
+			return 1;
+		}
+	} else if (skb->protocol == htons(ETH_P_IPV6)) {
+		ip6h = ipv6_hdr(skb);
+		if (ip6h && (ip6h->nexthdr == IPPROTO_TCP || ip6h->nexthdr == IPPROTO_UDP)) {
+			return 1;
+		}
 	}
-	iph = ip_hdr(skb);
-	if (iph && iph->protocol == IPPROTO_TCP) {
-		return 1;
-	}
+
 	return 0;
 }
 
 static int heytap_market_match(struct sk_buff *skb, int dir, dpi_match_data_t *data)
 {
-	if (!dir && is_tcp(skb)) {
+	if (!dir && is_tcp_or_udp(skb)) {
 		data->dpi_result = DPI_ID_HEYTAP_MARKET_STREAM_DOWNLOAD_DATA;
 		data->state = DPI_MATCH_STATE_COMPLETE;
 		return 0;
 	}
+	data->dpi_result = DPI_ID_HEYTAP_MARKET_APP;
+	data->state = DPI_MATCH_STATE_COMPLETE;
 	return 0;
 }
 

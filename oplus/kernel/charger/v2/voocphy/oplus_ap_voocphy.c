@@ -3507,6 +3507,7 @@ static irqreturn_t oplus_voocphy_interrupt_handler(int irq, void *dev_id)
 			voocphy_info("invalid data of the first frame , irq_num = %d\n",
 				     chip->irq_rxdone_num);
 			oplus_voocphy_set_status_and_notify_ap(chip, FAST_NOTIFY_ADAPTER_STATUS_ABNORMAL);
+			goto handle_done;
 		}
 
 		/* feed soft monitor watchdog */

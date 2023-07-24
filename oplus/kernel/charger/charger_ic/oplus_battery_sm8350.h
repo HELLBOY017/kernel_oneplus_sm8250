@@ -72,6 +72,7 @@
 #define BC_PD_SOFT_RESET				0x58
 #define BC_CHG_STATUS_GET				0x59
 #define BC_CHG_STATUS_SET				0x60
+#define BC_ABNORMAL_PD_SVOOC_ADAPTER			0x67
 #endif
 
 #ifdef OPLUS_FEATURE_CHG_BASIC

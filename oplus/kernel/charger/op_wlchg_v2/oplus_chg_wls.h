@@ -861,6 +861,10 @@ struct oplus_chg_wls {
 	unsigned int wls_bcc_fcc_to_icl_factor;
 	oplus_chg_track_trigger trx_info_load_trigger;
 	struct delayed_work trx_info_load_trigger_work;
+	struct mutex track_upload_lock;
+	bool rx_err_uploading;
+	oplus_chg_track_trigger *rx_err_load_trigger;
+	struct delayed_work rx_err_load_trigger_work;
 };
 
 #ifdef OPLUS_CHG_DEBUG

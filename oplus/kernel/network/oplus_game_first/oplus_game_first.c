@@ -22,7 +22,9 @@
 #include <net/inet_connection_sock.h>
 #include <linux/ipv6.h>
 #include <net/ipv6.h>
+#ifdef TRACE_FUNC_ON
 #include <trace/hooks/ipv4.h>
+#endif
 #include <trace/events/net.h>
 #include <linux/netfilter.h>
 #include <linux/netfilter_ipv4.h>

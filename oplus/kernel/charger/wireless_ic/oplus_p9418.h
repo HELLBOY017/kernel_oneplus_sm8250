@@ -148,6 +148,7 @@ struct oplus_p9418_ic{
 	struct work_struct			power_switch_work;
 	struct mutex				flow_mutex;
 	struct wakeup_source		*bus_wakelock;
+	struct mutex				power_enable_mutex;
 	u64			tx_start_time;
 	u64			upto_ble_time;		/* enable tx to get mac time(ms) */
 	u64			charger_done_time;	/* enable tx to charger done time(min) */

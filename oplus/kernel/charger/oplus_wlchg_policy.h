@@ -29,6 +29,10 @@
 
 #define PMIC_ICL_MAX 1100000
 
+#define WLCHG_VOOC_PWR_MAX_MW 15000
+#define WLCHG_RECEIVE_POWER_DEFAULT 12000
+#define WLCHG_RECEIVE_POWER_PD65W 50000
+
 #define WPC_CHARGE_CURRENT_LIMIT_300MA 300
 #define WPC_CHARGE_CURRENT_ZERO 0 // 0mA
 #define WPC_CHARGE_CURRENT_INIT_100MA 100
@@ -144,6 +148,7 @@
 #define EPP_CURR_STEP_MAX 2
 
 #define FOD_PARM_LENGTH 12
+#define MATCH_Q_LENGTH 3
 
 #define DEFAULT_SKIN_TEMP 250
 #define CHARGE_FULL_FAN_THREOD_LO 350
@@ -239,6 +244,26 @@ enum wlchg_msg_type {
 	WLCHG_TX_ID_MSG,
 };
 
+enum wlchg_adapter_id {
+	WLCHG_DOCK_OAWV00,
+	WLCHG_DOCK_OAWV01,
+	WLCHG_DOCK_OAWV02,
+	WLCHG_DOCK_OAWV03,
+	WLCHG_DOCK_OAWV04,
+	WLCHG_DOCK_OAWV05,
+	WLCHG_DOCK_OAWV06,
+	WLCHG_DOCK_OAWV07,
+	WLCHG_DOCK_OAWV08,
+	WLCHG_DOCK_OAWV09,
+	WLCHG_DOCK_OAWV10,
+	WLCHG_DOCK_OAWV11,
+	WLCHG_DOCK_OAWV16 = 16,
+	WLCHG_DOCK_OAWV17,
+	WLCHG_DOCK_OAWV18,
+	WLCHG_DOCK_OAWV19,
+	WLCHG_DOCK_THIRD = 0x1f,
+};
+
 struct wlchg_msg_t {
 	char type;
 	char data;
@@ -248,6 +273,17 @@ struct cmd_info_t {
 	unsigned char cmd;
 	enum rx_msg_type cmd_type;
 	int cmd_retry_count;
+};
+
+struct wlchg_base_type {
+	u8 id;
+	int power_max_mw;
+};
+
+struct wlchg_pwr_table {
+	u8 f2_id;
+	int r_power;/*watt*/
+	int t_power;/*watt*/
 };
 
 struct wpc_data {
@@ -507,8 +543,7 @@ struct charge_param {
 	int epp_skin_temp_min;
 	int epp_curr_step[EPP_CURR_STEP_MAX];
 	bool fastchg_fod_enable;
-	unsigned char fastchg_match_q;
-	unsigned char fastchg_match_q_new;
+	unsigned char fastchg_match_q[MATCH_Q_LENGTH];
 	unsigned char fastchg_fod_parm[FOD_PARM_LENGTH];
 	unsigned char fastchg_fod_parm_new[FOD_PARM_LENGTH];
 	unsigned char fastchg_fod_parm_startup[FOD_PARM_LENGTH];
@@ -604,7 +639,7 @@ struct op_chg_chip {
 
 	int adapter_id;
 	int adapter_power;
-	int chg_base_id;
+	u8 chg_base_id;
 	int chg_base_power;
 	int wls_prj_power;
 

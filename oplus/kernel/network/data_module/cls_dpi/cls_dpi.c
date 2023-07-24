@@ -94,16 +94,18 @@ static void __cls_dpi_delete(struct tcf_proto *tp, struct cls_dpi_data *prog, st
 static int check_dpi_id_valid(u32 type, u64 dpi_id)
 {
 	u64 mask = 0;
-
 	switch (type) {
-	case DPI_TYPE_STREAM:
-		mask = DPI_IP_STREAM_MASK;
+	case DPI_TYPE_UID:
+		mask = DPI_ID_UID_MASK;
+		break;
+	case DPI_TYPE_APP:
+		mask = DPI_ID_APP_MASK;
 		break;
 	case DPI_TYPE_FUNC:
 		mask = DPI_ID_FUNC_MASK;
 		break;
-	case DPI_TYPE_APP:
-		mask = DPI_ID_APP_MASK;
+	case DPI_TYPE_STREAM:
+		mask = DPI_IP_STREAM_MASK;
 		break;
 	default:
 		return 0;
@@ -128,7 +130,7 @@ static int check_mark_valid(u32 mark)
 
 static bool match_skb_dpi(struct sk_buff *skb, bool ingress, struct cls_dpi_data *pdata)
 {
-	u64 dpi_id = get_skb_dpi_id(skb, ingress ? 0 : 1);
+	u64 dpi_id = get_skb_dpi_id(skb, ingress?0:1, ingress?1:0);
 	u64 mask = 0;
 
 	if (dpi_id == 0) {
@@ -136,14 +138,17 @@ static bool match_skb_dpi(struct sk_buff *skb, bool ingress, struct cls_dpi_data
 	}
 
 	switch (pdata->type) {
-	case DPI_TYPE_STREAM:
-		mask = DPI_IP_STREAM_MASK;
+	case DPI_TYPE_UID:
+		mask = DPI_ID_UID_MASK;
+		break;
+	case DPI_TYPE_APP:
+		mask = DPI_ID_APP_MASK;
 		break;
 	case DPI_TYPE_FUNC:
 		mask = DPI_ID_FUNC_MASK;
 		break;
-	case DPI_TYPE_APP:
-		mask = DPI_ID_APP_MASK;
+	case DPI_TYPE_STREAM:
+		mask = DPI_IP_STREAM_MASK;
 		break;
 	default:
 		return 0;
