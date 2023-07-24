@@ -73,4 +73,4 @@ static int __init oplus_gpio_init(void)
 late_initcall_sync(oplus_gpio_init);
 MODULE_DESCRIPTION("nc gpio config");
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("mofei@oplus.com");
+MODULE_AUTHOR("mofei");
