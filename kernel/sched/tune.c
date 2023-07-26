@@ -10,7 +10,9 @@
 
 #include "sched.h"
 #ifdef OPLUS_FEATURE_POWER_CPUFREQ
+#ifdef CONFIG_SCHED_WALT
 #include "walt.h"
+#endif
 #endif
 
 bool schedtune_initialized = false;
@@ -117,7 +119,9 @@ struct schedtune {
 	 * towards idle CPUs */
 	int prefer_idle;
 #ifdef OPLUS_FEATURE_POWER_CPUFREQ
+#ifdef CONFIG_SCHED_WALT
 	unsigned int window_policy;
+#endif
 #endif
 #ifdef OPLUS_FEATURE_POWER_EFFICIENCY
 	bool discount_wait_time;
@@ -164,7 +168,9 @@ root_schedtune = {
 	.colocate_update_disabled = false,
 #endif
 #ifdef OPLUS_FEATURE_POWER_CPUFREQ
+#ifdef CONFIG_SCHED_WALT
 	.window_policy = 3,
+#endif
 #endif
 #ifdef OPLUS_FEATURE_POWER_EFFICIENCY
 	.discount_wait_time = false,
@@ -755,6 +761,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 }
 
 #ifdef OPLUS_FEATURE_POWER_CPUFREQ
+#ifdef CONFIG_SCHED_WALT
 unsigned int schedtune_window_policy(struct task_struct *p)
 {
 	struct schedtune *st;
@@ -770,6 +777,7 @@ unsigned int schedtune_window_policy(struct task_struct *p)
 
 	return window_policy;
 }
+#endif
 
 unsigned int uclamp_discount_wait_time(struct task_struct *p)
 {
@@ -819,6 +827,7 @@ unsigned int uclamp_ed_task_filter(struct task_struct *p)
 	return ret;
 }
 
+#ifdef CONFIG_SCHED_WALT
 static u64
 window_policy_read(struct cgroup_subsys_state *css,
 		struct cftype *cft)
@@ -838,7 +847,48 @@ window_policy_write(struct cgroup_subsys_state *css, struct cftype *cft,
 
 	st->window_policy = window_policy;
 
-	return 0;
+        return 0;
+}
+#endif
+#endif
+
+#ifdef CONFIG_STUNE_ASSIST
+static int sched_boost_override_write_wrapper(struct cgroup_subsys_state *css,
+					      struct cftype *cft, u64 override)
+{
+	if (task_is_booster(current))
+		return 0;
+
+	return sched_boost_override_write(css, cft, override);
+}
+
+#ifdef CONFIG_SCHED_WALT
+static int sched_colocate_write_wrapper(struct cgroup_subsys_state *css,
+					struct cftype *cft, u64 colocate)
+{
+	if (task_is_booster(current))
+		return 0;
+
+	return sched_colocate_write(css, cft, colocate);
+}
+#endif
+static int boost_write_wrapper(struct cgroup_subsys_state *css,
+			       struct cftype *cft, s64 boost)
+{
+	if (task_is_booster(current))
+		return 0;
+
+	return boost_write(css, cft, boost);
+}
+
+static int prefer_idle_write_wrapper(struct cgroup_subsys_state *css,
+				     struct cftype *cft, u64 prefer_idle)
+{
+	if (task_is_booster(current))
+		return 0;
+
+	return prefer_idle_write(css, cft, prefer_idle);
+>>>>>>> 2279bceeda22 (sched/tune: Protect oplus's functions for WALT optimizations)
 }
 #endif
 
@@ -891,11 +941,13 @@ static struct cftype files[] = {
 		.write_u64 = prefer_idle_write,
 	},
 #ifdef OPLUS_FEATURE_POWER_CPUFREQ
+#ifdef CONFIG_SCHED_WALT
 	{
 		.name = "window_policy",
 		.read_u64 = window_policy_read,
 		.write_u64 = window_policy_write,
 	},
+#endif
 #endif
 #ifdef OPLUS_FEATURE_POWER_EFFICIENCY
 	{
