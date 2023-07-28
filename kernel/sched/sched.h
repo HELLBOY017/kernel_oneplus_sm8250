@@ -90,13 +90,9 @@
 struct rq;
 struct cpuidle_state;
 
-#define CPU_NR		8
-
-#define TASK_BITS (PID_MAX_DEFAULT + BITS_PER_LONG)
-
 extern __read_mostly bool sched_predl;
-extern unsigned int sched_capacity_margin_up[CPU_NR];
-extern unsigned int sched_capacity_margin_down[CPU_NR];
+extern unsigned int sched_capacity_margin_up[NR_CPUS];
+extern unsigned int sched_capacity_margin_down[NR_CPUS];
 
 struct sched_walt_cpu_load {
 	unsigned long nl;
@@ -2248,7 +2244,7 @@ static inline unsigned long cpu_util_cum(int cpu, int delta)
 	return (delta >= capacity) ? capacity : delta;
 }
 
-#ifdef CONFIG_SCHED_WALT
+#ifdef CONFIG_SCHED_TUNE
 extern unsigned long stune_util(int cpu, unsigned long other_util,
 				struct sched_walt_cpu_load *walt_load);
 #endif
@@ -2669,7 +2665,7 @@ bool uclamp_boosted(struct task_struct *p);
  *
  * The utilization signals of all scheduling classes (CFS/RT/DL) and IRQ time
  * need to be aggregated differently depending on the usage made of them. This
- * enum is used within schedutil_cpu_util() to differentiate the types of
+ * enum is used within schedutil_freq_util() to differentiate the types of
  * utilization expected by the callers, and adjust the aggregation accordingly.
  */
 enum schedutil_type {
