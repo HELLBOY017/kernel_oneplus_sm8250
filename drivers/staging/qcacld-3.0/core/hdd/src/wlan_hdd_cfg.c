@@ -236,6 +236,7 @@ QDF_STATUS hdd_update_mac_config(struct hdd_context *hdd_ctx)
 	int max_mac_addr = QDF_MAX_CONCURRENCY_PERSONA;
 	struct hdd_cfg_entry mac_table[QDF_MAX_CONCURRENCY_PERSONA];
 	tSirMacAddr custom_mac_addr;
+	int fallback;
 
 	QDF_STATUS qdf_status = QDF_STATUS_SUCCESS;
 
@@ -247,7 +248,11 @@ QDF_STATUS hdd_update_mac_config(struct hdd_context *hdd_ctx)
 		 * valid setup for us, so log using debug instead of error
 		 */
 		hdd_debug("request_firmware failed; status:%d", status);
-		return QDF_STATUS_E_FAILURE;
+		fallback = request_firmware(&fw, WLAN_MAC_FILE_DEFAULT, hdd_ctx->parent_dev);
+		if (fallback) {
+			hdd_debug("request_firmware failed; fallback_status:%d", fallback);
+			return QDF_STATUS_E_FAILURE;
+		}
 	}
 
 	if (!fw || !fw->data || !fw->size) {
