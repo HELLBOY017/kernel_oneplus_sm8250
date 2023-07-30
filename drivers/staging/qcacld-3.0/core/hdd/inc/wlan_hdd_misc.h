@@ -48,7 +48,8 @@
 #define WLAN_INI_FILE              "wlan/WCNSS_qcom_cfg.ini"
 #endif /* OPLUS_BUG_STABILITY */
 #define WLAN_INI_FILE_DEFAULT      "wlan/qca_cld/" PREFIX "WCNSS_qcom_cfg.ini"
-#define WLAN_MAC_FILE              "wlan/qca_cld/" PREFIX "wlan_mac.bin"
+#define WLAN_MAC_FILE              "wlan/qca_cld/qca6390/" PREFIX "wlan_mac.bin"
+#define WLAN_MAC_FILE_DEFAULT              "wlan/qca_cld/" PREFIX "wlan_mac.bin"
 #else
 #define WLAN_INI_FILE              "wlan/" PREFIX "qcom_cfg.ini"
 #define WLAN_MAC_FILE              "wlan/" PREFIX "wlan_mac.bin"
