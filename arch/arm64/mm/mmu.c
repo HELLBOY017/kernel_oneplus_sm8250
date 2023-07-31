@@ -406,6 +406,7 @@ static void __create_pgd_mapping(pgd_t *pgdir, phys_addr_t phys,
 	} while (pgdp++, addr = next, addr != end);
 }
 
+#if defined(CONFIG_UNMAP_KERNEL_AT_EL0) || defined(CONFIG_MEMORY_HOTPLUG)
 static phys_addr_t pgd_kernel_pgtable_alloc(int shift)
 {
 	void *ptr = (void *)__get_free_page(PGALLOC_GFP);
@@ -415,6 +416,7 @@ static phys_addr_t pgd_kernel_pgtable_alloc(int shift)
 	dsb(ishst);
 	return __pa(ptr);
 }
+#endif
 
 static phys_addr_t pgd_pgtable_alloc(int shift)
 {
