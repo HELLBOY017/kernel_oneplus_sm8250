@@ -526,14 +526,12 @@ static void tp_gesture_handle(struct touchpanel_data *ts)
 	memset(&gesture_info_temp, 0, sizeof(struct gesture_info));
 	ts->ts_ops->get_gesture_info(ts->chip_data, &gesture_info_temp);
 	tp_geture_info_transform(&gesture_info_temp, &ts->resolution_info);
-	if (custom_gesture_enable) {
-	        if (ts->single_tap_support) {
-		        if (gesture_info_temp.gesture_type == SingleTap) {
-			        if (sec_double_tap(&gesture_info_temp) == 1) {
-				          gesture_info_temp.gesture_type  = DouTap;
-			        }
-		        }
-	        }
+	if (ts->single_tap_support) {
+		if (gesture_info_temp.gesture_type == SingleTap) {
+		        if (sec_double_tap(&gesture_info_temp) == 1) {
+				gesture_info_temp.gesture_type  = DouTap;
+			}
+		}
 	}        
 
 	TPD_INFO("detect %s gesture\n", gesture_info_temp.gesture_type == DouTap ? "double tap" :
