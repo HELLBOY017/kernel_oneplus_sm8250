@@ -1798,7 +1798,7 @@ static struct ctl_table vm_table[] = {
 		.procname	= "swappiness",
 		.data		= &vm_swappiness,
 		.maxlen		= sizeof(vm_swappiness),
-		.mode		= 0644,
+		.mode		= 0444,
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
 		.extra2		= &two_hundred,
@@ -1874,12 +1874,7 @@ static struct ctl_table vm_table[] = {
 		.procname	= "compact_memory",
 		.data		= &sysctl_compact_memory,
 		.maxlen		= sizeof(int),
-#ifdef OPLUS_FEATURE_PERFORMANCE
-		.mode		= 0222,
-#else
 		.mode		= 0200,
-
-#endif /*OPLUS_FEATURE_PERFORMANCE*/
 		.proc_handler	= sysctl_compaction_handler,
 	},
 	{
