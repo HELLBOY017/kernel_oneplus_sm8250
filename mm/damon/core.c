@@ -13,6 +13,9 @@
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/string.h>
+#ifndef CONFIG_DEBUG_KERNEL
+#include <linux/sched/task.h>
+#endif
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/damon.h>
