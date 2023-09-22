@@ -21,4 +21,6 @@ static inline uint32_t register_system_pm_ops(struct system_pm_ops *pm_ops)
 { return -ENODEV; }
 #endif
 
+extern void update_ipi_history(int cpu);
+
 #endif
