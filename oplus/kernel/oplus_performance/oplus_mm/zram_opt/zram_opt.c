@@ -18,14 +18,6 @@ static int g_swappiness = 160;
 static int g_hybridswapd_swappiness = 200;
 static struct proc_dir_entry *para_entry;
 
-#ifdef CONFIG_HYBRIDSWAP_SWAPD
-extern bool free_swap_is_low(void);
-bool __weak free_swap_is_low(void)
-{
-	return false;
-}
-#endif
-
 struct zram_opt_ops {
 	void (*zo_set_swappiness)(void *data, int *swappiness);
 	void (*zo_set_inactive_ratio)(void *data, unsigned long *inactive_ratio, bool file);
@@ -36,12 +28,6 @@ static void zo_set_swappiness(void *data, int *swappiness)
 {
 	if (current_is_kswapd()) {
 		*swappiness = g_swappiness;
-#ifdef CONFIG_HYBRIDSWAP_SWAPD
-	} else if (strncmp(current->comm, "hybridswapd:", sizeof("hybridswapd:") - 1) == 0) {
-		*swappiness = g_hybridswapd_swappiness;
-		if (free_swap_is_low())
-			*swappiness = 0;
-#endif
 	} else
 		*swappiness = g_direct_swappiness;
 
