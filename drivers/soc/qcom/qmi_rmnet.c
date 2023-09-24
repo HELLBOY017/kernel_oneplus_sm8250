@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2021-2022, Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <soc/qcom/qmi_rmnet.h>
@@ -44,7 +45,8 @@ unsigned int rmnet_wq_frequency __read_mostly = 1000;
 #define PS_INTERVAL (((!rmnet_wq_frequency) ?                             \
 					1 : rmnet_wq_frequency/10) * (HZ/100))
 #define NO_DELAY (0x0000 * HZ)
-#define PS_INTERVAL_KT (ms_to_ktime(1000))
+#define PS_INTERVAL_MS (1000)
+#define PS_INTERVAL_KT (ms_to_ktime(PS_INTERVAL_MS))
 #define WATCHDOG_EXPIRE_JF (msecs_to_jiffies(50))
 
 #ifdef CONFIG_QCOM_QMI_DFC
@@ -337,6 +339,9 @@ static void __qmi_rmnet_bearer_put(struct net_device *dev,
 
 			mq->bearer = NULL;
 			mq->drop_on_remove = reset;
+			/* Let other CPU's see this update so that packets are
+			 * dropped, instead of further processing packets
+			 */
 			smp_mb();
 
 			qmi_rmnet_flow_control(dev, i, 1);
@@ -367,6 +372,9 @@ static void __qmi_rmnet_update_mq(struct net_device *dev,
 	if (!mq->bearer) {
 		mq->bearer = bearer;
 		mq->drop_on_remove = false;
+		/* Let other CPU's see this update so that packets are
+		 * dropped, instead of further processing packets
+		 */
 		smp_mb();
 
 		if (dfc_mode == DFC_MODE_SA) {
@@ -1158,6 +1166,15 @@ static void qmi_rmnet_check_stats(struct work_struct *work)
 	if (unlikely(!qmi))
 		return;
 
+	rmnet_get_packets(real_work->port, &rx, &tx);
+	rxd = rx - real_work->old_rx_pkts;
+	txd = tx - real_work->old_tx_pkts;
+	real_work->old_rx_pkts = rx;
+	real_work->old_tx_pkts = tx;
+
+	dl_msg_active = qmi->dl_msg_active;
+	qmi->dl_msg_active = false;
+
 	if (qmi->ps_enabled) {
 
 		/* Ready to accept grant */
@@ -1177,15 +1194,6 @@ static void qmi_rmnet_check_stats(struct work_struct *work)
 
 		goto end;
 	}
-
-	rmnet_get_packets(real_work->port, &rx, &tx);
-	rxd = rx - real_work->old_rx_pkts;
-	txd = tx - real_work->old_tx_pkts;
-	real_work->old_rx_pkts = rx;
-	real_work->old_tx_pkts = tx;
-
-	dl_msg_active = qmi->dl_msg_active;
-	qmi->dl_msg_active = false;
 
 	if (!rxd && !txd) {
 		/* If no DL msg received and there is a flow disabled,

@@ -1752,7 +1752,6 @@ static int aio_poll_wake(struct wait_queue_entry *wait, unsigned mode, int sync,
 	 */
 	if (mask && !req->work_scheduled &&
 	    spin_trylock_irqsave(&iocb->ki_ctx->ctx_lock, flags)) {
-
 		struct kioctx *ctx = iocb->ki_ctx;
 
 		list_del_init(&req->wait.entry);

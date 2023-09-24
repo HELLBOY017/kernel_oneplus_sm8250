@@ -84,8 +84,8 @@ struct npu_network {
 	atomic_t ref_cnt;
 	bool is_valid;
 	bool is_active;
+	bool is_unloading;
 	bool fw_error;
-	bool is_async;
 	struct npu_client *client;
 	struct list_head cmd_list;
 };
