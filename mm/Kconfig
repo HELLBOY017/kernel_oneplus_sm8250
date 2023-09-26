@@ -912,6 +912,12 @@ config PROCESS_RECLAIM
 
 	 Any other value is ignored.
 
+config OOM_REAPER_RECLAIM_MEMORY
+	bool "enable oom_reaper to reclaim memory"
+	default n
+	help
+	  enable oom_reaper to reclaim memory
+
 config FORCE_ALLOC_FROM_DMA_ZONE
 	bool "Force certain memory allocators to always return ZONE_DMA32 memory"
 	depends on ZONE_DMA32
