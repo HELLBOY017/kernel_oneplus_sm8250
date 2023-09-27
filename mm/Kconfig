@@ -918,6 +918,12 @@ config OOM_REAPER_RECLAIM_MEMORY
 	help
 	  enable oom_reaper to reclaim memory
 
+config PHYSICAL_ANTI_FRAGMENTATION
+	bool "Physical memory anti-fragmentation"
+	default y
+	help
+	 Turn on the function of Physical memory anti-fragmentation.
+
 config FORCE_ALLOC_FROM_DMA_ZONE
 	bool "Force certain memory allocators to always return ZONE_DMA32 memory"
 	depends on ZONE_DMA32

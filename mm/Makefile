@@ -110,3 +110,4 @@ obj-$(CONFIG_HMM) += hmm.o
 obj-$(CONFIG_MEMFD_CREATE) += memfd.o
 obj-$(CONFIG_PROCESS_RECLAIM)	+= process_reclaim.o
 obj-$(CONFIG_DAMON) += damon/
+obj-$(CONFIG_PHYSICAL_ANTI_FRAGMENTATION) += multi_freearea.o

@@ -42,6 +42,10 @@
 
 #include "internal.h"
 
+#ifdef CONFIG_PHYSICAL_ANTI_FRAGMENTATION
+#include "multi_freearea.h"
+#endif
+
 /*
  * online_page_callback contains pointer to current page onlining function.
  * Initially it is generic_online_page(). If it is required it could be
@@ -396,6 +400,10 @@ static void shrink_zone_span(struct zone *zone, unsigned long start_pfn,
 			zone->spanned_pages = pfn - zone_start_pfn + 1;
 	}
 
+#ifdef CONFIG_PHYSICAL_ANTI_FRAGMENTATION
+	ajust_zone_label(zone);
+#endif
+
 	/*
 	 * The section is not biggest or smallest mem_section in the zone, it
 	 * only creates a hole in the zone. So in this case, we need not
@@ -422,6 +430,9 @@ static void shrink_zone_span(struct zone *zone, unsigned long start_pfn,
 	/* The zone has no valid section */
 	zone->zone_start_pfn = 0;
 	zone->spanned_pages = 0;
+#ifdef CONFIG_PHYSICAL_ANTI_FRAGMENTATION
+	ajust_zone_label(zone);
+#endif
 	zone_span_writeunlock(zone);
 }
 
@@ -737,6 +748,9 @@ static void __meminit resize_zone_range(struct zone *zone, unsigned long start_p
 		zone->zone_start_pfn = start_pfn;
 
 	zone->spanned_pages = max(start_pfn + nr_pages, old_end_pfn) - zone->zone_start_pfn;
+#ifdef CONFIG_PHYSICAL_ANTI_FRAGMENTATION
+	ajust_zone_label(zone);
+#endif
 }
 
 static void __meminit resize_pgdat_range(struct pglist_data *pgdat, unsigned long start_pfn,
