@@ -2,7 +2,6 @@
 
 config EXFAT_FS
 	tristate "exFAT filesystem support"
-	select BUFFER_HEAD
 	select NLS
 	select LEGACY_DIRECT_IO
 	help
