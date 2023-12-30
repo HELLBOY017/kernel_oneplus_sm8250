@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2013-2016, 2018-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2013-2016, 2018-2021 The Linux Foundation. All rights reserved.*
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -106,7 +105,7 @@
  */
 #define MAX_SPATIAL_STREAM_ANY MAX_SPATIAL_STREAM_ANY_V2 /* DEPRECATED */
 
-/* defines to set Packet extension values which can be 0, 8, or 16 usec */
+/* defines to set Packet extension values whic can be 0 us, 8 usec or 16 usec */
 /* NOTE: Below values cannot be changed without breaking WMI Compatibility */
 #define MAX_HE_NSS               8
 #define MAX_HE_MODULATION        8
@@ -149,7 +148,7 @@ typedef enum {
     MODE_11AX_HE80_2G = 23,
 #endif
 
-#if (defined(SUPPORT_11BE) && SUPPORT_11BE) || defined(SUPPORT_11BE_ROM)
+#if defined(SUPPORT_11BE) && SUPPORT_11BE
     MODE_11BE_EHT20 = 24,
     MODE_11BE_EHT40 = 25,
     MODE_11BE_EHT80 = 26,
@@ -248,7 +247,7 @@ typedef enum {
         ((mode) == MODE_11AX_HE80_2G))
 #endif /* SUPPORT_11AX */
 
-#if (defined(SUPPORT_11BE) && SUPPORT_11BE) || defined(SUPPORT_11BE_ROM)
+#if defined(SUPPORT_11BE) && SUPPORT_11BE
 #define IS_MODE_EHT(mode) (((mode) == MODE_11BE_EHT20) || \
         ((mode) == MODE_11BE_EHT40)     || \
         ((mode) == MODE_11BE_EHT80)     || \
@@ -458,10 +457,6 @@ typedef struct {
     A_UINT32 low_5ghz_chan;
     A_UINT32 high_5ghz_chan;
     A_UINT32 wireless_modes_ext; /* REGDMN MODE ext */
-    A_UINT32 low_2ghz_chan_ext;
-    A_UINT32 high_2ghz_chan_ext;
-    A_UINT32 low_5ghz_chan_ext;
-    A_UINT32 high_5ghz_chan_ext;
 } HAL_REG_CAPABILITIES;
 
 #ifdef NUM_SPATIAL_STREAM
@@ -481,8 +476,8 @@ typedef struct {
 
 /*
  * Used to update rate-control logic with the status of the tx-completion.
- * In host-based implementation of the rate-control feature, this structure
- * is used to create the payload for HTT message/s from target to host.
+ * In host-based implementation of the rate-control feature, this struture is used to
+ * create the payload for HTT message/s from target to host.
  */
 #ifndef CONFIG_MOVE_RC_STRUCT_TO_MACCORE
   #if (NUM_SPATIAL_STREAM > 3)
@@ -684,7 +679,7 @@ typedef struct {
 #endif
 
 /**
- * structure describing host memory chunk.
+ * strucutre describing host memory chunk.
  */
 typedef struct {
    A_UINT32   tlv_header;     /* TLV tag and len; tag equals WMITLV_TAG_STRUC_wlan_host_memory_chunk */
@@ -813,9 +808,9 @@ struct wlan_dbg_tx_stats_v1 {
     A_UINT32 sw_retry_failure;
     /* illegal rate phy errors  */
     A_UINT32 illgl_rate_phy_err;
-    /* wal pdev continuous xretry */
+    /* wal pdev continous xretry */
     A_UINT32 pdev_cont_xretry;
-    /* wal pdev continuous xretry */
+    /* wal pdev continous xretry */
     A_UINT32 pdev_tx_timeout;
     /* wal pdev resets  */
     A_UINT32 pdev_resets;
@@ -865,9 +860,9 @@ struct wlan_dbg_tx_stats_v2 {
     A_UINT32 sw_retry_failure;
     /* illegal rate phy errors  */
     A_UINT32 illgl_rate_phy_err;
-    /* wal pdev continuous xretry */
+    /* wal pdev continous xretry */
     A_UINT32 pdev_cont_xretry;
-    /* wal pdev continuous xretry */
+    /* wal pdev continous xretry */
     A_UINT32 pdev_tx_timeout;
     /* wal pdev resets  */
     A_UINT32 pdev_resets;
@@ -976,7 +971,8 @@ struct wlan_dbg_mem_stats {
 };
 
 struct wlan_dbg_peer_stats {
-    A_INT32 dummy; /* REMOVE THIS ONCE REAL PEER STAT COUNTERS ARE ADDED */
+
+	A_INT32 dummy; /* REMOVE THIS ONCE REAL PEER STAT COUNTERS ARE ADDED */
 };
 
 /*
@@ -1020,7 +1016,7 @@ typedef struct {
  * TEMPORARY: leave rssi_chain3 in place for AR900B builds until code using
  * rssi_chain3 has been converted to use wlan_dbg_rx_rate_info_v2_t.
  */
-    A_UINT32 rssi_chain3;
+	A_UINT32 rssi_chain3;
 } wlan_dbg_rx_rate_info_v1b_t;
 
 #if defined(AR900B)
@@ -1283,18 +1279,15 @@ struct wlan_dbg_tidq_stats {
 };
 
 typedef enum {
-    WLAN_DBG_DATA_STALL_NONE                   = 0,
-    WLAN_DBG_DATA_STALL_VDEV_PAUSE             = 1,
-    WLAN_DBG_DATA_STALL_HWSCHED_CMD_FILTER     = 2,
-    WLAN_DBG_DATA_STALL_HWSCHED_CMD_FLUSH      = 3,
-    WLAN_DBG_DATA_STALL_RX_REFILL_FAILED       = 4,
-    WLAN_DBG_DATA_STALL_RX_FCS_LEN_ERROR       = 5,
-    WLAN_DBG_DATA_STALL_MAC_WDOG_ERRORS        = 6, /* Mac watch dog */
-    WLAN_DBG_DATA_STALL_PHY_BB_WDOG_ERROR      = 7, /* PHY watch dog */
-    WLAN_DBG_DATA_STALL_POST_TIM_NO_TXRX_ERROR = 8,
-    WLAN_DBG_DATA_STALL_CONSECUTIVE_NON_FLUSH  = 9,
-    WLAN_DBG_DATA_STALL_CONSECUTIVE_NOACK      = 10,
-    WLAN_DBG_DATA_STALL_CONSECUTIVE_LT_EXPIRY  = 11,
+    WLAN_DBG_DATA_STALL_NONE = 0,
+    WLAN_DBG_DATA_STALL_VDEV_PAUSE,         /* 1 */
+    WLAN_DBG_DATA_STALL_HWSCHED_CMD_FILTER, /* 2 */
+    WLAN_DBG_DATA_STALL_HWSCHED_CMD_FLUSH,  /* 3 */
+    WLAN_DBG_DATA_STALL_RX_REFILL_FAILED,   /* 4 */
+    WLAN_DBG_DATA_STALL_RX_FCS_LEN_ERROR,   /* 5 */
+    WLAN_DBG_DATA_STALL_MAC_WDOG_ERRORS,    /* 6 */ /* Mac watch dog */
+    WLAN_DBG_DATA_STALL_PHY_BB_WDOG_ERROR,  /* 7 */ /* PHY watch dog */
+    WLAN_DBG_DATA_STALL_POST_TIM_NO_TXRX_ERROR, /* 8 */
     WLAN_DBG_DATA_STALL_MAX,
 } wlan_dbg_data_stall_type_e;
 
@@ -1317,7 +1310,7 @@ typedef enum {
 
 /** MGMT RX REO Changes */
 /* Macros for having versioning info for compatibility check between host and firmware */
-#define MLO_SHMEM_MAJOR_VERSION 2
+#define MLO_SHMEM_MAJOR_VERSION 1
 #define MLO_SHMEM_MINOR_VERSION 1
 
 /** Helper Macros for tlv header of the given tlv buffer */
@@ -1361,36 +1354,6 @@ typedef enum {
         (_var) |= (((_val) & ((1 << (_num_bits)) - 1)) << (_index)); \
     } while (0)
 
-/**
- * Enum which defines different versions of management Rx reorder snapshots.
- */
-typedef enum {
-    /**
-     * DWORD Lower:
-     * [15:0]  : Management packet counter
-     * [30:16] : Redundant global time stamp = Global time stamp[14:0]
-     * [31]    : Valid
-     *
-     * DWORD Upper:
-     * [31:0]  : Global time stamp
-     *
-     */
-    MGMT_RX_REO_SNAPSHOT_VERSION_TIMESTAMP_REDUNDANCY = 0,
-
-    /**
-     * DWORD Lower:
-     * [14:0]  : Global time stamp[14:0]
-     * [30:15] : Management packet counter
-     * [31]    : Valid
-     *
-     * DWORD Upper:
-     * [14:0]  : Redundant management packet counter = Management packet
-     *           counter[14:0]
-     * [31:15] : Global time stamp[31:15]
-     */
-    MGMT_RX_REO_SNAPSHOT_VERSION_PKT_CTR_REDUNDANCY = 1,
-} MGMT_RX_REO_SNAPSHOT_VERSION;
-
 /** Definition of the GLB_H_SHMEM arena tlv structures */
 
 typedef enum {
@@ -1400,8 +1363,6 @@ typedef enum {
     MLO_SHMEM_TLV_STRUCT_MLO_GLB_LINK,
     MLO_SHMEM_TLV_STRUCT_MLO_GLB_LINK_INFO,
     MLO_SHMEM_TLV_STRUCT_MLO_GLB_H_SHMEM,
-    MLO_SHMEM_TLV_STRUCT_MLO_GLB_CHIP_CRASH_INFO,
-    MLO_SHMEM_TLV_STRUCT_MLO_GLB_PER_CHIP_CRASH_INFO,
 } MLO_SHMEM_TLV_TAG_ID;
 
 /** Helper macro for params GET/SET of mgmt_rx_reo_snapshot */
@@ -1433,152 +1394,6 @@ typedef enum {
 
 #define MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_GET_ADRESS(mgmt_rx_reo_snapshot) \
     (&mgmt_rx_reo_snapshot->mgmt_rx_reo_snapshot_low)
-
-/**
- * Helper macros/functions for params GET/SET of different hw version
- * of the mgmt_rx_reo_snapshot
- */
-
-static INLINE A_UINT8
-MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_VALID_GET(
-    A_UINT32 mgmt_rx_reo_snapshot_low, A_UINT8 snapshot_ver)
-{
-    if ((snapshot_ver != MGMT_RX_REO_SNAPSHOT_VERSION_TIMESTAMP_REDUNDANCY) &&
-        (snapshot_ver != MGMT_RX_REO_SNAPSHOT_VERSION_PKT_CTR_REDUNDANCY))
-    {
-        A_ASSERT(0);
-    }
-
-    return MLO_SHMEM_GET_BITS(mgmt_rx_reo_snapshot_low, 31, 1);
-}
-
-static INLINE void
-MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_VALID_SET(
-    A_UINT32 *mgmt_rx_reo_snapshot_low, A_UINT8 value, A_UINT8 snapshot_ver)
-{
-    if ((snapshot_ver != MGMT_RX_REO_SNAPSHOT_VERSION_TIMESTAMP_REDUNDANCY) &&
-        (snapshot_ver != MGMT_RX_REO_SNAPSHOT_VERSION_PKT_CTR_REDUNDANCY)) {
-        A_ASSERT(0);
-    }
-
-    MLO_SHMEM_SET_BITS(*mgmt_rx_reo_snapshot_low, 31, 1, value);
-}
-
-static INLINE A_UINT16
-MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_MGMT_PKT_CTR_GET(
-    A_UINT32 mgmt_rx_reo_snapshot_low, A_UINT8 snapshot_ver)
-{
-    if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_TIMESTAMP_REDUNDANCY) {
-        return MLO_SHMEM_GET_BITS(mgmt_rx_reo_snapshot_low, 0, 16);
-    } else if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_PKT_CTR_REDUNDANCY){
-        return MLO_SHMEM_GET_BITS(mgmt_rx_reo_snapshot_low, 15, 16);
-    } else {
-        A_ASSERT(0);
-        return 0;
-    }
-}
-
-static INLINE void
-MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_MGMT_PKT_CTR_SET(
-    A_UINT32 *mgmt_rx_reo_snapshot_low, A_UINT16 value, A_UINT8 snapshot_ver)
-{
-    if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_TIMESTAMP_REDUNDANCY) {
-        MLO_SHMEM_SET_BITS(*mgmt_rx_reo_snapshot_low, 0, 16, value);
-    } else if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_PKT_CTR_REDUNDANCY){
-        MLO_SHMEM_SET_BITS(*mgmt_rx_reo_snapshot_low, 15, 16, value);
-    } else {
-        A_ASSERT(0);
-    }
-}
-
-#define MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_MGMT_PKT_CTR_REDUNDANT_GET( \
-    mgmt_rx_reo_snapshot_high) \
-    MLO_SHMEM_GET_BITS(mgmt_rx_reo_snapshot_high, 0, 15)
-#define MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_MGMT_PKT_CTR_REDUNDANT_SET( \
-    mgmt_rx_reo_snapshot_high, value) \
-    MLO_SHMEM_SET_BITS(mgmt_rx_reo_snapshot_high, 0, 15, value)
-
-#define MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_GLOBAL_TIMESTAMP_REDUNDANT_GET( \
-    mgmt_rx_reo_snapshot_low) \
-    MLO_SHMEM_GET_BITS(mgmt_rx_reo_snapshot_low, 16, 15)
-#define MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_GLOBAL_TIMESTAMP_REDUNDANT_SET( \
-    mgmt_rx_reo_snapshot_low, value) \
-    MLO_SHMEM_SET_BITS(mgmt_rx_reo_snapshot_low, 16, 15, value)
-
-static INLINE A_UINT32
-MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_GLOBAL_TIMESTAMP_GET(
-    A_UINT32 mgmt_rx_reo_snapshot_low,
-    A_UINT32 mgmt_rx_reo_snapshot_high,
-    A_UINT8 snapshot_ver)
-{
-    if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_TIMESTAMP_REDUNDANCY) {
-        return mgmt_rx_reo_snapshot_high;
-    } else if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_PKT_CTR_REDUNDANCY){
-        return
-            ((MLO_SHMEM_GET_BITS(mgmt_rx_reo_snapshot_high, 15, 17) << 15) |
-             MLO_SHMEM_GET_BITS(mgmt_rx_reo_snapshot_low, 0, 15));
-    } else {
-        A_ASSERT(0);
-        return 0;
-    }
-}
-
-static INLINE void
-MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_GLOBAL_TIMESTAMP_SET(
-    A_UINT32 *mgmt_rx_reo_snapshot_low,
-    A_UINT32 *mgmt_rx_reo_snapshot_high,
-    A_UINT32 value,
-    A_UINT8 snapshot_ver)
-{
-    if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_TIMESTAMP_REDUNDANCY) {
-        *mgmt_rx_reo_snapshot_high = value;
-    } else if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_PKT_CTR_REDUNDANCY){
-        MLO_SHMEM_SET_BITS(
-            *mgmt_rx_reo_snapshot_high, 15, 17, ((value) >> 15));
-        MLO_SHMEM_SET_BITS(
-            *mgmt_rx_reo_snapshot_low, 0, 15, ((value) & 0x7fff));
-    } else {
-        A_ASSERT(0);
-    }
-}
-
-static INLINE A_BOOL
-MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_CHECK_CONSISTENCY(
-    A_UINT32 mgmt_rx_reo_snapshot_low,
-    A_UINT32 mgmt_rx_reo_snapshot_high,
-    A_UINT8 snapshot_ver)
-{
-    if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_TIMESTAMP_REDUNDANCY) {
-        A_UINT32 global_timestamp;
-        A_UINT32 global_timestamp_redundant;
-
-        global_timestamp = MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_GLOBAL_TIMESTAMP_GET(
-            mgmt_rx_reo_snapshot_low, mgmt_rx_reo_snapshot_high, snapshot_ver);
-        global_timestamp_redundant =
-            MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_GLOBAL_TIMESTAMP_REDUNDANT_GET(
-                mgmt_rx_reo_snapshot_low);
-
-        return
-            (MLO_SHMEM_GET_BITS(global_timestamp, 0, 15) ==
-             MLO_SHMEM_GET_BITS(global_timestamp_redundant, 0, 15));
-    } else if (snapshot_ver == MGMT_RX_REO_SNAPSHOT_VERSION_PKT_CTR_REDUNDANCY){
-        A_UINT16 mgmt_pkt_ctr;
-        A_UINT16 mgmt_pkt_ctr_redundant;
-
-        mgmt_pkt_ctr = MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_MGMT_PKT_CTR_GET(
-            mgmt_rx_reo_snapshot_low, snapshot_ver);
-        mgmt_pkt_ctr_redundant =
-            MLO_SHMEM_MGMT_RX_REO_SNAPSHOT_MGMT_PKT_CTR_REDUNDANT_GET(
-                mgmt_rx_reo_snapshot_high);
-
-        return
-            (MLO_SHMEM_GET_BITS(mgmt_pkt_ctr, 0, 15) ==
-             MLO_SHMEM_GET_BITS(mgmt_pkt_ctr_redundant, 0, 15));
-    } else {
-        A_ASSERT(0);
-        return 0;
-    }
-}
 
 /* REO snapshot structure */
 typedef struct {
@@ -1632,15 +1447,6 @@ A_COMPILE_TIME_ASSERT(verify_mlo_glb_rx_reo_per_link_snapshot_fw_consumed_offset
 #define MLO_SHMEM_GLB_RX_REO_SNAPSHOT_PARAM_VALID_LINK_BMAP_GET(link_info) MLO_SHMEM_GET_BITS(link_info, 4, 16)
 #define MLO_SHMEM_GLB_RX_REO_SNAPSHOT_PARAM_VALID_LINK_BMAP_SET(link_info, value) MLO_SHMEM_SET_BITS(link_info, 4, 16, value)
 
-#define MLO_SHMEM_GLB_RX_REO_SNAPSHOT_PARAM_HW_FWD_SNAPSHOT_VER_GET(snapshot_ver_info) MLO_SHMEM_GET_BITS(snapshot_ver_info, 0, 3)
-#define MLO_SHMEM_GLB_RX_REO_SNAPSHOT_PARAM_HW_FWD_SNAPSHOT_VER_SET(snapshot_ver_info, value) MLO_SHMEM_SET_BITS(snapshot_ver_info, 0, 3, value)
-
-#define MLO_SHMEM_GLB_RX_REO_SNAPSHOT_PARAM_FW_FWD_SNAPSHOT_VER_GET(snapshot_ver_info) MLO_SHMEM_GET_BITS(snapshot_ver_info, 3, 3)
-#define MLO_SHMEM_GLB_RX_REO_SNAPSHOT_PARAM_FW_FWD_SNAPSHOT_VER_SET(snapshot_ver_info, value) MLO_SHMEM_SET_BITS(snapshot_ver_info, 3, 3, value)
-
-#define MLO_SHMEM_GLB_RX_REO_SNAPSHOT_PARAM_FW_CONSUMED_SNAPSHOT_VER_GET(snapshot_ver_info) MLO_SHMEM_GET_BITS(snapshot_ver_info, 6, 3)
-#define MLO_SHMEM_GLB_RX_REO_SNAPSHOT_PARAM_FW_CONSUMED_SNAPSHOT_VER_SET(snapshot_ver_info, value) MLO_SHMEM_SET_BITS(snapshot_ver_info, 6, 3, value)
-
 /* Definition of the complete REO snapshot info */
 typedef struct {
     /* TLV tag and len; tag equals MLO_SHMEM_TLV_STRUCT_MLO_GLB_RX_REO_SNAPSHOT_INFO */
@@ -1654,18 +1460,6 @@ typedef struct {
      * [31:20]: reserved
      */
     A_UINT32 link_info;
-
-    /**
-     * snapshot_ver_info
-     *
-     * [2:0]:  hw_forwarded snapshot version
-     * [5:3]:  fw_forwarded snapshot version
-     * [8:6]:  fw_consumed snapshot version
-     * [31:9]: reserved
-     */
-    A_UINT32 snapshot_ver_info;
-    A_UINT32 reserved_alignment_padding;
-
 /*  This TLV is followed by array of mlo_glb_rx_reo_per_link_snapshot_info:
  *  mlo_glb_rx_reo_per_link_snapshot_info will have multiple instances
  *  equal to num of hw links received by no_of_link
@@ -1736,7 +1530,7 @@ typedef struct {
      */
     A_UINT32 link_info;
 /*  This TLV is followed by array of mlo_glb_link:
- *  mlo_glb_link will have multiple instances equal to num of hw links
+ *  mlo_glb_link will have mutiple instances equal to num of hw links
  *  received by no_of_link
  *      mlo_glb_link glb_link_info[];
  */
@@ -1744,82 +1538,6 @@ typedef struct {
 
 A_COMPILE_TIME_ASSERT(check_mlo_glb_link_info_8byte_size_quantum,
         (((sizeof(mlo_glb_link_info) % sizeof(A_UINT64) == 0x0))));
-
-typedef enum {
-    MLO_SHMEM_CRASH_PARTNER_CHIPS = 1,
-    MLO_SHMEM_CRASH_SW_PANIC      = 2,
-    MLO_SHMEM_CRASH_SW_ASSERT     = 3,
-} MLO_SHMEM_CHIP_CRASH_REASON;
-
-typedef enum {
-    MLO_SHMEM_RECOVERY_CRASH_PARTNER_CHIPS = 1,
-    MLO_SHMEM_RECOVER_NON_MLO_MODE = 2,
-} MLO_SHMEM_CHIP_RECOVERY_MODE;
-
-/* glb link info structures used for scratchpad memory (crash and recovery) */
-typedef struct {
-    /* TLV tag and len; tag equals MLO_SHMEM_TLV_STRUCT_MLO_GLB_PER_CHIP_CRASH_INFO */
-    A_UINT32 tlv_header;
-    /**
-     * crash reason, takes value in enum MLO_SHMEM_CHIP_CRASH_REASON
-     */
-    A_UINT32 crash_reason;
-    /**
-     * crash reason, takes value in enum MLO_SHMEM_CHIP_RECOVERY_MODE
-     */
-    A_UINT32 recovery_mode;
-    /* reserved: added for padding to A_UINT64 size, available for future use */
-    A_UINT32 reserved;
-} mlo_glb_per_chip_crash_info;
-
-A_COMPILE_TIME_ASSERT(check_mlo_glb_per_chip_crash_info,
-        (((sizeof(mlo_glb_per_chip_crash_info) % sizeof(A_UINT64) == 0x0))));
-
-/** Helper macro for params GET/SET of mlo_glb_chip_crash_info */
-#define MLO_SHMEM_CHIP_CRASH_INFO_PARAM_NO_OF_CHIPS_GET(chip_info) \
-    (MLO_SHMEM_GET_BITS(chip_info, 0, 2) + \
-     (MLO_SHMEM_GET_BITS(chip_info, 12, 4) << 2))
-#define MLO_SHMEM_CHIP_CRASH_INFO_PARAM_NO_OF_CHIPS_SET(chip_info, value) \
-    do { \
-       MLO_SHMEM_SET_BITS(chip_info, 0, 2, ((value) & 0x03)); \
-       MLO_SHMEM_SET_BITS(chip_info, 12, 4, ((value) >> 2)); \
-} while (0)
-
-#define MLO_SHMEM_CHIP_CRASH_INFO_PARAM_VALID_CHIP_BMAP_GET(chip_info) MLO_SHMEM_GET_BITS(chip_info, 2, 8)
-#define MLO_SHMEM_CHIP_CRASH_INFO_PARAM_VALID_CHIP_BMAP_SET(chip_info, value) MLO_SHMEM_SET_BITS(chip_info, 2, 8, value)
-
-typedef struct {
-    /* TLV tag and len; tag equals MLO_SHMEM_TLV_STRUCT_MLO_GLB_CHIP_CRASH_INFO */
-    A_UINT32 tlv_header;
-
-    /**
-     * chip_info
-     *
-     * [1:0]:  no_of_chips
-     * [4:2]:  valid_chip_bmap
-     * For number of chips beyond 3, extension fields are added.
-     * To maintain backward compatibility, with 3 chip board and
-     * old host driver, valid chip bmap is extended in continuation from
-     * existing bit 4 onwards, while extending no_of_chips information
-     * would overlap with old valid_chip_bmap, hence extended from
-     * bit 12:15. Now no_of_chip will have two parts, lower 2 bits from 0-1 and
-     * upper 4 bits from 12-15. SET-GET macros are modified accordingly.
-     * This helps in no change in respective processing files and don't need
-     * to maintain two copy of information for backward compatibility.
-     * [9:5]:  valid_chip_bmap_ext
-     * [15:12]: no_of_chips_ext
-     * [31:16]: reserved
-     */
-    A_UINT32 chip_info;
-    /*  This TLV is followed by array of mlo_glb_per_chip_crash_info:
-     *  mlo_glb_per_chip_crash_info will have multiple instances equal to num of partner chips
-     *  received by no_of_chips
-     *  mlo_glb_per_chip_crash_info per_chip_crash_info[];
-     */
-} mlo_glb_chip_crash_info;
-
-A_COMPILE_TIME_ASSERT(check_mlo_glb_chip_crash_info,
-        (((sizeof(mlo_glb_chip_crash_info) % sizeof(A_UINT64) == 0x0))));
 
 /** Helper macro for params GET/SET of mlo_glb_h_shmem */
 #define MLO_SHMEM_GLB_H_SHMEM_PARAM_MINOR_VERSION_GET(major_minor_version) MLO_SHMEM_GET_BITS(major_minor_version, 0, 16)
@@ -1842,19 +1560,11 @@ typedef struct {
 /*  This TLV is followed by TLVs
  *  mlo_glb_rx_reo_snapshot_info reo_snapshot;
  *  mlo_glb_link_info glb_info;
- *  mlo_glb_chip_crash_info crash_info;
  */
 } mlo_glb_h_shmem;
 
 A_COMPILE_TIME_ASSERT(check_mlo_glb_h_shmem_8byte_size_quantum,
         (((sizeof(mlo_glb_h_shmem) % sizeof(A_UINT64) == 0x0))));
 
-/** 2 word representation of MAC addr */
-typedef struct _wmi_mac_addr {
-    /** upper 4 bytes of  MAC address */
-    A_UINT32 mac_addr31to0;
-    /** lower 2 bytes of  MAC address */
-    A_UINT32 mac_addr47to32;
-} wmi_mac_addr;
 
 #endif /* __WLANDEFS_H__ */

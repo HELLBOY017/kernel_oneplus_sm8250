@@ -153,12 +153,30 @@ include $(DLKM_DIR)/AndroidKernelModule.mk
 ifneq ($(findstring $(WLAN_CHIPSET),$(WIFI_DRIVER_DEFAULT)),)
 ifeq ($(PRODUCT_VENDOR_MOVE_ENABLED),true)
 ifneq ($(WIFI_DRIVER_INSTALL_TO_KERNEL_OUT),)
-$(shell mkdir -p $(TARGET_OUT_VENDOR)/lib/modules; \
-	ln -sf /$(TARGET_COPY_OUT_VENDOR)/lib/modules/$(WLAN_CHIPSET)/$(LOCAL_MODULE) $(TARGET_OUT_VENDOR)/lib/modules/$(LOCAL_MODULE))
+#ifdef OPLUS_FEATURE_REMAKE_OPTIMIZATION
+#$(shell mkdir -p $(TARGET_OUT_VENDOR)/lib/modules; \
+#	ln -sf /$(TARGET_COPY_OUT_VENDOR)/lib/modules/$(WLAN_CHIPSET)/$(LOCAL_MODULE) $(TARGET_OUT_VENDOR)/lib/modules/$(LOCAL_MODULE))
+#else
+$(shell mkdir -p $(TARGET_OUT_VENDOR)/lib/modules)
+#ifdef OPLUS_FEATURE_REMAKE_OPTIMIZATION
+TARGET_FILE = /$(TARGET_COPY_OUT_VENDOR)/lib/modules/$(WLAN_CHIPSET)/$(LOCAL_MODULE)
+LINK_NAME = $(TARGET_OUT_VENDOR)/lib/modules/$(LOCAL_MODULE)
+#if file not exist or it is a link file, check and create link file if necessary
+$(shell if [[ ! -f  $(LINK_NAME) || -L $(LINK_NAME) ]]; then \
+if [[ "$$(readlink $(LINK_NAME))" != "$(TARGET_FILE)" ]]; then ln -sf $(TARGET_FILE) $(LINK_NAME) ; fi; \
+fi)
+#endif
+
+#endif
 endif
 else
-$(shell mkdir -p $(TARGET_OUT)/lib/modules; \
-	ln -sf /system/lib/modules/$(WLAN_CHIPSET)/$(LOCAL_MODULE) $(TARGET_OUT)/lib/modules/$(LOCAL_MODULE))
+#ifdef OPLUS_FEATURE_REMAKE_OPTIMIZATION
+#$(shell mkdir -p $(TARGET_OUT)/lib/modules; \
+#	ln -sf /system/lib/modules/$(WLAN_CHIPSET)/$(LOCAL_MODULE) $(TARGET_OUT)/lib/modules/$(LOCAL_MODULE))
+#else
+$(shell mkdir -p $(TARGET_OUT)/lib/modules)
+$(call link-file-after-check,/system/lib/modules/$(WLAN_CHIPSET)/$(LOCAL_MODULE),$(TARGET_OUT)/lib/modules/$(LOCAL_MODULE))
+#endif
 endif
 endif
 
@@ -168,10 +186,19 @@ else
 TARGET_FW_PATH := $(TARGET_OUT_ETC)/$(TARGET_FW_DIR)
 endif
 
-$(shell mkdir -p $(TARGET_FW_PATH); \
-	ln -sf $(TARGET_MAC_BIN_PATH)/wlan_mac.bin $(TARGET_FW_PATH)/wlan_mac.bin)
+#ifdef OPLUS_FEATURE_REMAKE_OPTIMIZATION
+#$(shell mkdir -p $(TARGET_FW_PATH); \
+#	ln -sf $(TARGET_MAC_BIN_PATH)/wlan_mac.bin $(TARGET_FW_PATH)/wlan_mac.bin)
+#else
+$(shell mkdir -p $(TARGET_FW_PATH))
+$(call link-file-after-check,$(TARGET_MAC_BIN_PATH)/wlan_mac.bin,$(TARGET_FW_PATH)/wlan_mac.bin)
+#endif
 ifneq ($(GENERIC_ODM_IMAGE),true)
-$(shell ln -sf $(TARGET_CFG_PATH)/WCNSS_qcom_cfg.ini $(TARGET_FW_PATH)/WCNSS_qcom_cfg.ini)
+#ifdef OPLUS_FEATURE_REMAKE_OPTIMIZATION
+#$(shell ln -sf $(TARGET_CFG_PATH)/WCNSS_qcom_cfg.ini $(TARGET_FW_PATH)/WCNSS_qcom_cfg.ini)
+#else
+$(call link-file-after-check,$(TARGET_CFG_PATH)/WCNSS_qcom_cfg.ini,$(TARGET_FW_PATH)/WCNSS_qcom_cfg.ini)
+#endif
 endif
 endif # Multi-ko check
 endif # DLKM check

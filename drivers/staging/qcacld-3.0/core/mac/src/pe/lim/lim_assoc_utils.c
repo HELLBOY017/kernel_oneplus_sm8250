@@ -1538,41 +1538,6 @@ static bool lim_check_valid_mcs_for_nss(struct pe_session *session,
 }
 #endif
 
-/**
- * lim_remove_membership_selectors() - remove elements from rate set
- *
- * @rate_set: pointer to rate set
- *
- * Removes the BSS membership selector elements from the rate set, and keep
- * only the rates
- *
- * Return: none
- */
-static void lim_remove_membership_selectors(tSirMacRateSet *rate_set)
-{
-	int i, selector_count = 0;
-
-	for (i = 0; i < rate_set->numRates; i++) {
-		if ((rate_set->rate[i] == (WLAN_BASIC_RATE_MASK |
-				WLAN_BSS_MEMBERSHIP_SELECTOR_HT_PHY)) ||
-		    (rate_set->rate[i] == (WLAN_BASIC_RATE_MASK |
-				WLAN_BSS_MEMBERSHIP_SELECTOR_VHT_PHY)) ||
-		    (rate_set->rate[i] == (WLAN_BASIC_RATE_MASK |
-				WLAN_BSS_MEMBERSHIP_SELECTOR_GLK)) ||
-		    (rate_set->rate[i] == (WLAN_BASIC_RATE_MASK |
-				WLAN_BSS_MEMBERSHIP_SELECTOR_EPD)) ||
-		    (rate_set->rate[i] == (WLAN_BASIC_RATE_MASK |
-				WLAN_BSS_MEMBERSHIP_SELECTOR_SAE_H2E)) ||
-		    (rate_set->rate[i] == (WLAN_BASIC_RATE_MASK |
-				WLAN_BSS_MEMBERSHIP_SELECTOR_HE_PHY)))
-			selector_count++;
-
-		if (i + selector_count < rate_set->numRates)
-			rate_set->rate[i] = rate_set->rate[i + selector_count];
-	}
-	rate_set->numRates -= selector_count;
-}
-
 QDF_STATUS lim_populate_peer_rate_set(struct mac_context *mac,
 				      struct supported_rates *pRates,
 				      uint8_t *pSupportedMCSSet,
@@ -1621,10 +1586,6 @@ QDF_STATUS lim_populate_peer_rate_set(struct mac_context *mac,
 		}
 	} else
 		tempRateSet2.numRates = 0;
-
-	lim_remove_membership_selectors(&tempRateSet);
-	lim_remove_membership_selectors(&tempRateSet2);
-
 	if ((tempRateSet.numRates + tempRateSet2.numRates) >
 	    WLAN_SUPPORTED_RATES_IE_MAX_LEN) {
 		pe_err("more than 12 rates in CFG");
@@ -1781,8 +1742,8 @@ QDF_STATUS lim_populate_peer_rate_set(struct mac_context *mac,
  * the rate sets received in the Assoc request on AP
  * or Beacon/Probe Response from peer in IBSS.
  *
- * 1. It makes the intersection between our own rate set
- *    and extended rate set and the ones received in the
+ * 1. It makes the intersection between our own rate Sat
+ *    and extemcded rate set and the ones received in the
  *    association request.
  * 2. It creates a combined rate set of 12 rates max which
  *    comprised the basic and extended rates
@@ -1832,16 +1793,13 @@ QDF_STATUS lim_populate_matching_rate_set(struct mac_context *mac_ctx,
 		temp_rate_set2.numRates = 0;
 	}
 
-	lim_remove_membership_selectors(&temp_rate_set);
-	lim_remove_membership_selectors(&temp_rate_set2);
-
 	/*
 	 * absolute sum of both num_rates should be less than 12. following
-	 * 16-bit sum avoids false condition where 8-bit arithmetic overflow
+	 * 16-bit sum avoids false codition where 8-bit arthematic overflow
 	 * might have caused total sum to be less than 12
 	 */
 	if (((uint16_t)temp_rate_set.numRates +
-	    (uint16_t)temp_rate_set2.numRates) > SIR_MAC_MAX_NUMBER_OF_RATES) {
+		(uint16_t)temp_rate_set2.numRates) > 12) {
 		pe_err("more than 12 rates in CFG");
 		return QDF_STATUS_E_FAILURE;
 	}
@@ -2170,12 +2128,9 @@ lim_add_sta(struct mac_context *mac_ctx,
 	/* Update VHT/HT Capability */
 	if (LIM_IS_AP_ROLE(session_entry) ||
 	    LIM_IS_IBSS_ROLE(session_entry)) {
-		add_sta_params->htCapable =
-				sta_ds->mlmStaContext.htCapability &&
-				session_entry->htCapability;;
+		add_sta_params->htCapable = sta_ds->mlmStaContext.htCapability;
 		add_sta_params->vhtCapable =
-				sta_ds->mlmStaContext.vhtCapability &&
-				session_entry->vhtCapability;
+			 sta_ds->mlmStaContext.vhtCapability;
 	}
 #ifdef FEATURE_WLAN_TDLS
 	/* SystemRole shouldn't be matter if staType is TDLS peer */
@@ -2500,6 +2455,7 @@ lim_add_sta(struct mac_context *mac_ctx,
 				add_sta_params->wpa_rsn |=
 					(assoc_req->wpaPresent << 1);
 			}
+
 		}
 	}
 

@@ -202,24 +202,6 @@ QDF_STATUS rrm_set_max_tx_power_rsp(struct mac_context *mac,
 	return retCode;
 }
 
-/**
- * rrm_calculate_and_fill_rcpi() - calculates and fills RCPI value
- * @rcpi: pointer to hold calculated RCPI value
- * @cur_rssi: value of current RSSI
- *
- * @return None
- */
-static void rrm_calculate_and_fill_rcpi(uint8_t *rcpi, int8_t cur_rssi)
-{
-	/* 2008 11k spec reference: 18.4.8.5 RCPI Measurement */
-	if (cur_rssi <= RCPI_LOW_RSSI_VALUE)
-		*rcpi = 0;
-	else if ((cur_rssi > RCPI_LOW_RSSI_VALUE) && (cur_rssi <= 0))
-		*rcpi = CALCULATE_RCPI(cur_rssi);
-	else
-		*rcpi = RCPI_MAX_VALUE;
-}
-
 /* -------------------------------------------------------------------- */
 /**
  * rrm_process_link_measurement_request
@@ -292,7 +274,14 @@ rrm_process_link_measurement_request(struct mac_context *mac,
 
 	pe_info("Received Link report frame with %d", currentRSSI);
 
-	rrm_calculate_and_fill_rcpi(&LinkReport.rcpi, currentRSSI);
+	/* 2008 11k spec reference: 18.4.8.5 RCPI Measurement */
+	if ((currentRSSI) <= RCPI_LOW_RSSI_VALUE)
+		LinkReport.rcpi = 0;
+	else if ((currentRSSI > RCPI_LOW_RSSI_VALUE) && (currentRSSI <= 0))
+		LinkReport.rcpi = CALCULATE_RCPI(currentRSSI);
+	else
+		LinkReport.rcpi = RCPI_MAX_VALUE;
+
 	LinkReport.rsni = WMA_GET_RX_SNR(pRxPacketInfo);
 
 	pe_debug("Sending Link report frame");
@@ -1025,9 +1014,7 @@ rrm_process_beacon_report_xmit(struct mac_context *mac_ctx,
 				beacon_report->phyType = bss_desc->nwType;
 				beacon_report->bcnProbeRsp = 1;
 				beacon_report->rsni = bss_desc->sinr;
-
-				rrm_calculate_and_fill_rcpi(&beacon_report->rcpi,
-							    bss_desc->rssi);
+				beacon_report->rcpi = bss_desc->rssi;
 				beacon_report->antennaId = 0;
 				beacon_report->parentTSF = bss_desc->parentTSF;
 				qdf_mem_copy(beacon_report->bssid,

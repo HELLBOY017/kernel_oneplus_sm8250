@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2017-2021 The Linux Foundation. All rights reserved.
- * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -54,8 +53,6 @@ enum htt_ppdu_stats_tlv_tag {
     HTT_PPDU_STATS_USR_COMPLTN_BA_BITMAP_1024_TLV,/* htt_ppdu_stats_user_compltn_ba_bitmap_1024_tlv */
     HTT_PPDU_STATS_RX_MGMTCTRL_PAYLOAD_TLV,       /* htt_ppdu_stats_rx_mgmtctrl_payload_tlv */
     HTT_PPDU_STATS_FOR_SMU_TLV,                   /* htt_ppdu_stats_for_smu_tlv */
-    HTT_PPDU_STATS_MLO_TX_RESP_TLV,               /* htt_ppdu_stats_mlo_tx_resp_tlv */
-    HTT_PPDU_STATS_MLO_TX_NOTIFICATION_TLV,       /* htt_ppdu_stats_mlo_tx_notification_tlv */
 
     /* New TLV's are added above to this line */
     HTT_PPDU_STATS_MAX_TAG,
@@ -612,58 +609,6 @@ typedef enum HTT_PPDU_STATS_SPATIAL_REUSE HTT_PPDU_STATS_SPATIAL_REUSE;
             ((_var) |= ((_val) << HTT_PPDU_STATS_COMMON_TLV_BSS_COLOR_ID_S)); \
     } while (0)
 
-#define HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_VALID_M     0x00020000
-#define HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_VALID_S             17
-
-#define HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_VALID_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_VALID_M) >> \
-    HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_VALID_S)
-
-#define HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_VALID_SET(_var, _val) \
-    do { \
-        HTT_CHECK_SET_VAL(HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_VALID, _val); \
-        ((_var) |= ((_val) << HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_VALID_S)); \
-    } while (0)
-
-#define HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_M     0x000c0000
-#define HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_S             18
-
-#define HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_M) >> \
-    HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_S)
-
-#define HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_SET(_var, _val) \
-    do { \
-        HTT_CHECK_SET_VAL(HTT_PPDU_STATS_COMMON_TLV_AC_VALID, _val); \
-        ((_var) |= ((_val) << HTT_PPDU_STATS_COMMON_TLV_BACKOFF_AC_S)); \
-    } while (0)
-
-#define HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_VALID_M     0x00100000
-#define HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_VALID_S             20
-
-#define HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_VALID_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_VALID_M) >> \
-    HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_VALID_S)
-
-#define HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_VALID_SET(_var, _val) \
-    do { \
-        HTT_CHECK_SET_VAL(HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_VALID, _val); \
-        ((_var) |= ((_val) << HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_VALID_S)); \
-    } while (0)
-
-#define HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_M     0x1fe00000
-#define HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_S             21
-
-#define HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_M) >> \
-    HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_S)
-
-#define HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_SET(_var, _val) \
-    do { \
-        HTT_CHECK_SET_VAL(HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_VALID, _val); \
-        ((_var) |= ((_val) << HTT_PPDU_STATS_COMMON_TLV_NUM_UL_USER_RESPONSES_S)); \
-    } while (0)
-
 #define HTT_PPDU_STATS_COMMON_TRIG_COOKIE_M    0x0000ffff
 #define HTT_PPDU_STATS_COMMON_TRIG_COOKIE_S    0
 
@@ -812,36 +757,19 @@ typedef struct {
      *               by which SRG/Non-SRG based spatial reuse opportunity
      *               was created.
      * BIT [16:16] - PPDU transmitted using PSR opportunity
-     * BIT [17:17] - backoff_ac_valid
-     * BIT [19:18] - backoff_ac: WMM ACI Value of the backoff engine used for
-     *               this transmission. Only valid if backoff_ac_valid is set
-     *               to 1. Typically this would match the default tid
-     *               number -> AC mapping. For frames in the middle of a SIFS
-     *               burst, the backoff_ac_valid will be 0.
-     * BIT [20:20] - num_ul_user_responses_valid
-     * BIT [21:28] - num_ul_user_responses: The number of user responses
-     *               detected by the MAC layer. This value can be compared with
-     *               the "num_ul_expected_users" field to see whether this frame
-     *               had a complete or partial response failure. Only valid if
-     *               num_ul_user_responses_valid is set to 1.
-     * BIT [31:29] - reserved
+     * BIT [31:17] - reserved
      */
     union {
-        A_UINT32 reserved__num_ul_user_responses__num_ul_user_responses_valid__backoff_ac__backoff_ac_valid__psr_tx__aborted_obss_rssi__srg_tx__non_srg_tx__bss_color_id;
         A_UINT32 reserved__psr_tx__aborted_obss_rssi__srg_tx__non_srg_tx___bss_color_id;
         A_UINT32 reserved__aborted_obss_rssi__srg_tx__non_srg_tx___bss_color_id;
         A_UINT32 reserved__bss_color_id;
         struct {
-            A_UINT32 bss_color_id:                6,
-                     non_srg_tx:                  1,
-                     srg_tx:                      1,
-                     aborted_obss_rssi:           8,
-                     psr_tx:                      1,
-                     backoff_ac_valid:            1,
-                     backoff_ac:                  2,
-                     num_ul_user_responses_valid: 1,
-                     num_ul_user_responses:       8,
-                     reserved2:                   3;
+            A_UINT32 bss_color_id:       6,
+                     non_srg_tx:         1,
+                     srg_tx:             1,
+                     aborted_obss_rssi:  8,
+                     psr_tx:             1,
+                     reserved2:         15;
         };
     };
 
@@ -856,18 +784,16 @@ typedef struct {
     };
 
     /*
-     * BIT [0 : 0] - htt_seq_type field is added for backward compatibility
-     *               with pktlog decoder, host driver or any third party tool
-     *               interpreting ppdu sequence type. If field 'htt_seq_type'
-     *               is not present or is present but set to WAL_PPDU_SEQ_TYPE,
-     *               decoder should interpret the seq type as
-     *               WAL_TXSEND_PPDU_SEQUENCE.
-     *               If the new field htt_seq_type is present and is set to
-     *               HTT_PPDU_SEQ_TYPE then decoder should interpret the
-     *               seq type as HTT_PPDU_STATS_SEQ_TYPE.
-     *               htt_seq_type field will be set to HTT_PPDU_SEQ_TYPE in
-     *               firmware versions where this field is defined.
-     * BIT [31: 1] - reserved
+     * htt_seq_type field is added for backward compatibility with
+     * pktlog decoder, host driver or any third party tool interpreting
+     * ppdu sequence type. If field 'htt_seq_type'is not present or is
+     * present but set to WAL_PPDU_SEQ_TYPE, decoder should interpret
+     * the seq type as WAL_TXSEND_PPDU_SEQUENCE.
+     * If the new field htt_seq_type is present and is set to
+     * HTT_PPDU_SEQ_TYPE then decoder should interpret the seq type as
+     * HTT_PPDU_STATS_SEQ_TYPE. htt_seq_type field will be set to
+     * HTT_PPDU_SEQ_TYPE in firmware versions where this field is
+     * defined.
      */
     union {
         A_UINT32 reserved__htt_seq_type;
@@ -876,16 +802,6 @@ typedef struct {
                      reserved3:     31;
         };
     };
-    /* is_manual_ulofdma_trigger:
-     * Flag to indicate if a given UL OFDMA trigger is manually triggered
-     * from the Host
-     */
-    A_UINT32 is_manual_ulofdma_trigger;
-    /* is_combined_ul_bsrp_trigger:
-     * Flag to indicate if a given UL BSRP trigger is sent combined as
-     * part of existing DL/UL data sequence
-     */
-    A_UINT32 is_combined_ul_bsrp_trigger;
 } htt_ppdu_stats_common_tlv;
 
 #define HTT_PPDU_STATS_USER_COMMON_TLV_TID_NUM_M     0x000000ff
@@ -1250,19 +1166,6 @@ typedef struct {
      * value is larger than A_INT8.
      */
     A_UINT32 alt_tx_pwr[HTT_STATS_MAX_CHAINS / HTT_PPDU_STATS_USER_COMMON_TLV_TX_PWR_CHAINS_PER_U32];
-
-    /*
-     * A bitmap indicating the MSDUQs that the scheduler is attempting to
-     * transmit in this PPDU. Note that in some cases, the scheduler's notion
-     * of what MSDUQs are being transmitted from may not be fully accurate,
-     * such as when MPDUs are retried, or when some previously generated MPDUs
-     * that were not attempted OTA yet are tried.
-     *
-     * The valid bit indices for this bitmap are defined by the HTT_MSDUQ_INDEX
-     * enum (in htt.h). For example, (1 << HTT_MSDUQ_INDEX_UDP) would
-     * correspond to the default UDP msduq.
-     */
-    A_UINT32 msduq_bitmap;
 } htt_ppdu_stats_user_common_tlv;
 
 #define HTT_PPDU_STATS_USER_RATE_TLV_TID_NUM_M     0x000000ff
@@ -1668,157 +1571,6 @@ typedef enum HTT_PPDU_STATS_RESP_PPDU_TYPE HTT_PPDU_STATS_RESP_PPDU_TYPE;
          ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RESP_PPDU_TYPE_S)); \
      } while (0)
 
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_FORMAT_M        0x0000f000
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_FORMAT_S                12
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_FORMAT_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_RU_FORMAT_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_RU_FORMAT_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_FORMAT_SET(_var, _val) \
-     do { \
-         HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_RU_FORMAT, _val); \
-         ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RU_FORMAT_S)); \
-     } while (0)
-
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_END_M           0x0000ffff
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_END_S                    0
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_END_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_RU_END_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_RU_END_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_END_SET(_var, _val) \
-     do { \
-         HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_RU_END, _val); \
-         ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RU_END_S)); \
-     } while (0)
-
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_START_M         0xffff0000
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_START_S                 16
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_START_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_RU_START_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_RU_START_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_START_SET(_var, _val) \
-     do { \
-         HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_RU_START, _val); \
-         ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RU_START_S)); \
-     } while (0)
-
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_INDEX_M         0x0000ffff
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_INDEX_S                  0
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_INDEX_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_RU_INDEX_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_RU_INDEX_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_INDEX_SET(_var, _val) \
-     do { \
-         HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_RU_INDEX, _val); \
-         ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RU_INDEX_S)); \
-     } while (0)
-
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_SIZE_M          0xffff0000
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_SIZE_S                  16
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_SIZE_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_RU_SIZE_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_RU_SIZE_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RU_SIZE_SET(_var, _val) \
-     do { \
-         HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_RU_SIZE, _val); \
-         ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RU_SIZE_S)); \
-     } while (0)
-
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_END_M      0x0000ffff
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_END_S               0
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_END_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_END_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_END_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_END_SET(_var, _val) \
-     do { \
-         HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_END, _val); \
-         ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_END_S)); \
-     } while (0)
-
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_START_M    0xffff0000
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_START_S            16
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_START_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_START_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_START_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_START_SET(_var, _val) \
-     do { \
-         HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_START, _val); \
-         ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_START_S)); \
-     } while (0)
-
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_INDEX_M    0x0000ffff
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_INDEX_S             0
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_INDEX_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_INDEX_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_INDEX_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_INDEX_SET(_var, _val) \
-     do { \
-         HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_INDEX, _val); \
-         ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_INDEX_S)); \
-     } while (0)
-
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_SIZE_M     0xffff0000
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_SIZE_S             16
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_SIZE_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_SIZE_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_SIZE_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_SIZE_SET(_var, _val) \
-     do { \
-         HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_SIZE, _val); \
-         ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_RESP_RU_SIZE_S)); \
-     } while (0)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_PUNC_PATTERN_BITMAP_M  0x0000ffff
-#define HTT_PPDU_STATS_USER_RATE_TLV_PUNC_PATTERN_BITMAP_S           0
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_PUNC_PATTERN_BITMAP_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_PUNC_PATTERN_BITMAP_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_PUNC_PATTERN_BITMAP_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_PUNC_PATTERN_BITMAP_SET (_var , _val) \
-    do { \
-        HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_PUNC_PATTERN_BITMAP, _val); \
-        ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_PUNC_PATTERN_BITMAP_S)); \
-    } while (0)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_EXTRA_EHT_LTF_M  0x00010000
-#define HTT_PPDU_STATS_USER_RATE_TLV_EXTRA_EHT_LTF_S          16
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_EXTRA_EHT_LTF_GET(_var) \
-    (((_var) & HTT_PPDU_STATS_USER_RATE_TLV_EXTRA_EHT_LTF_M) >> \
-    HTT_PPDU_STATS_USER_RATE_TLV_EXTRA_EHT_LTF_S)
-
-#define HTT_PPDU_STATS_USER_RATE_TLV_EXTRA_EHT_LTF_SET (_var , _val) \
-    do { \
-        HTT_CHECK_SET_VAL(HTT_PPDU_STATS_USER_RATE_TLV_EXTRA_EHT_LTF, _val); \
-        ((_var) |= ((_val) << HTT_PPDU_STATS_USER_RATE_TLV_EXTRA_EHT_LTF_S)); \
-    } while (0)
-
 typedef enum HTT_PPDU_STATS_RU_SIZE {
     HTT_PPDU_STATS_RU_26,
     HTT_PPDU_STATS_RU_52,
@@ -2002,14 +1754,10 @@ typedef struct {
     };
 
     /*
-     * BIT [15:0]  :- Punctured BW bitmap pattern to indicate which BWs are
-     *                punctured.
-     * BIT 16      :- flag showing whether EHT extra LTF is applied
-     *                for current PPDU
+     * This is an unused word that can be safely renamed / used
+     * by any future feature.
      */
-    A_UINT32 punc_pattern_bitmap: 16,
-             extra_eht_ltf:       1,
-             reserved4:           15;
+    A_UINT32 reserved4;
 } htt_ppdu_stats_user_rate_tlv;
 
 #define HTT_PPDU_STATS_USR_RATE_VALID_M     0x80000000
@@ -2452,7 +2200,7 @@ typedef struct {
 
     /*
      * Max rates configured per BW:
-     * for BW supported by Smart Antenna - 20MHZ, 40MHZ, 80MHZ and 160MHZ
+     * for BW supported by Smart Antenna - 20MHZ, 40MHZ and 80MHZ and 160MHZ
      * (Note: 160 MHz is currently not supported by Smart Antenna)
      */
     A_UINT32 max_rates[HTT_STATS_NUM_SUPPORTED_BW_SMART_ANTENNA];
@@ -2473,12 +2221,6 @@ typedef struct {
              sw_rts_failure:    1,
              cts_rcvd_diff_bw:  1,
              reserved2:        28;
-
-    /*
-     * Max rates configured per BW:
-     * for BW supported by Smart Antenna - 320 MHZ
-     */
-    A_UINT32 max_rates_ext;
 } htt_ppdu_stats_user_cmpltn_common_tlv;
 
 #define HTT_PPDU_STATS_USER_CMPLTN_BA_BITMAP_TLV_TID_NUM_M     0x000000ff
@@ -2848,7 +2590,7 @@ typedef struct {
      * The size of the actual mgmt payload (in bytes) can be obtained from
      * the frame_length field.
      * The size of entire payload including the padding for alignment
-     * (in bytes) can be derived from the length in tlv parameters,
+     * (in bytes) can be derived from the length in tlv parametes,
      * minus the 12 bytes of the above fields.
      */
     A_UINT32 payload[1];
@@ -2890,7 +2632,7 @@ typedef struct {
      * The size of the actual mgmt payload (in bytes) can be obtained from
      * the frame_length field.
      * The size of entire payload including the padding for alignment
-     * (in bytes) can be derived from the length in tlv parameters,
+     * (in bytes) can be derived from the length in tlv parametes,
      * minus the 12 bytes of the above fields.
      */
     A_UINT32 payload[1];
@@ -2962,118 +2704,5 @@ typedef struct {
     /* The number of elements in the ba_bitmap array depends on win_size. */
     A_UINT32 ba_bitmap[1];
 } htt_ppdu_stats_for_smu_tlv;
-
-typedef struct {
-    htt_tlv_hdr_t tlv_hdr;
-    /*
-     * BIT [  2 :   0]   :- response_reason
-     * BIT [  6 :   3]   :- mlo_change_t1_cts2self
-     * BIT [ 10 :   7]   :- mlo_change_t1_ppdu
-     * BIT [ 14 :  11]   :- mlo_change_t2_response
-     * BIT [ 18 :  15]   :- mlo_change_t3_r2r
-     * BIT [ 19 :  19]   :- partner_link_info_valid
-     * BIT [ 22 :  20]   :- partner_link_id
-     * BIT [ 27 :  23]   :- partner_link_cmd_ring_id
-     * BIT [ 28 :  28]   :- dot11ax_trigger_frame_embedded
-     * BIT [ 31 :  29]   :- reserved_0a
-     */
-    A_UINT32 response_reason                                         :  3,
-             mlo_change_t1_cts2self                                  :  4,
-             mlo_change_t1_ppdu                                      :  4,
-             mlo_change_t2_response                                  :  4,
-             mlo_change_t3_r2r                                       :  4,
-             partner_link_info_valid                                 :  1,
-             partner_link_id                                         :  3,
-             partner_link_cmd_ring_id                                :  5,
-             dot11ax_trigger_frame_embedded                          :  1,
-             reserved_0a                                             :  3;
-    /*
-     * BIT [ 15 :   0]   :- partner_link_schedule_id
-     * BIT [ 31 :  16]   :- tx_rx_overlap_duration (microsecond units)
-     */
-    A_UINT32 partner_link_schedule_id                                : 16,
-             tx_rx_overlap_duration_us                               : 16;
-    /*
-     * BIT [ 15 :   0]   :- cts2self_duration (microsecond units)
-     * BIT [ 31 :  16]   :- ppdu_duration (microsecond units)
-     */
-    A_UINT32 cts2self_duration_us                                    : 16,
-             ppdu_duration_us                                        : 16;
-    /*
-     * BIT [ 15 :   0]   :- response_duration (microsecond units)
-     * BIT [ 31 :  16]   :- response_to_response_duration (microsecond units)
-     */
-    A_UINT32 response_duration_us                                    : 16,
-             response_to_response_duration_us                        : 16;
-    /*
-     * BIT [ 15 :   0]   :- self_link_schedule_id
-     * BIT [ 31 :  16]   :- hls_branch_debug_code
-     */
-    A_UINT32 self_link_schedule_id                                   : 16,
-             hls_branch_debug_code                                   : 16;
-    /*
-     * BIT [ 31 :   0]   :- hls_decision_debug_info
-     */
-    A_UINT32 hls_decision_debug_info                                 : 32;
-} htt_ppdu_stats_mlo_tx_resp_tlv;
-
-typedef struct {
-    htt_tlv_hdr_t tlv_hdr;
-    /*
-     * BIT [  2 :   0]   :- notification_reason
-     * BIT [  3 :   3]   :- ml_decision
-     * BIT [  4 :   4]   :- cts2self_padding
-     * BIT [  5 :   5]   :- initiated_by_truncated_backoff
-     * BIT [  8 :   6]   :- transmit_start_reason
-     * BIT [ 14 :   9]   :- num_users
-     * BIT [ 24 :  15]   :- nstr_mlo_sta_id
-     * BIT [ 25 :  25]   :- block_self_ml_sync
-     * BIT [ 26 :  26]   :- block_partner_ml_sync
-     * BIT [ 27 :  27]   :- nstr_mlo_sta_id_valid
-     * BIT [ 31 :  28]   :- reserved_0a
-     */
-    A_UINT32 notification_reason                                     :  3,
-             ml_decision                                             :  1,
-             cts2self_padding                                        :  1,
-             initiated_by_truncated_backoff                          :  1,
-             transmit_start_reason                                   :  3,
-             num_users                                               :  6,
-             nstr_mlo_sta_id                                         : 10,
-             block_self_ml_sync                                      :  1,
-             block_partner_ml_sync                                   :  1,
-             nstr_mlo_sta_id_valid                                   :  1,
-             reserved_0a                                             :  4;
-    /*
-     * BIT [ 15 :   0]   :- pdg_ppdu_duration_adjust_value (microsecond units)
-     * BIT [ 31 :  16]   :- mlo_ppdu_duration_adjust_value (microsecond units)
-     */
-    A_UINT32 pdg_ppdu_duration_adjust_value_us                       : 16,
-             mlo_ppdu_duration_adjust_value_us                       : 16;
-    /*
-     * BIT [ 15 :   0]   :- response_duration (microsecond units)
-     * BIT [ 31 :  16]   :- response_to_response_duration (microsecond units)
-     */
-    A_UINT32 response_duration_us                                    : 16,
-             response_to_response_duration_us                        : 16;
-    /*
-     * BIT [ 15 :   0]   :- schedule_id
-     * BIT [ 20 :  16]   :- cmd_ring_id
-     * BIT [ 31 :  21]   :- reserved_1a
-     */
-    A_UINT32 schedule_id                                             : 16,
-             cmd_ring_id                                             :  5,
-             reserved_1a                                             : 11;
-    /*
-     * BIT [ 31 :  0]   :- mlo_reference_timestamp (microsecond units)
-     */
-    A_UINT32 mlo_reference_timestamp_us                              : 32;
-    /*
-     * BIT [ 15 :   0]   :- cts2self_duration (microsecond units)
-     * BIT [ 31 :  16]   :- ppdu_duration (microsecond units)
-     */
-    A_UINT32 cts2self_duration_us                                    : 16,
-             ppdu_duration_us                                        : 16;
-} htt_ppdu_stats_mlo_tx_notification_tlv;
-
 
 #endif //__HTT_PPDU_STATS_H__

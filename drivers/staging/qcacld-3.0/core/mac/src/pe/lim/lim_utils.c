@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2011-2020 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Permission to use, copy, modify, and/or distribute this software for
  * any purpose with or without fee is hereby granted, provided that the
@@ -552,67 +551,6 @@ void lim_deactivate_timers(struct mac_context *mac_ctx)
 	}
 
 	tx_timer_deactivate(&lim_timer->sae_auth_timer);
-}
-
-void lim_deactivate_timers_for_vdev(struct mac_context *mac_ctx,
-				    uint8_t vdev_id)
-{
-	tLimTimers *lim_timer = &mac_ctx->lim.lim_timers;
-	struct pe_session *pe_session;
-
-	pe_session = pe_find_session_by_vdev_id(mac_ctx, vdev_id);
-	if (!pe_session) {
-		pe_err("pe session invalid for vdev %d", vdev_id);
-		return;
-	}
-	pe_debug("pe limMlmState %s vdev %d",
-		 lim_mlm_state_str(pe_session->limMlmState),
-		 vdev_id);
-	switch (pe_session->limMlmState) {
-	case eLIM_MLM_WT_JOIN_BEACON_STATE:
-		if (tx_timer_running(
-				&lim_timer->gLimJoinFailureTimer)) {
-			pe_debug("Trigger Join failure timeout for vdev %d",
-				 vdev_id);
-			tx_timer_deactivate(
-				&lim_timer->gLimJoinFailureTimer);
-			lim_process_join_failure_timeout(mac_ctx);
-		}
-		break;
-	case eLIM_MLM_WT_AUTH_FRAME2_STATE:
-	case eLIM_MLM_WT_AUTH_FRAME4_STATE:
-		if (tx_timer_running(
-				&lim_timer->gLimAuthFailureTimer)) {
-			pe_debug("Trigger Auth failure timeout for vdev %d",
-				 vdev_id);
-			tx_timer_deactivate(
-				&lim_timer->gLimAuthFailureTimer);
-			lim_process_auth_failure_timeout(mac_ctx);
-		}
-		break;
-	case eLIM_MLM_WT_ASSOC_RSP_STATE:
-		if (tx_timer_running(
-				&lim_timer->gLimAssocFailureTimer)) {
-			pe_debug("Trigger Assoc failure timeout for vdev %d",
-				 vdev_id);
-			tx_timer_deactivate(
-				&lim_timer->gLimAssocFailureTimer);
-			lim_process_assoc_failure_timeout(mac_ctx,
-							  LIM_ASSOC);
-		}
-		break;
-	case eLIM_MLM_WT_SAE_AUTH_STATE:
-		if (tx_timer_running(&lim_timer->sae_auth_timer)) {
-			pe_debug("Trigger SAE Auth failure timeout for vdev %d",
-				 vdev_id);
-			tx_timer_deactivate(
-				&lim_timer->sae_auth_timer);
-			lim_process_sae_auth_timeout(mac_ctx);
-		}
-		break;
-	default:
-		return;
-	}
 }
 
 
@@ -1934,16 +1872,22 @@ static void __lim_process_channel_switch_timeout(struct pe_session *pe_session)
 		}
 
 		/*
-		 * The channel switch request received from AP is carrying
-		 * invalid channel. It's ok to ignore this channel switch
-		 * request as it might be from spoof AP. If it's from genuine
-		 * AP, it may lead to heart beat failure and result in
-		 * disconnection. DUT can go ahead and reconnect to it/any
-		 * other AP once it disconnects.
+		 * If the channel-list that AP is asking us to switch is invalid
+		 * then we cannot switch the channel. Just disassociate from AP.
+		 * We will find a better AP !!!
 		 */
-		pe_err("Invalid channel freq %u Ignore CSA request",
-		       channel_freq);
-		return;
+		if ((pe_session->limMlmState ==
+		   eLIM_MLM_LINK_ESTABLISHED_STATE) &&
+		   (pe_session->limSmeState != eLIM_SME_WT_DISASSOC_STATE) &&
+		   (pe_session->limSmeState != eLIM_SME_WT_DEAUTH_STATE)) {
+			pe_err("Invalid channel! Disconnect");
+			lim_tear_down_link_with_ap(mac,
+					   mac->lim.lim_timers.
+					   gLimChannelSwitchTimer.sessionId,
+					   eSIR_MAC_UNSUPPORTED_CHANNEL_CSA,
+					   eLIM_LINK_MONITORING_DISASSOC);
+			return;
+		}
 	}
 	switch (pe_session->gLimChannelSwitch.state) {
 	case eLIM_CHANNEL_SWITCH_PRIMARY_ONLY:

@@ -4006,10 +4006,6 @@ __wlan_hdd_cfg80211_get_features(struct wiphy *wiphy,
 		wlan_hdd_cfg80211_set_feature(feature_flags,
 			QCA_WLAN_VENDOR_FEATURE_OFFCHANNEL_SIMULTANEOUS);
 
-	if (policy_mgr_is_hw_dbs_capable(hdd_ctx->psoc))
-		wlan_hdd_cfg80211_set_feature(feature_flags,
-			QCA_WLAN_VENDOR_FEATURE_CONCURRENT_BAND_SESSIONS);
-
 	if (wma_is_p2p_lo_capable())
 		wlan_hdd_cfg80211_set_feature(feature_flags,
 			QCA_WLAN_VENDOR_FEATURE_P2P_LISTEN_OFFLOAD);
@@ -8062,7 +8058,7 @@ static int hdd_config_latency_level(struct hdd_adapter *adapter,
 	QDF_STATUS status;
 
 	if (!hdd_is_wlm_latency_manager_supported(hdd_ctx))
-		return -ENOTSUPP;
+		return -EINVAL;
 
 	latency_level = nla_get_u16(attr);
 	switch (latency_level) {

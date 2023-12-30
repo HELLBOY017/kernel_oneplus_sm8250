@@ -617,6 +617,10 @@ static void hal_reg_write_work(void *arg)
 			hal_verbose_debug("Delay reg writer for srng 0x%x, addr 0x%pK",
 					  q_elem->srng->ring_id, q_elem->addr);
 
+		if (hal_reg_write_need_delay(q_elem))
+			hal_verbose_debug("Delay reg writer for srng 0x%x, addr 0x%pK",
+					  q_elem->srng->ring_id, q_elem->addr);
+
 		write_val = hal_process_reg_write_q_elem(hal, q_elem);
 		hal_verbose_debug("read_idx %u srng 0x%x, addr 0x%pK dequeue_val %u sched delay %llu us",
 				  hal->read_idx, ring_id, addr, write_val, delta_us);

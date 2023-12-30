@@ -1,6 +1,5 @@
 /*
  * Copyright (c) 2011-2017 The Linux Foundation. All rights reserved.
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -409,7 +408,7 @@ A_COMPILE_TIME_ASSERT(verify_Pkt_pool_sz,
  *     Purpose: Specify length Ethernet Packet
  *   - VDEV_ID
  *     Bits 23:16
- *     Purpose: Specify the VDEV ID corresponding to the packet
+ *     Purpose: Specify the VDEV ID corrsponding the the packet
  */
 
 
