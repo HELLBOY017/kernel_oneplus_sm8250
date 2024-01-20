@@ -1,0 +1,5 @@
+config OPLUS_UFCS_CLASS
+	tristate "oplus ufcs class"
+	default n
+	help
+	  Say Y or M to enable oplus ufcs class

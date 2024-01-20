@@ -1,0 +1,5 @@
+config OPLUS_SUBSYS_SLEEP_MONITOR
+	tristate "monitor Qualcomm subsystem sleep"
+	default n
+	help
+	  This selects to get sleep info for Qualcomm subsystem

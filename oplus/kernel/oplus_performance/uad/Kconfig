@@ -1,0 +1,66 @@
+config OPLUS_CPU_FREQ_GOV_UAG
+	tristate "uag cpufreq policy governor"
+	depends on CPU_FREQ && SMP
+	select CPU_FREQ_GOV_ATTR_SET
+	select IRQ_WORK
+	help
+	  This governor makes decisions based on the utilization.  It sets
+          the CPU frequency to be proportional to the utilization/capacity
+          ratio coming from the scheduler or frameboost.  If the utilization
+          is frequency-invariant, the new frequency is also proportional to
+          the maximum available frequency.  If that is not the case, it is
+          proportional to the current frequency of the CPU.
+
+	  If in doubt, say N.
+
+config UAG_NONLINEAR_FREQ_CTL
+	bool "Non-linear frequency control"
+	depends on OPLUS_CPU_FREQ_GOV_UAG
+	default n
+	help
+	  Choose this option to enable non-linear frequency control.
+	  This will change per-opp capacity from linear scaled by
+	  freuqency to evaluated by benchmark. This makes capacity
+	  more accurate and will let scheduler/schedutil use more
+	  suitable frequency.
+
+config OPLUS_UAG_USE_TL
+	bool "use target loads in uag cpufreq policy governor"
+	depends on OPLUS_CPU_FREQ_GOV_UAG
+	default n
+	help
+	  Add target_loads sysfs attr in uag cpufreq policy governor.
+
+config UA_KERNEL_CPU_IOCTL
+	tristate "cpu ioctl interface"
+	default n
+	help
+	  Provide ioctl interface for cpu features.
+
+config OPLUS_UAG_AMU_AWARE
+	bool "consider amu info for cpufreq decision"
+	depends on OPLUS_CPU_FREQ_GOV_UAG
+	default n
+	help
+	  Consider AMU info such as cycles/stall ... to adjust cpufreq.
+
+config OPLUS_MULTI_LV_TL
+	bool "Add multi-level target loads to scale cpu frequency"
+	depends on OPLUS_UAG_USE_TL && UAG_NONLINEAR_FREQ_CTL && OPLUS_FEATURE_FRAME_BOOST
+	default n
+	help
+	  Add multi-level target loads to scale cpu frequency.
+
+config OPLUS_FEATURE_TOUCH_BOOST
+	tristate "touch_boost"
+	default n
+	help
+	  oplus touch boost
+
+config OPLUS_UAG_SOFT_LIMIT
+	bool "soft frequency limit in uag cpufreq policy governor"
+	depends on OPLUS_CPU_FREQ_GOV_UAG
+	default n
+	help
+	  Add soft frequency limit in uag cpufreq policy governor.
+	  Frequency can breakthrough this limit in UA scene.

@@ -1,0 +1,148 @@
+source "$(KCONFIG_EXT_PREFIX)drivers/power/oplus/v2/ufcs/Kconfig"
+
+config OPLUS_CHG_IC_DEBUG
+	bool "Virtual IC layer debug interface"
+	help
+	  Say Y here to declare virtual IC layer debug interface
+
+config OPLUS_CHG_MMS_DEBUG
+	bool "Message subscription layer debug interface"
+	help
+	  Say Y here to declare message subscription layer debug interface
+
+config OPLUS_SMART_CHARGE
+	bool "smart charge"
+	help
+	  Say Y here to enable smart charge
+
+config OPLUS_DA9313_CHARGER
+	bool "DA9313 support"
+	help
+	  Say Y here to declare DA9313 support
+
+config OPLUS_MP2762_CHARGER
+	bool "MP2762 support"
+	help
+	  Say Y here to declare MP2762 support
+
+config OPLUS_SGM41512_CHARGER
+	bool "SGM41512 support"
+	help
+	  Say Y here to declare SGM41512 support
+
+config OPLUS_PD_MANAGER_CHARGER
+	bool "PD_MANAGER support"
+	help
+	  Say Y here to declare PD_MANAGER support
+
+config OPLUS_ADSP_CHARGER
+	bool "ADSP support"
+	help
+	  Say Y here to declare ADSP support
+
+config OPLUS_MT6375_CHARGER
+	bool "MT6375 debug support"
+	help
+	  Say Y here to declare MT6375 debug support
+
+config OPLUS_ADSP_SM8450_CHARGER
+	bool "SM8450 support"
+	help
+	  Say Y here to declare sm8450 support
+
+config OPLUS_CHG_PARALLEL
+	bool "parallel battery switching support"
+	help
+	  Say Y here to declare parallel battery switching support
+
+config OPLUS_CHG_MOS_CTRL
+	bool "parallel mos ctrl support"
+	help
+	  Say Y here to declare parallel mos ctrl support
+
+config OPLUS_VOOCPHY_SC8547A
+	bool "oplus voocphy sc8547a support"
+	help
+	  Say Y here to declare cp sc8547a support
+
+
+config OPLUS_UFCS_SC2201
+	bool "enable sc2201 ufcs phy"
+	depends on OPLUS_UFCS_CLASS
+	help
+	  Say Y here to declare sc2201 ufcs phy support
+
+config OPLUS_UFCS_SC8547A
+	bool "enable sc8547a ufcs phy"
+	depends on OPLUS_UFCS_CLASS && !OPLUS_VOOCPHY_SC8547A
+	help
+	  Say Y here to declare sc8547a ufcs phy support
+
+config OPLUS_WIRELESS_NU1619
+	bool "oplus wireless nu1619 support"
+	help
+	  Say Y here to declare wireless nu1619 support
+
+config OPLUS_WIRELESS_P9415
+	bool "oplus wireless p9415 support"
+	help
+	  Say Y here to declare wireless p9415 support
+
+config OPLUS_CHARGEPUMP_HL7227
+	bool "oplus chargepump hl7227 support"
+	help
+	  Say Y here to declare chargepump hl7227 support
+
+menuconfig OPLUS_CHG_VOOCPHY
+	bool "OPLUS charging voocphy"
+	help
+	  Say Y here to enable OPLUS charging system support
+
+if OPLUS_CHG_VOOCPHY
+config OPLUS_CHG_VOOCPHY_CHGLIB
+	bool "voocphy chglib support"
+	help
+	  Say Y here to declare voocphy chglib support
+
+config OPLUS_CHG_AP_VOOCPHY
+	bool "ap voocphy support"
+	depends on OPLUS_CHG_VOOCPHY_CHGLIB
+	help
+          Say Y here to declare ap voocphy support
+
+config OPLUS_CHG_ADSP_VOOCPHY
+	bool "adsp voocphy support"
+	depends on OPLUS_CHG_VOOCPHY_CHGLIB
+	help
+          Say Y here to declare adsp voocphy support
+
+config OPLUS_VOOCPHY_MASTER_SC8547
+	bool "master cp sc8547 support"
+	depends on OPLUS_CHG_VOOCPHY_CHGLIB && OPLUS_CHG_AP_VOOCPHY
+	help
+	  Say Y here to declare master cp sc8547 support
+
+config OPLUS_VOOCPHY_SLAVE_SC8547
+	bool "slave cp sc8547 support"
+	depends on OPLUS_CHG_VOOCPHY_CHGLIB && OPLUS_CHG_AP_VOOCPHY
+	help
+	  Say Y here to declare slave cp sc8547 support
+
+config OPLUS_VOOCPHY_SC8517
+	bool "bidirect cp sc8517 support"
+	depends on OPLUS_CHG_VOOCPHY_CHGLIB && OPLUS_CHG_AP_VOOCPHY
+	help
+	  Say Y here to declare bidirect cp sc8517 support
+
+config OPLUS_AUDIO_SWITCH_GLINK
+	bool "audio switch glink support"
+	help
+	  Say Y here to declare audio switch glink support
+
+config OPLUS_VOOCPHY_HL7138
+	bool "cp hl7138 support"
+	depends on OPLUS_CHG_VOOCPHY_CHGLIB && OPLUS_CHG_AP_VOOCPHY
+	help
+	  Say Y here to declare cp hl7138 support
+
+endif #OPLUS_CHG_VOOCPHY

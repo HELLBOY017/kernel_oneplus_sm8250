@@ -1,0 +1,64 @@
+menuconfig OPLUS_FINGERPRINT
+	bool "OPLUS fingerprint"
+	depends on SPI_MASTER
+	help
+	  Say Y here to enable OPLUS fingerprint support
+
+config OPLUS_FINGERPRINT_GKI_ENABLE
+       default n
+       tristate "Fingerprint enable gki"
+
+config OPLUS_FINGERPRINT_COMMON
+       default n
+       tristate "Fingerprint gki EANBLE"
+
+config OPLUS_FINGERPRINT_USE_PROC_OPS
+       default n
+       tristate "kernel 5.10 use the proc_ops struct"
+
+if OPLUS_FINGERPRINT
+### platform config
+config OPLUS_FINGERPRINT_QCOM
+       default n
+       tristate "Fingerprint base on QCOM"
+
+config OPLUS_FINGERPRINT_MTK
+       default n
+       tristate "Fingerprint base on MTK"
+
+### fingerprint sensor config
+config OPLUS_FINGERPRINT_FPC
+       default n
+       tristate "Fingerprint base on fpc capacitive chip"
+config OPLUS_FINGERPRINT_GOODIX
+       default n
+       tristate "Fingerprint base on goodix capacitive chip"
+config OPLUS_FINGERPRINT_GOODIX_OPTICAL
+       default n
+       tristate "Fingerprint base on goodix optical chip"
+config OPLUS_FINGERPRINT_SILEAD_OPTICAL
+       default n
+       tristate "Fingerprint base on silead optical chip"
+config OPLUS_FINGERPRINT_EGIS_OPTICAL
+       default n
+       tristate "Fingerprint base on egis optical chip"
+config OPLUS_FINGERPRINT_EGIS
+       default n
+       tristate "Fingerprint base on egis chip"
+config OPLUS_FINGERPRINT_JIIOV_OPTICAL
+       default n
+       tristate "Fingerprint base on jiiov optical chip"
+
+config OPLUS_FINGERPRINT_SILEAD_CAP
+       default n
+       tristate "Fingerprint base on silead capacitive chip"
+
+### fingerprint feature config
+config OPLUS_FINGERPRINT_NAVIGATION_ENABLE
+       default n
+       tristate "Fingerprint navigation function"
+
+config OPLUS_FINGERPRINT_ENABLE_TEE_BINDERCORE
+       default n
+       tristate "Fingerprint mtk bind big core"
+endif #OPLUS_FINGERPRINT

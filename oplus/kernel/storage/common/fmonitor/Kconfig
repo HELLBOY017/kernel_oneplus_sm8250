@@ -1,0 +1,6 @@
+config OPLUS_FEATURE_FILE_MONITOR
+    tristate "file monitor"
+    default y
+    help
+      Monitor User Mode File Modification.
+

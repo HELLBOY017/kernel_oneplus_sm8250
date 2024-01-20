@@ -1,0 +1,3 @@
+source "drivers/soc/oplus/storage/common/storage_log/Kconfig"
+source "drivers/soc/oplus/storage/common/oplus_uprobe/Kconfig"
+

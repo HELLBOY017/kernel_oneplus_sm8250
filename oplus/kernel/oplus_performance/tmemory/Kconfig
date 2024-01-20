@@ -1,0 +1,50 @@
+config TMEMORY
+	tristate "tmemory module"
+	depends on BLOCK
+	default n
+	help
+	  Support tmemory
+
+config TMEMORY_CRYPTO
+	bool "tmemory crypto"
+	depends on TMEMORY
+	depends on BLK_INLINE_ENCRYPTION
+	default n
+	help
+	  enable tmemory crypto
+
+config TMEMORY_DEBUG
+	bool "tmemory debug"
+	depends on TMEMORY
+	default n
+	help
+	  use tmemory debug log
+
+config TMEMORY_MIGRATION
+	bool "tmemory page migration"
+	depends on TMEMORY
+	depends on TMEMORY_CRYPTO
+	default n
+	help
+	  support page migration
+
+config TMEMORY_SWITCH_TIME_DEFAULT
+	int "tmemory switch time's default value"
+	depends on TMEMORY
+	default "5000"
+	help
+	  new bio will be blocked after this time.
+
+config TMEMORY_FAULT_INJECTION
+	bool "tmemory fault injection"
+	depends on TMEMORY
+	default n
+	help
+	  support fault injection
+
+config TMEMORY_PANIC_NOCLOSE
+	bool "tmemory panic noclose"
+	depends on TMEMORY
+	default n
+	help
+	  support when panic tmemory not to close

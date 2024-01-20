@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2018-2020 Oplus. All rights reserved.
+config OPLUS_FEATURE_MDMFEATURE
+  tristate "config modify modem feature"
+  default n
+  help
+    define this config to modify modem feature.
+
+config OPLUS_FEATURE_QCOM_SMEM_INTI
+  bool "config init smem on qcom"
+  default n
+  help
+    This config only be used on qcom platform.

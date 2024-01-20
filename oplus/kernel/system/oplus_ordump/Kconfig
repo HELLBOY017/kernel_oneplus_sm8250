@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2018-2020 Oplus. All rights reserved.
+config OPLUS_FEATURE_FULLDUMP_BACK
+    tristate "OPLUS-FULLDUMP_BACK support"
+    default n
+    help
+      OPLUS-FULLDUMP_BACK is the kernel config of ORDUMP feature
+      ORDUMP (Memory RAM Dump) based on OPLUS-FULLDUMP_BACK is designed as a memory
+      dump mechanism for debugging system to dump DRAM content at QCOM
+      android phone platform
+

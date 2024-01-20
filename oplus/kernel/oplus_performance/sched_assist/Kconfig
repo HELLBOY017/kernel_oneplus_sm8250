@@ -1,0 +1,107 @@
+config OPLUS_FEATURE_SCHED_ASSIST
+	tristate "sched_assist"
+	default n
+	help
+	  turning sched for ui, render and so on to improve UX
+config OPLUS_FEATURE_SCHED_SPREAD
+	bool "sched_spread"
+	default n
+	help
+	  This is the uifirst 5.0 feature, which will spread tasks,
+	  kick runnable time from task demand and adjust bg's time slice.
+config OPLUS_FEATURE_SCHED_UX_PRIORITY
+	bool "sched_ux_priority"
+	default n
+	depends on OPLUS_FEATURE_SCHED_ASSIST
+	help
+	  enable ux list and ux priority for cfs task, ported from kernel 5.10
+config OPLUS_UX_IM_FLAG
+	bool "config ux im_flag"
+	default n
+	help
+	  export im_flag proc node for mark thread.
+config OPLUS_RELEASE_BUFFER_CALLBACK_UX
+	bool "config launcher async release buffer callback ux"
+	default n
+	help
+	  the binder thread of launcher which response async release buffer
+	  callback from sf is set to UX from ONCE_UX.
+config OPLUS_FEATURE_AUDIO_OPT
+	bool "config audio opt"
+	default n
+	help
+	  audio task schedule opt.
+config OPLUS_FEATURE_AUDIO_CAMUX_OFF
+        bool "config audio scene camera ux off"
+        default n
+        help
+          camera provider preempt audio thread, turn off camera ux in audio
+          scene.
+config OPLUS_CRTC_COMMIT_MUTEX_OPT
+	bool "config crtc_commit mutex opt"
+	default n
+	help
+	  crtc_commit thread and CFS thread frequently compete for mutex
+	  lock optimization.
+
+config OPLUS_SS_LOCKER_OPT
+	bool "config system_server locker optimation"
+	default n
+	help
+	  when ams/wms using synchronized(), it will be marked as ss_locker,
+	  adjust it's thread priority and do preempt-protection if
+	  CONFIG_LOCKING_PROTECT is set.
+
+config OPLUS_LOCKING_STRATEGY
+	bool "config monitor&juc locking optimation"
+	depends on OPLUS_FEATURE_SCHED_ASSIST
+	default n
+	help
+	  monitor&juc locking optimation.
+
+config OPLUS_CPU_AUDIO_PERF
+	tristate "boost audio task in scheduler"
+	default n
+	depends on OPLUS_UX_IM_FLAG
+	help
+	   Choose this option to enable scheduler boost for audio task.
+
+config OPLUS_LOCKING_OSQ
+	bool "osq control"
+	depends on OPLUS_LOCKING_STRATEGY
+	default n
+	help
+	  Customized mutex & rwsem osq logic.
+
+config OPLUS_LOCKING_MONITOR
+	bool "locking stats monitor"
+	depends on OPLUS_LOCKING_STRATEGY
+	default n
+	help
+	  Tracing kernel-lock statistics.
+
+config OPLUS_INTERNAL_VERSION
+	bool "internal version"
+	depends on OPLUS_LOCKING_MONITOR
+	default n
+	help
+	  Support more tracing-types in internal version.
+config OPLUS_FEATURE_EAS_OPT
+	tristate "eas opt"
+	default n
+	help
+	  control oplus_cap, iowait_protect
+
+config OPLUS_FEATURE_VT_CAP
+	tristate "oplus cap"
+	default n
+	depends on OPLUS_FEATURE_EAS_OPT
+	help
+	  oplus cap can influence task placement
+
+config OPLUS_CPUFREQ_IOWAIT_PROTECT
+	tristate "cpufreq_iowait"
+	default n
+	depends on OPLUS_FEATURE_EAS_OPT
+	help
+	  ensure iowait decay not happen too quickly
