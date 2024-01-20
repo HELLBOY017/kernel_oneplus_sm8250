@@ -1003,15 +1003,6 @@ static struct msm_vidc_ctrl msm_venc_ctrls[] = {
 		),
 		.qmenu = roi_map_type,
 	},
-	{
-		.id = V4L2_CID_MPEG_VIDC_ENABLE_ONLY_BASE_LAYER_IR,
-		.name = "Enable Only Base Layer IR",
-		.type = V4L2_CTRL_TYPE_BOOLEAN,
-		.minimum = V4L2_MPEG_MSM_VIDC_DISABLE,
-		.maximum = V4L2_MPEG_MSM_VIDC_ENABLE,
-		.default_value = V4L2_MPEG_MSM_VIDC_DISABLE,
-		.step = 1,
-	},
 };
 
 #define NUM_CTRLS ARRAY_SIZE(msm_venc_ctrls)
@@ -1980,7 +1971,6 @@ int msm_venc_s_ctrl(struct msm_vidc_inst *inst, struct v4l2_ctrl *ctrl)
 	case V4L2_CID_MPEG_VIDC_VENC_BITRATE_SAVINGS:
 	case V4L2_CID_MPEG_VIDEO_H264_CHROMA_QP_INDEX_OFFSET:
 	case V4L2_CID_MPEG_VIDC_SUPERFRAME:
-	case V4L2_CID_MPEG_VIDC_ENABLE_ONLY_BASE_LAYER_IR:
 		s_vpr_h(sid, "Control set: ID : 0x%x Val : %d\n",
 			ctrl->id, ctrl->val);
 		break;
@@ -2884,7 +2874,7 @@ int msm_venc_set_frame_qp(struct msm_vidc_inst *inst)
 	 *   Enable QP types which have been set by client.
 	 * When RC is OFF:
 	 *   I_QP value must be set by client.
-	 *   If QP value is invalid, then, assign default QP.
+	 *   If other QP value is invalid, then, assign I_QP value to it.
 	 */
 	if (inst->rc_type != RATE_CONTROL_OFF) {
 		if (!(inst->client_set_ctrls & CLIENT_SET_I_QP))
@@ -2900,7 +2890,7 @@ int msm_venc_set_frame_qp(struct msm_vidc_inst *inst)
 		if (!(inst->client_set_ctrls & CLIENT_SET_I_QP)) {
 			s_vpr_e(inst->sid,
 				"%s: Client value is not valid\n", __func__);
-			i_qp->val = DEFAULT_QP;
+			return -EINVAL;
 		}
 		if (!(inst->client_set_ctrls & CLIENT_SET_P_QP))
 			p_qp->val = i_qp->val;
@@ -3276,9 +3266,6 @@ int msm_venc_set_intra_refresh_mode(struct msm_vidc_inst *inst)
 	struct v4l2_ctrl *ctrl = NULL;
 	struct hfi_intra_refresh intra_refresh;
 	struct v4l2_format *f;
-	struct hfi_enable enable;
-	struct v4l2_ctrl *layer = NULL;
-	struct v4l2_ctrl *max_layer = NULL;
 
 	if (!inst || !inst->core) {
 		d_vpr_e("%s: invalid params %pK\n", __func__, inst);
@@ -3290,13 +3277,7 @@ int msm_venc_set_intra_refresh_mode(struct msm_vidc_inst *inst)
 		inst->rc_type == V4L2_MPEG_VIDEO_BITRATE_MODE_CBR))
 		return 0;
 
-	/* Check for base layer only intra refresh in case of multiple layers */
-	layer = get_ctrl(inst, V4L2_CID_MPEG_VIDEO_HEVC_HIER_CODING_LAYER);
-	max_layer = get_ctrl(inst,
-		V4L2_CID_MPEG_VIDC_VIDEO_HEVC_MAX_HIER_CODING_LAYER);
-	ctrl = get_ctrl(inst, V4L2_CID_MPEG_VIDC_ENABLE_ONLY_BASE_LAYER_IR);
-	enable.enable = !!ctrl->val;
-
+	/* Firmware supports only random mode */
 	intra_refresh.mode = HFI_INTRA_REFRESH_RANDOM;
 
 	ctrl = get_ctrl(inst, V4L2_CID_MPEG_VIDC_VIDEO_INTRA_REFRESH_RANDOM);
@@ -3315,24 +3296,11 @@ int msm_venc_set_intra_refresh_mode(struct msm_vidc_inst *inst)
 	} else {
 		ctrl = get_ctrl(inst,
 			V4L2_CID_MPEG_VIDEO_CYCLIC_INTRA_REFRESH_MB);
-		intra_refresh.mode = HFI_INTRA_REFRESH_CYCLIC;
 		intra_refresh.mbs = ctrl->val;
 	}
 	if (!intra_refresh.mbs) {
 		intra_refresh.mode = HFI_INTRA_REFRESH_NONE;
 		intra_refresh.mbs = 0;
-	} else {
-		if (enable.enable && layer->val && max_layer->val) {
-			s_vpr_h(inst->sid, "%s: Enable only base layer IR:%d\n",
-				__func__, enable.enable);
-			rc = call_hfi_op(hdev, session_set_property,
-				inst->session,
-				HFI_PROPERTY_PARAM_ENABLE_ONLY_BASE_LAYER_IR,
-				&enable, sizeof(enable));
-			if (rc)
-				s_vpr_e(inst->sid,
-					"%s: set property failed\n", __func__);
-		}
 	}
 
 	s_vpr_h(inst->sid, "%s: %d %d\n", __func__,
@@ -4631,9 +4599,8 @@ int handle_all_intra_restrictions(struct msm_vidc_inst *inst)
 	if (inst->all_intra && n_fps > fps_max) {
 		inst->clk_data.frame_rate = fps_max << 16;
 		n_fps = fps_max;
-		s_vpr_h(inst->sid,
-			"%s:cap2 frame rate to %u for allintra encoding",
-			__func__, inst->clk_data.frame_rate >> 16);
+		s_vpr_h(inst->sid, "%s:cap2 frame rate to %u for allintra encoding",
+		__func__, inst->clk_data.frame_rate >> 16);
 	}
 	if ((inst->rc_type != V4L2_MPEG_VIDEO_BITRATE_MODE_VBR &&
 		inst->rc_type != RATE_CONTROL_OFF &&
