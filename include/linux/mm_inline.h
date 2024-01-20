@@ -5,6 +5,16 @@
 #include <linux/huge_mm.h>
 #include <linux/swap.h>
 
+#ifdef CONFIG_MAPPED_PROTECT
+extern void mapped_page_try_sorthead(struct page *page);
+extern unsigned long page_should_be_protect(struct page *page);
+extern bool update_mapped_mul(struct page *page, bool inc_size);
+extern void add_mapped_mul_op_lrulist(struct page *page, enum lru_list lru);
+extern void dec_mapped_mul_op_lrulist(struct page *page, enum lru_list lru);
+extern long multi_mapped(int file);
+extern long multi_mapped_max(int file);
+#endif
+
 /**
  * page_is_file_cache - should the page be on a file LRU or anon LRU?
  * @page: the page to test
@@ -47,6 +57,9 @@ static __always_inline void update_lru_size(struct lruvec *lruvec,
 static __always_inline void add_page_to_lru_list(struct page *page,
 				struct lruvec *lruvec, enum lru_list lru)
 {
+#ifdef CONFIG_MAPPED_PROTECT
+	add_mapped_mul_op_lrulist(page, lru);
+#endif
 	update_lru_size(lruvec, lru, page_zonenum(page), hpage_nr_pages(page));
 	list_add(&page->lru, &lruvec->lists[lru]);
 }
@@ -54,6 +67,9 @@ static __always_inline void add_page_to_lru_list(struct page *page,
 static __always_inline void add_page_to_lru_list_tail(struct page *page,
 				struct lruvec *lruvec, enum lru_list lru)
 {
+#ifdef CONFIG_MAPPED_PROTECT
+	add_mapped_mul_op_lrulist(page, lru);
+#endif
 	update_lru_size(lruvec, lru, page_zonenum(page), hpage_nr_pages(page));
 	list_add_tail(&page->lru, &lruvec->lists[lru]);
 }
@@ -61,10 +77,12 @@ static __always_inline void add_page_to_lru_list_tail(struct page *page,
 static __always_inline void del_page_from_lru_list(struct page *page,
 				struct lruvec *lruvec, enum lru_list lru)
 {
+#ifdef CONFIG_MAPPED_PROTECT
+	dec_mapped_mul_op_lrulist(page, page_lru(page));
+#endif
 	list_del(&page->lru);
 	update_lru_size(lruvec, lru, page_zonenum(page), -hpage_nr_pages(page));
 }
-
 /**
  * page_lru_base_type - which LRU list type should a page be on?
  * @page: the page to test
