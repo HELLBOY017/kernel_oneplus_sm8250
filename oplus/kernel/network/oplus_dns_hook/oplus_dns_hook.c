@@ -439,11 +439,7 @@ static int dns_hook_process_output(struct sk_buff *skb, int hook,
 
 	nf_ct_attach(rsp_skb, skb);
 	if (skb->protocol == htons(ETH_P_IP)) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 158))
 		if (ip_route_me_harder(state->net, state->sk, rsp_skb, RTN_UNSPEC)) {
-#else
-		if (ip_route_me_harder(state->net, rsp_skb, RTN_UNSPEC)) {
-#endif
 			LOGK(1, "ip_route_me_harder error");
 			kfree_skb(rsp_skb);
 			return -1;
@@ -452,11 +448,7 @@ static int dns_hook_process_output(struct sk_buff *skb, int hook,
 		ret = ip_local_out(state->net, state->sk, rsp_skb);
 		LOGK(0, "ip_local_out return %d", ret);
 	} else if (skb->protocol == htons(ETH_P_IPV6)) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 158))
 		if (ip6_route_me_harder(state->net, state->sk, rsp_skb)) {
-#else
-		if (ip6_route_me_harder(state->net, rsp_skb)) {
-#endif
 			LOGK(1, "ip6_route_me_harder error");
 			kfree_skb(rsp_skb);
 			return -1;
