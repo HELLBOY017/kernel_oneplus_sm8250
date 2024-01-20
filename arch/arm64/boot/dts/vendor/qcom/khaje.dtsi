@@ -21,7 +21,7 @@
 / {
 	model = "Qualcomm Technologies, Inc. Khaje SoC";
 	compatible = "qcom,khaje";
-	qcom,msm-id = <518 0x10000>, <586 0x10000>;
+	qcom,msm-id = <518 0x10000>;
 	interrupt-parent = <&wakegic>;
 
 	#address-cells = <2>;
@@ -410,6 +410,11 @@
 			label = "cont_splash_region";
 		};
 
+		disp_rdump_memory: disp_rdump_region@5c000000 {
+			reg = <0x0 0x5c000000 0x0 0x00f00000>;
+			label = "disp_rdump_region";
+		};
+
 		dfps_data_memory: dfps_data_region@5cf00000 {
 			reg = <0x0 0x5cf00000 0x0 0x0100000>;
 			label = "dfps_data_region";
@@ -611,7 +616,7 @@
 		interrupts-extended = <&wakegic GIC_SPI 197
 						IRQ_TYPE_EDGE_RISING>;
 		reg = <0x45f01b8 0x1000>,
-			<0xf111008 0x4>;  /* MSM_APCS_GCC_BASE 4K */
+			<0xf011008 0x4>;  /* MSM_APCS_GCC_BASE 4K */
 		reg-names = "vmpm", "ipc";
 		qcom,num-mpm-irqs = <96>;
 		interrupt-controller;
@@ -1952,7 +1957,6 @@
 	qcom,chd_silver {
 		compatible = "qcom,core-hang-detect";
 		label = "silver";
-		cluster-id = <0>;
 		qcom,threshold-arr = <0x0f1880b0 0x0f1980b0
 				      0x0f1a80b0 0x0f1b80b0>;
 		qcom,config-arr = <0x0f1880b8 0x0f1980b8
@@ -1962,7 +1966,6 @@
 	qcom,chd_gold {
 		compatible = "qcom,core-hang-detect";
 		label = "gold";
-		cluster-id = <1>;
 		qcom,threshold-arr = <0x0f0880b0 0x0f0980b0
 				      0x0f0a80b0 0x0f0b80b0>;
 		qcom,config-arr = <0x0f0880b8 0x0f0980b8
@@ -3966,21 +3969,12 @@ tpdm_turing_llm: tpdm@8861000 {
 
 			qcom,speed-bin = <0>;
 
-			qcom,initial-pwrlevel = <6>;
-			qcom,ca-target-pwrlevel = <5>;
+			qcom,initial-pwrlevel = <5>;
+			qcom,ca-target-pwrlevel = <4>;
 
 			/* TURBO_L1 */
 			qcom,gpu-pwrlevel@0 {
 				reg = <0>;
-				qcom,gpu-freq = <1260000000>;
-				qcom,bus-freq = <7>;
-				qcom,bus-min = <7>;
-				qcom,bus-max = <7>;
-			};
-
-			/* TURBO_L1 */
-			qcom,gpu-pwrlevel@1 {
-				reg = <1>;
 				qcom,gpu-freq = <1114800000>;
 				qcom,bus-freq = <7>;
 				qcom,bus-min = <7>;
@@ -3988,8 +3982,8 @@ tpdm_turing_llm: tpdm@8861000 {
 			};
 
 			/* TURBO */
-			qcom,gpu-pwrlevel@2 {
-				reg = <2>;
+			qcom,gpu-pwrlevel@1 {
+				reg = <1>;
 				qcom,gpu-freq = <1025000000>;
 				qcom,bus-freq = <6>;
 				qcom,bus-min = <5>;
@@ -3997,8 +3991,8 @@ tpdm_turing_llm: tpdm@8861000 {
 			};
 
 			/* NOM */
-			qcom,gpu-pwrlevel@3 {
-				reg = <3>;
+			qcom,gpu-pwrlevel@2 {
+				reg = <2>;
 				qcom,gpu-freq = <785000000>;
 				qcom,bus-freq = <5>;
 				qcom,bus-min = <4>;
@@ -4006,8 +4000,8 @@ tpdm_turing_llm: tpdm@8861000 {
 			};
 
 			/* SVS_L1 */
-			qcom,gpu-pwrlevel@4 {
-				reg = <4>;
+			qcom,gpu-pwrlevel@3 {
+				reg = <3>;
 				qcom,gpu-freq = <600000000>;
 				qcom,bus-freq = <4>;
 				qcom,bus-min = <3>;
@@ -4015,8 +4009,8 @@ tpdm_turing_llm: tpdm@8861000 {
 			};
 
 			/* SVS */
-			qcom,gpu-pwrlevel@5 {
-				reg = <5>;
+			qcom,gpu-pwrlevel@4 {
+				reg = <4>;
 				qcom,gpu-freq = <465000000>;
 				qcom,bus-freq = <3>;
 				qcom,bus-min = <2>;
@@ -4024,8 +4018,8 @@ tpdm_turing_llm: tpdm@8861000 {
 			};
 
 			/* LOW SVS */
-			qcom,gpu-pwrlevel@6 {
-				reg = <6>;
+			qcom,gpu-pwrlevel@5 {
+				reg = <5>;
 				qcom,gpu-freq = <320000000>;
 				qcom,bus-freq = <2>;
 				qcom,bus-min = <1>;
@@ -4033,8 +4027,8 @@ tpdm_turing_llm: tpdm@8861000 {
 			};
 
 			/* XO */
-			qcom,gpu-pwrlevel@7 {
-				reg = <7>;
+			qcom,gpu-pwrlevel@6 {
+				reg = <6>;
 				qcom,gpu-freq = <0>;
 				qcom,bus-freq = <0>;
 				qcom,bus-min = <0>;
@@ -4184,10 +4178,6 @@ tpdm_turing_llm: tpdm@8861000 {
 &qupv3_se1_i2c {
 	status = "ok";
 	#include "pm8008.dtsi"
-};
-
-&pm8008_regulators {
-	/delete-property/ qcom,enable-ocp-broadcast;
 };
 
 &pm8008_8 {

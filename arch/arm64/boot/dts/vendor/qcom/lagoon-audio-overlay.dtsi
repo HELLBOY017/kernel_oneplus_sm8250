@@ -58,11 +58,16 @@
 			qcom,swr-clock-stop-mode0 = <1>;
 			qcom,swr-mstr-irq-wakeup-capable = <1>;
 			wcd938x_tx_slave: wcd938x-tx-slave {
+				//#ifdef OPLUS_ARCH_EXTENDS
+				status = "disabled";
+				//#endif /*OPLUS_ARCH_EXTENDS*/
 				compatible = "qcom,wcd938x-slave";
 				reg = <0x0D 0x01170223>;
 			};
 			wcd937x_tx_slave: wcd937x-tx-slave {
-				status = "disabled";
+				//#ifdef OPLUS_ARCH_EXTENDS
+				//status = "disabled";
+				//#endif /*OPLUS_ARCH_EXTENDS*/
 				compatible = "qcom,wcd937x-slave";
 				reg = <0x0A 0x01170223>;
 			};
@@ -103,11 +108,16 @@
 			qcom,swr-num-dev = <1>;
 			qcom,swr-clock-stop-mode0 = <1>;
 			wcd938x_rx_slave: wcd938x-rx-slave {
+				//#ifdef OPLUS_ARCH_EXTENDS
+				status = "disabled";
+				//#endif /*OPLUS_ARCH_EXTENDS*/
 				compatible = "qcom,wcd938x-slave";
 				reg = <0x0D 0x01170224>;
 			};
 			wcd937x_rx_slave: wcd937x_rx_slave {
-				status = "disabled";
+				//#ifdef OPLUS_ARCH_EXTENDS
+				//status = "disabled";
+				//#endif /*OPLUS_ARCH_EXTENDS*/
 				compatible = "qcom,wcd937x-slave";
 				reg = <0x0A 0x01170224>;
 			};
@@ -185,6 +195,9 @@
 	};
 
 	wcd938x_codec: wcd938x-codec {
+		//#ifdef OPLUS_ARCH_EXTENDS
+		status = "disabled";
+		//#endif /*OPLUS_ARCH_EXTENDS*/
 		compatible = "qcom,wcd938x-codec";
 		qcom,split-codec = <1>;
 		qcom,rx_swr_ch_map = <0 HPH_L 0x1 0 HPH_L>,
@@ -234,7 +247,9 @@
 	};
 
 	wcd937x_codec: wcd937x-codec {
-		status = "disabled";
+		//#ifdef OPLUS_ARCH_EXTENDS
+		//status = "disabled";
+		//#endif /*OPLUS_ARCH_EXTENDS*/
 		compatible = "qcom,wcd937x-codec";
 		qcom,split-codec = <1>;
 		qcom,rx_swr_ch_map = <0 HPH_L 0x1 0 HPH_L>,

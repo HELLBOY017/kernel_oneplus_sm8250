@@ -392,7 +392,6 @@
 	qcom,sw-jeita-enable;
 	qcom,wd-bark-time-secs = <16>;
 	qcom,suspend-input-on-debug-batt;
-	qcom,hvdcp-disable;
 	qcom,thermal-mitigation = <5325000 4500000 4000000 3500000 3000000
 				2500000 2000000 1500000 1000000 500000>;
 };
@@ -562,7 +561,7 @@
 	/delete-property/ avdd-supply;
 	lab-supply = <&lcdb_ldo_vreg>;
 	ibb-supply = <&lcdb_ncp_vreg>;
-	qcom,dsi-default-panel = <&dsi_dual_arglass_seeya_video>;
+	
 };
 
 &display_panel_avdd {
@@ -577,31 +576,7 @@
 	status = "ok";
 };
 
-&dsi_dual_arglass_seeya_90hz_video {
-	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
-	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-	qcom,mdss-dsi-bl-ctrl-dcs-subtype = <0xc2>;
-	qcom,mdss-dsi-bl-min-level = <1>;
-	qcom,mdss-dsi-bl-max-level = <1023>;
-	qcom,mdss-brightness-max-level = <1023>;
-	qcom,platform-reset-gpio = <&tlmm 75 0>;
-	qcom,platform-bklight-en-gpio = <&tlmm 46 0>;
-	qcom,5v-boost-gpio = <&tlmm 61 0>;
-	/delete-property/ qcom,platform-en-gpio;
-};
 
-&dsi_dual_arglass_seeya_video {
-	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
-	qcom,mdss-dsi-bl-pmic-control-type = "bl_ctrl_dcs";
-	qcom,mdss-dsi-bl-ctrl-dcs-subtype = <0xc2>;
-	qcom,mdss-dsi-bl-min-level = <1>;
-	qcom,mdss-dsi-bl-max-level = <1023>;
-	qcom,mdss-brightness-max-level = <1023>;
-	qcom,platform-reset-gpio = <&tlmm 75 0>;
-	qcom,platform-bklight-en-gpio = <&tlmm 46 0>;
-	qcom,5v-boost-gpio = <&tlmm 61 0>;
-	/delete-property/ qcom,platform-en-gpio;
-};
 
 &dsi_sw43404_amoled_cmd {
 	qcom,panel-supply-entries = <&dsi_panel_pwr_supply>;
@@ -683,7 +658,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150b_adc_tm ADC_AMUX_THM3_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -698,7 +672,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150_adc_tm ADC_XO_THERM_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -713,7 +686,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150_adc_tm ADC_AMUX_THM1_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -728,7 +700,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150_adc_tm ADC_AMUX_THM2_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -743,7 +714,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150l_adc_tm ADC_AMUX_THM1_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -758,15 +728,8 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150l_adc_tm ADC_AMUX_THM2_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
-				temperature = <125000>;
-				hysteresis = <1000>;
-				type = "passive";
-			};
-
-			active-config1 {
 				temperature = <125000>;
 				hysteresis = <1000>;
 				type = "passive";
@@ -779,7 +742,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150l_adc_tm ADC_AMUX_THM3_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -1085,9 +1047,3 @@
 	qcom,strobe-sel = <1>;
 	status = "okay";
 };
-
-&pm8150b_pdphy {
-	/* Restricting only to 5V@3A */
-	qcom,default-sink-caps = <5000 3000>; /* 5V @ 3A */
-};
-

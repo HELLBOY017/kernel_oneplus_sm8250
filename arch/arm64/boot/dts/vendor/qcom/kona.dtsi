@@ -358,7 +358,11 @@
 			compatible = "android,firmware";
 			vbmeta {
 				compatible = "android,vbmeta";
-				parts = "vbmeta,boot,system,vendor,dtbo";
+				//#ifndef OPLUS_BUG_STABILITY
+				//parts = "vbmeta,boot,system,vendor,dtbo";
+				//#else
+				parts = "vbmeta,boot,system,vendor,dtbo,recovery";
+				//#endif /* OPLUS_BUG_STABILITY */
 			};
 
 			fstab {
@@ -368,7 +372,11 @@
 					dev = "/dev/block/platform/soc/1d84000.ufshc/by-name/vendor";
 					type = "ext4";
 					mnt_flags = "ro,barrier=1,discard";
-					fsmgr_flags = "wait,slotselect,avb";
+					//#ifndef OPLUS_BUG_STABILITY
+					//fsmgr_flags = "wait,slotselect,avb";
+					//#else
+					fsmgr_flags = "wait,avb";
+					//#endif /* OPLUS_BUG_STABILITY */
 					status = "ok";
 				};
 			};
@@ -409,85 +417,112 @@
 
 		removed_mem: removed_region@80b00000 {
 			no-map;
-			reg = <0x0 0x80b00000 0x0 0x5300000>;
+			//reg = <0x0 0x80b00000 0x0 0x5300000>;
+			reg = <0x0 0x80b00000 0x0 0xcd00000>;
 		};
 
-		pil_camera_mem: pil_camera_region@86200000 {
+		//pil_camera_mem: pil_camera_region@86200000 {
+		pil_camera_mem: pil_camera_region@8dc00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x86200000 0x0 0x500000>;
+			//reg = <0x0 0x86200000 0x0 0x500000>;
+			reg = <0x0 0x8dc00000 0x0 0x500000>;
 		};
 
-		pil_wlan_fw_mem: pil_wlan_fw_region@86700000 {
+		//pil_wlan_fw_mem: pil_wlan_fw_region@86700000 {
+		pil_wlan_fw_mem: pil_wlan_fw_region@8e100000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x86700000 0x0 0x100000>;
+			//reg = <0x0 0x86700000 0x0 0x100000>;
+			reg = <0x0 0x8e100000 0x0 0x100000>;
 		};
 
-		pil_ipa_fw_mem: pil_ipa_fw_region@86800000 {
+		//pil_ipa_fw_mem: pil_ipa_fw_region@86800000 {
+		pil_ipa_fw_mem: pil_ipa_fw_region@8e200000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x86800000 0x0 0x10000>;
+			//reg = <0x0 0x86800000 0x0 0x10000>;
+			reg = <0x0 0x8e200000 0x0 0x10000>;
 		};
 
-		pil_ipa_gsi_mem: pil_ipa_gsi_region@86810000 {
+		//pil_ipa_gsi_mem: pil_ipa_gsi_region@86810000 {
+		pil_ipa_gsi_mem: pil_ipa_gsi_region@8e210000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x86810000 0x0 0xa000>;
+			//reg = <0x0 0x86810000 0x0 0xa000>;
+			reg = <0x0 0x8e210000 0x0 0xa000>;
 		};
 
-		pil_gpu_mem: pil_gpu_region@8681a000 {
+		//pil_gpu_mem: pil_gpu_region@8681a000 {
+		pil_gpu_mem: pil_gpu_region@8e21a000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x8681a000 0x0 0x2000>;
+			//reg = <0x0 0x8681a000 0x0 0x2000>;
+			reg = <0x0 0x8e21a000 0x0 0x2000>;
 		};
 
-		pil_npu_mem: pil_npu_region@86900000 {
+		//pil_npu_mem: pil_npu_region@86900000 {
+		pil_npu_mem: pil_npu_region@8e300000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x86900000 0x0 0x500000>;
+			//reg = <0x0 0x86900000 0x0 0x500000>;
+			reg = <0x0 0x8e300000 0x0 0x500000>;
 		};
 
-		pil_video_mem: pil_video_region@86e00000 {
+		//pil_video_mem: pil_video_region@86e00000 {
+		pil_video_mem: pil_video_region@8e800000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x86e00000 0x0 0x500000>;
+			//reg = <0x0 0x86e00000 0x0 0x500000>;
+			reg = <0x0 0x8e800000 0x0 0x500000>;
 		};
 
-		pil_cvp_mem: pil_cvp_region@87300000 {
+		//pil_cvp_mem: pil_cvp_region@87300000 {
+		pil_cvp_mem: pil_cvp_region@8ed00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x87300000 0x0 0x500000>;
+			//reg = <0x0 0x87300000 0x0 0x500000>;
+			reg = <0x0 0x8ed00000 0x0 0x500000>;
 		};
 
-		pil_cdsp_mem: pil_cdsp_region@87800000 {
+		//pil_cdsp_mem: pil_cdsp_region@87800000 {
+		pil_cdsp_mem: pil_cdsp_region@8f200000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x87800000 0x0 0x1400000>;
+			//reg = <0x0 0x87800000 0x0 0x1400000>;
+			reg = <0x0 0x8f200000 0x0 0x1400000>;
 		};
 
-		pil_slpi_mem: pil_slpi_region@88c00000 {
+		//pil_slpi_mem: pil_slpi_region@88c00000 {
+		pil_slpi_mem: pil_slpi_region@90600000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x88c00000 0x0 0x1500000>;
+			//reg = <0x0 0x88c00000 0x0 0x1500000>;
+			reg = <0x0 0x90600000 0x0 0x1500000>;
 		};
 
-		pil_adsp_mem: pil_adsp_region@8a100000 {
+		//pil_adsp_mem: pil_adsp_region@8a100000 {
+		pil_adsp_mem: pil_adsp_region@91b00000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x8a100000 0x0 0x1d00000>;
+			//reg = <0x0 0x8a100000 0x0 0x1d00000>;
+			reg = <0x0 0x91b00000 0x0 0x2500000>;
 		};
 
-		pil_spss_mem: pil_spss_region@8be00000 {
+		//pil_spss_mem: pil_spss_region@8be00000 {
+		pil_spss_mem: pil_spss_region@94000000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x8be00000 0x0 0x100000>;
+			//reg = <0x0 0x8be00000 0x0 0x100000>;
+			reg = <0x0 0x94000000 0x0 0x100000>;
 		};
 
-		cdsp_secure_heap: cdsp_secure_heap@8bf00000 {
+		//cdsp_secure_heap: cdsp_secure_heap@8bf00000 {
+		cdsp_secure_heap: cdsp_secure_heap@94100000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0x0 0x8bf00000 0x0 0x4600000>;
+			//reg = <0x0 0x8bf00000 0x0 0x4600000>;
+			reg = <0x0 0x94100000 0x0 0x4600000>;
 		};
 
 		adsp_mem: adsp_region {
@@ -517,6 +552,11 @@
 		cont_splash_memory: cont_splash_region@9c000000 {
 			reg = <0x0 0x9c000000 0x0 0x02300000>;
 			label = "cont_splash_region";
+		};
+
+		disp_rdump_memory: disp_rdump_region@9c000000 {
+			reg = <0x0 0x9c000000 0x0 0x00800000>;
+			label = "disp_rdump_region";
 		};
 
 		dfps_data_memory: dfps_data_region@9e300000 {
@@ -773,7 +813,6 @@
 		clock-names = "core_clk";
 
 		qcom,coresight-jtagmm-cpu = <&CPU0>;
-		status = "disabled";
 	};
 
 	jtag_mm1: jtagmm@7140000 {
@@ -785,7 +824,6 @@
 		clock-names = "core_clk";
 
 		qcom,coresight-jtagmm-cpu = <&CPU1>;
-		status = "disabled";
 	};
 
 	jtag_mm2: jtagmm@7240000 {
@@ -797,7 +835,6 @@
 		clock-names = "core_clk";
 
 		qcom,coresight-jtagmm-cpu = <&CPU2>;
-		status = "disabled";
 	};
 
 	jtag_mm3: jtagmm@7340000 {
@@ -809,7 +846,6 @@
 		clock-names = "core_clk";
 
 		qcom,coresight-jtagmm-cpu = <&CPU3>;
-		status = "disabled";
 	};
 
 	jtag_mm4: jtagmm@7440000 {
@@ -821,7 +857,6 @@
 		clock-names = "core_clk";
 
 		qcom,coresight-jtagmm-cpu = <&CPU4>;
-		status = "disabled";
 	};
 
 	jtag_mm5: jtagmm@7540000 {
@@ -833,7 +868,6 @@
 		clock-names = "core_clk";
 
 		qcom,coresight-jtagmm-cpu = <&CPU5>;
-		status = "disabled";
 	};
 
 	jtag_mm6: jtagmm@7640000 {
@@ -845,7 +879,6 @@
 		clock-names = "core_clk";
 
 		qcom,coresight-jtagmm-cpu = <&CPU6>;
-		status = "disabled";
 	};
 
 	jtag_mm7: jtagmm@7740000 {
@@ -857,7 +890,6 @@
 		clock-names = "core_clk";
 
 		qcom,coresight-jtagmm-cpu = <&CPU7>;
-		status = "disabled";
 	};
 
 	qcom,devfreq-l3 {
@@ -2362,7 +2394,8 @@
 
 	qcom_seecom: qseecom@82400000 {
 		compatible = "qcom,qseecom";
-		reg = <0x82400000 0x3A00000>;
+		//reg = <0x82400000 0x3A00000>;
+		reg = <0x82400000 0xb400000>;
 		reg-names = "secapp-region";
 		memory-region = <&qseecom_mem>;
 		qcom,hlos-num-ce-hw-instances = <1>;
@@ -2585,7 +2618,6 @@
 		reg = <0x177004 0x4>;
 		regulator-name = "ufs_phy_gdsc";
 		qcom,retain-regs;
-		qcom,gds-timeout = <500>;
 	};
 
 	usb30_prim_gdsc: qcom,gdsc@10f004 {
@@ -3016,29 +3048,6 @@
 		};
 	};
 
-	ufs_ice: ufsice@1d90000 {
-		compatible = "qcom,ice";
-		reg = <0x1d90000 0x8000>;
-		qcom,enable-ice-clk;
-		clock-names = "ufs_core_clk", "bus_clk",
-				"iface_clk", "ice_core_clk";
-		clocks = <&clock_gcc GCC_UFS_PHY_AXI_CLK>,
-			<&clock_gcc GCC_UFS_1X_CLKREF_EN>,
-			<&clock_gcc GCC_UFS_PHY_AHB_CLK>,
-			<&clock_gcc GCC_UFS_PHY_ICE_CORE_CLK>;
-		qcom,op-freq-hz = <0>, <0>, <0>, <300000000>;
-		vdd-hba-supply = <&ufs_phy_gdsc>;
-		qcom,msm-bus,name = "ufs_ice_noc";
-		qcom,msm-bus,num-cases = <2>;
-		qcom,msm-bus,num-paths = <1>;
-		qcom,msm-bus,vectors-KBps =
-				<1 650 0 0>,    /* No vote */
-				<1 650 1000 0>; /* Max. bandwidth */
-		qcom,bus-vector-names = "MIN",
-					"MAX";
-		qcom,instance-type = "ufs";
-	};
-
 	ufsphy_mem: ufsphy_mem@1d87000 {
 		reg = <0x1d87000 0xe00>, <0x1d90000 0x8000>; /* PHY regs */
 		reg-names = "phy_mem", "ufs_ice";
@@ -3379,7 +3388,8 @@
 		qcom,spss-debug-reg-addr = <0x01886020>;
 		qcom,spss-emul-type-reg-addr = <0x01fc8004>;
 		pil-mem = <&pil_spss_mem>;
-		qcom,pil-addr = <0x8BE00000>; // backward compatible
+		//qcom,pil-addr = <0x8BE00000>; // backward compatible
+		qcom,pil-addr = <0x94000000>; // backward compatible
 		qcom,pil-size = <0x0F0000>; // padding to 960 KB
 		status = "ok";
 	};
@@ -5071,6 +5081,7 @@
 #include "kona-pinctrl.dtsi"
 #include "kona-smp2p.dtsi"
 #include "kona-usb.dtsi"
+#include "kona-coresight.dtsi"
 #include "kona-sde.dtsi"
 #include "kona-sde-pll.dtsi"
 #include "msm-rdbg.dtsi"

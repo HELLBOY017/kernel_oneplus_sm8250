@@ -62,15 +62,6 @@ SoCs:
 - KHAJE
   compatible = "qcom,khaje"
 
-- KHAJEP
-  compatible = "qcom,khajep"
-
-- KHAJEQ
-  compatible = "qcom,khajeq"
-
-- KHAJEG
-  compatible = "qcom,khajeg"
-
 - SCUBA
   compatible = "qcom,scuba"
 
@@ -262,15 +253,6 @@ compatible = "qcom,bengalp-idp"
 compatible = "qcom,khaje-idp"
 compatible = "qcom,khaje-qrd"
 compatible = "qcom,khaje-atp"
-compatible = "qcom,khajep-idp"
-compatible = "qcom,khajep-qrd"
-compatible = "qcom,khajeq-idp"
-compatible = "qcom,khajeq-qrd"
-compatible = "qcom,khajep-atp"
-compatible = "qcom,khajeq-atp"
-compatible = "qcom,khajeg-idp"
-compatible = "qcom,khajeg-qrd"
-compatible = "qcom,khajeg-atp"
 compatible = "qcom,scuba-rumi"
 compatible = "qcom,scuba-idp"
 compatible = "qcom,scuba-qrd"

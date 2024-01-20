@@ -5,7 +5,6 @@
 #include "kona-audio-overlay-ar.dtsi"
 #include "kona-thermal-overlay.dtsi"
 #include "kona-xr-pinctrl-overlay.dtsi"
-#include "camera/kona-camera-sensor-xrfusion.dtsi"
 
 &tlmm {
 	mag_rst_gpio_default: mag_rst_gpio_default {
@@ -887,14 +886,6 @@
 };
 
 &dsi_panel_pwr_supply_lab_ibb {
-	qcom,panel-supply-entry@1 {
-		qcom,supply-min-voltage = <5700000>;
-	};
-
-	qcom,panel-supply-entry@2 {
-		qcom,supply-min-voltage = <5700000>;
-	};
-
 	qcom,panel-supply-entry@3 {
 		reg = <1>;
 		qcom,supply-name = "avdd";
@@ -993,7 +984,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150b_adc_tm ADC_AMUX_THM3_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -1008,7 +998,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150_adc_tm ADC_XO_THERM_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -1023,7 +1012,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150_adc_tm ADC_AMUX_THM1_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -1038,7 +1026,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150_adc_tm ADC_AMUX_THM2_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -1053,7 +1040,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150l_adc_tm ADC_AMUX_THM1_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
@@ -1068,15 +1054,8 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150l_adc_tm ADC_AMUX_THM2_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
-				temperature = <125000>;
-				hysteresis = <1000>;
-				type = "passive";
-			};
-
-			active-config1 {
 				temperature = <125000>;
 				hysteresis = <1000>;
 				type = "passive";
@@ -1089,7 +1068,6 @@
 		polling-delay = <0>;
 		thermal-governor = "user_space";
 		thermal-sensors = <&pm8150l_adc_tm ADC_AMUX_THM3_PU2>;
-		wake-capable-sensor;
 		trips {
 			active-config0 {
 				temperature = <125000>;
