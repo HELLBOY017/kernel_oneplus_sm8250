@@ -372,8 +372,15 @@ static void __lru_cache_activate_page(struct page *page)
 void mark_page_accessed(struct page *page)
 {
 	page = compound_head(page);
+#ifdef CONFIG_MAPPED_PROTECT
+	mapped_page_try_sorthead(page);
+#endif
 	if (!PageActive(page) && !PageUnevictable(page) &&
+#ifdef CONFIG_MAPPED_PROTECT
+			(PageReferenced(page) || (page_mapcount(page) > 10))) {
+#else
 			PageReferenced(page)) {
+#endif
 
 		/*
 		 * If the page is on the LRU, queue it for activation via
