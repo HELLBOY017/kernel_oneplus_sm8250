@@ -132,18 +132,15 @@ OPLUS_FEATURE_SIGKILL_DIAGNOSIS \
 OPLUS_FEATURE_SENSOR
 
 ifeq ($(OPLUS_FEATURE_ADFR_KERNEL), yes)
-    $(warning add OPLUS_FEATURE_ADFR in kernel)
     ALLOWED_MCROS += OPLUS_FEATURE_ADFR
 endif
 
 ifeq ($(OPLUS_FEATURE_GAMMA_SWITCH_KERNEL), yes)
-     $(warning add OPLUS_FEATURE_GAMMA_SWITCH_KERNEL in kernel)
      ALLOWED_MCROS += OPLUS_FEATURE_GAMMA_SWITCH
 endif
 
 
 $(foreach myfeature,$(ALLOWED_MCROS),\
-         $(warning make $(myfeature) to be a macro here) \
          $(eval KBUILD_CFLAGS += -D$(myfeature)) \
          $(eval KBUILD_CPPFLAGS += -D$(myfeature)) \
          $(eval CFLAGS_KERNEL += -D$(myfeature)) \
