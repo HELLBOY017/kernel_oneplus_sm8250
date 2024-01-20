@@ -1,0 +1,7 @@
+
+config OPLUS_FEATURE_OPLUS_UPROBE
+    tristate "oplus uprobe"
+    default n
+    help
+      define this config to enable oplus uprobe feature.
+

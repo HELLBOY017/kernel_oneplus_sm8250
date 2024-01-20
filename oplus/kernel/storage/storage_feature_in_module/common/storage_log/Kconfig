@@ -1,0 +1,7 @@
+
+config OPLUS_FEATURE_STORAGE_LOG
+   tristate "config storage log"
+   default n
+   help
+     General Configuration of Storage Log
+

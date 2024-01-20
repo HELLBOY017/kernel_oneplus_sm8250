@@ -1,0 +1,409 @@
+{
+    "type": "ic_cfg",
+    "name": "ufcs",
+    "max": 100,
+    "list": [
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_HANDSHAKE",
+            "desc": {
+                "zh": "ufcs握手"
+            },
+            "auto_debug_code": true,
+            "parameter_list": [],
+            "parameter_desc": [],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_PDO_SET",
+            "desc": {
+                "zh": "设置PDO"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["int", "int"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "in",
+                    "desc": {
+                        "zh": "要设置的电压，单位mV"
+                    }
+                },
+                {
+                    "range": "0-*",
+                    "type": "out",
+                    "desc": {
+                        "zh": "要设置的电流，单位mA"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": {
+                    "cmd": "vict -f {id} -S{0},{1} vic-*",
+                    "desc": {
+                        "zh": "设置pdo, {0}为电压，{1}为电流"
+                    }
+                },
+                "overwrite": {
+                    "cmd": "vict -f {id} -O {0},{1} vic-*",
+                    "desc": {
+                        "zh": "覆盖pdo, {0}为电压，{1}为电流"
+                    }
+                }
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_HARD_RESET",
+            "desc": {
+                "zh": "硬复位"
+            },
+            "auto_debug_code": true,
+            "parameter_list": [],
+            "parameter_desc": [],
+            "vict": {
+                "read": false,
+                "write": {
+                    "cmd": "vict -f {id} -S vic-*",
+                    "desc": {
+                        "zh": "设置硬复位"
+                    }
+                },
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_EXIT",
+            "desc": {
+                "zh": "退出ufcs充电"
+            },
+            "auto_debug_code": true,
+            "parameter_list": [],
+            "parameter_desc": [],
+            "vict": {
+                "read": false,
+                "write": {
+                    "cmd": "vict -f {id} -S vic-*",
+                    "desc": {
+                        "zh": "退出ufcs充电"
+                    }
+                },
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_CONFIG_WD",
+            "desc": {
+                "zh": "设置看门狗超时时间"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u16"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "in",
+                    "desc": {
+                        "zh": "要设置的超时时间，单位ms"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": {
+                    "cmd": "vict -f {id} -S{0} vic-*",
+                    "desc": {
+                        "zh": "设置超时时间, {0}为时间"
+                    }
+                },
+                "overwrite": {
+                    "cmd": "vict -f {id} -O {0} vic-*",
+                    "desc": {
+                        "zh": "覆盖超时时间, {0}为时间"
+                    }
+                }
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_GET_DEV_INFO",
+            "desc": {
+                "zh": "获取device信息"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u64 *"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "out",
+                    "desc": {
+                        "zh": "device信息，具体格式见ufcs协议手册的device info数据格式"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_GET_ERR_INFO",
+            "desc": {
+                "zh": "获取错误信息"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u64 *"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "out",
+                    "desc": {
+                        "zh": "错误信息，具体格式见ufcs协议手册的error info数据格式"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_GET_SRC_INFO",
+            "desc": {
+                "zh": "获取供电设备信息"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u64 *"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "out",
+                    "desc": {
+                        "zh": "供电设备信息，具体格式见ufcs协议手册的source info数据格式"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_GET_CABLE_INFO",
+            "desc": {
+                "zh": "获取线缆信息"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u64 *"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "out",
+                    "desc": {
+                        "zh": "线缆信息，具体格式见ufcs协议手册的cable info数据格式"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_GET_PDO_INFO",
+            "desc": {
+                "zh": "获取pdo信息"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u64 *", "int"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "out",
+                    "desc": {
+                        "zh": "用于存放pdo的buf"
+                    }
+                },
+                {
+                    "range": "0-*",
+                    "type": "in",
+                    "desc": {
+                        "zh": "存放pdo的buf的长度"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_VERIFY_ADAPTER",
+            "desc": {
+                "zh": "适配器鉴权校验"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u8", "u8 *", "u8"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "in",
+                    "desc": {
+                        "zh": "鉴权使用的秘钥的索引"
+                    }
+                },
+                {
+                    "range": "0-*",
+                    "type": "in",
+                    "desc": {
+                        "zh": "存放本地秘钥的buf"
+                    }
+                },
+                {
+                    "range": "0-*",
+                    "type": "in",
+                    "desc": {
+                        "zh": "本地秘钥的buf的长度"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_GET_POWER_CHANGE_INFO",
+            "desc": {
+                "zh": "获取功率变化的信息"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u32 *", "int"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "out",
+                    "desc": {
+                        "zh": "用于存放power change信息的buf"
+                    }
+                },
+                {
+                    "range": "0-*",
+                    "type": "in",
+                    "desc": {
+                        "zh": "存放power change信息的buf的长度"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_GET_EMARK_INFO",
+            "desc": {
+                "zh": "获取emark信息(OPLUS自定义消息)"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u64 *"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "out",
+                    "desc": {
+                        "zh": "线缆信息，具体格式见OPLUS UFCS VDM文档"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_GET_POWER_INFO_EXT",
+            "desc": {
+                "zh": "获取不同协议的功率信息(OPLUS自定义消息)"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["u64 *", "int"],
+            "parameter_desc": [
+                {
+                    "range": "0-*",
+                    "type": "out",
+                    "desc": {
+                        "zh": "用于存放power info信息的buf，具体格式见OPLUS UFCS VDM文档"
+                    }
+                },
+                {
+                    "range": "0-*",
+                    "type": "in",
+                    "desc": {
+                        "zh": "存放power info信息的buf的长度"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_IS_TEST_MODE",
+            "desc": {
+                "zh": "检查当前是否处于测试模式"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["bool *"],
+            "parameter_desc": [
+                {
+                    "range": "0-1",
+                    "type": "out",
+                    "desc": {
+                        "zh": "1:测试模式, 0:正常模式"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        },
+        {
+            "lable": "OPLUS_IC_FUNC_UFCS_IS_VOL_ACC_TEST_MODE",
+            "desc": {
+                "zh": "检查电压精度测试模式是否开启"
+            },
+            "auto_debug_code": true,
+            "parameter_list": ["bool *"],
+            "parameter_desc": [
+                {
+                    "range": "0-1",
+                    "type": "out",
+                    "desc": {
+                        "zh": "1:开启, 0:关闭"
+                    }
+                }
+            ],
+            "vict": {
+                "read": false,
+                "write": false,
+                "overwrite": false
+            }
+        }
+    ],
+
+    "version": "V1.1:16:19ef358a3c5132fb6741cce40042737a889214ccdec134d0a74f1d8ad7741486"
+}

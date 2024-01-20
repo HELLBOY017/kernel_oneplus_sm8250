@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2018-2020 Oplus. All rights reserved.
+
+ifeq ($(CONFIG_OPLUS_FEATURE_MTK), m)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+endif
+
+MODULE = oplus_network_linkpower_module
+obj-m += $(MODULE).o
+$(MODULE)-objs := linkpower_main.o
+
+$(MODULE)-objs += linkpower_netlink/linkpower_netlink.o
+$(MODULE)-objs += sk_pid_hook/sk_pid_hook.o
+
+ifeq ($(CONFIG_OPLUS_FEATURE_MTK), m)
+ccflags-y += -DMTK_PLATFORM
+$(MODULE)-objs += heartbeat_proxy/mediatek/heartbeat_proxy_mtk.o
+$(MODULE)-objs += heartbeat_proxy/mediatek/mipc_hashmap.o
+$(MODULE)-objs += heartbeat_proxy/mediatek/mipc_list.o
+$(MODULE)-objs += heartbeat_proxy/mediatek/mipc_msg.o
+$(MODULE)-objs += ccci_wakeup_hook/ccci_wakeup_hook.o
+
+else ifeq ($(CONFIG_OPLUS_FEATURE_QCOM), m)
+ccflags-y += -DQCOM_PLATFORM
+$(MODULE)-objs += heartbeat_proxy/qualcomm/heartbeat_proxy_qcom.o
+$(MODULE)-objs += qrtr_hook/qrtr_hook.o
+endif

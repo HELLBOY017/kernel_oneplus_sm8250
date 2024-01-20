@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2020-2022 Oplus. All rights reserved.
+
+config OPLUS_FEATURE_ESTABLISH_REPORT
+        tristate "ESTABLISH REPORT"
+        help
+          If you say yes to this option, will report establish
+          event to users space
