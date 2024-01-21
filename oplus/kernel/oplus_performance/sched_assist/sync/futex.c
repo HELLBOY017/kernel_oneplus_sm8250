@@ -286,7 +286,7 @@ static int get_lock_stats_grp_idx(struct task_struct *task)
 	return ret;
 }
 
-static inline bool curr_is_ux_thread_nolimit()
+static inline bool curr_is_ux_thread_nolimit(void)
 {
 	int state = get_ux_state_type(current);
 

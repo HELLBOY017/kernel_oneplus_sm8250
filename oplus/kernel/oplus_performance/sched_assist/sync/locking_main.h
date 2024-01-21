@@ -79,7 +79,7 @@ static inline bool locking_opt_enable(unsigned int enable)
 }
 
 #ifdef CONFIG_OPLUS_LOCKING_MONITOR
-static inline bool lock_supp_level(level)
+static inline bool lock_supp_level(int level)
 {
 	return (g_opt_enable & LK_MONITOR_MASK) == level;
 }

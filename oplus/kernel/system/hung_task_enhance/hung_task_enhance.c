@@ -87,7 +87,7 @@ static void oplus_check_hung_task(struct task_struct *t, unsigned long timeout, 
 	unsigned int local_iowait = 0;
 #endif
 #if IS_ENABLED(CONFIG_OPLUS_FEATURE_THEIA)
-	char extra_info[64];
+	char extra_info[76];
 #endif
 
 	if(is_ignore_process(t))
@@ -143,7 +143,7 @@ static void oplus_check_hung_task(struct task_struct *t, unsigned long timeout, 
                         local_iowait = 1;
 #if IS_ENABLED(CONFIG_OPLUS_FEATURE_THEIA)
 			memset(extra_info, 0, sizeof(extra_info));
-			snprintf(extra_info, 64, "DeathHealer task %s:%d io wait too long time", t->comm, t->pid);
+			snprintf(extra_info, sizeof(extra_info), "DeathHealer task %s:%d io wait too long time", t->comm, t->pid);
 			theia_send_event(THEIA_EVENT_HUNGTASK, THEIA_LOGINFO_KERNEL_LOG, t->pid, extra_info);
 #endif
                 }
@@ -163,7 +163,7 @@ static void oplus_check_hung_task(struct task_struct *t, unsigned long timeout, 
 			t->comm, t->pid, timeout, t->state, death_count+1);
 #if IS_ENABLED(CONFIG_OPLUS_FEATURE_THEIA)
 		memset(extra_info, 0, sizeof(extra_info));
-		snprintf(extra_info, 64, "DeathHealer: task %s:%d blocked for more than %ld seconds in state 0x%lx. Count:%d\n",
+		snprintf(extra_info, sizeof(extra_info), "DeathHealer: task %s:%d blocked for more than %ld seconds in state 0x%lx. Count:%d\n",
 			t->comm, t->pid, timeout, t->state, death_count + 1);
 		theia_send_event(THEIA_EVENT_HUNGTASK, THEIA_LOGINFO_KERNEL_LOG, t->pid, extra_info);
 #endif

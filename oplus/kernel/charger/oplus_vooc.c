@@ -111,7 +111,7 @@ bool oplus_vooc_get_fw_update_status(void)
 		return g_vooc_chip->mcu_update_ing;
 	}
 }
-void oplus_vooc_battery_update()
+void oplus_vooc_battery_update(void)
 {
 	struct oplus_vooc_chip *chip = g_vooc_chip;
 
@@ -1261,7 +1261,7 @@ static void oplus_vooc_fastchg_func(struct work_struct *work)
 	static bool normalchg_disabled = false;
 	int abnormal_dis_cnt = 0;
 	char buf[1] = { 0 };
-	static need_upload = true;
+	static bool need_upload = true;
 	/*
 	if (!g_adapter_chip) {
 		chg_err(" g_adapter_chip NULL\n");
@@ -2559,7 +2559,7 @@ void oplus_vooc_set_fastchg_to_warm_full_false(void)
 	}
 }
 
-bool oplus_vooc_get_fastchg_low_temp_full()
+bool oplus_vooc_get_fastchg_low_temp_full(void)
 {
 	if (!g_vooc_chip) {
 		return false;

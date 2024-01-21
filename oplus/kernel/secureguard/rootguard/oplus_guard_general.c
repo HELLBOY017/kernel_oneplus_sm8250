@@ -83,7 +83,7 @@ static int __init boot_state_init(void)
 	return 0;
 }
 
-static void __exit boot_state_exit()
+static void __exit boot_state_exit(void)
 {
 	return ;
 }
