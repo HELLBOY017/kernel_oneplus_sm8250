@@ -6764,7 +6764,7 @@ static int nvt_tp_remove(struct spi_device *client)
     return 0;
 }
 
-static int nvt_spi_suspend(struct device *dev)
+static int __maybe_unused nvt_spi_suspend(struct device *dev)
 {
     struct touchpanel_data *ts = dev_get_drvdata(dev);
 
@@ -6775,7 +6775,7 @@ static int nvt_spi_suspend(struct device *dev)
     return 0;
 }
 
-static int nvt_spi_resume(struct device *dev)
+static int __maybe_unused nvt_spi_resume(struct device *dev)
 {
     struct touchpanel_data *ts = dev_get_drvdata(dev);
 

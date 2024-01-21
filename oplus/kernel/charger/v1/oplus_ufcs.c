@@ -1442,7 +1442,7 @@ static int oplus_ufcs_choose_curves(struct oplus_ufcs_chip *chip)
 	return 0;
 }
 
-static int oplus_ufcs_variables_init()
+static int oplus_ufcs_variables_init(void)
 {
 	struct oplus_ufcs_chip *chip = g_ufcs_chip;
 	int ret = 0;
