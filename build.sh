@@ -131,7 +131,7 @@ function choices() {
             ZIPNAME=Meteoric-KernelSU
             KSU_CONFIG=ksu.config
             if [ ! -d $KERNEL_DIR/KernelSU ]; then
-                git submodule update --init KernelSU
+                git submodule update --init --recursive KernelSU
             fi
             ;;
     esac
