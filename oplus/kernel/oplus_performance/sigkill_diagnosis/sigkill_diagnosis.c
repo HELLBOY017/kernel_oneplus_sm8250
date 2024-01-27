@@ -147,7 +147,6 @@ void record_sigkill_reason(void *unused, int sig, struct task_struct *curr, stru
 
 static int __init sigkill_diagnosis_init(void)
 {
-	struct proc_dir_entry *root_dir_entry;
 	printk("sigkill_diagnosis_init");
 
 	g_sigkill_records = kzalloc(sizeof(*g_sigkill_records), GFP_KERNEL);
@@ -157,16 +156,16 @@ static int __init sigkill_diagnosis_init(void)
 	}
 	spin_lock_init(&g_sigkill_records->lock);
 
-	root_dir_entry = proc_mkdir("oplus_mem", NULL);
-	g_sigkill_reason_entry = proc_create((root_dir_entry ?
-		"sigkill_reason" : "oplus_mem/sigkill_reason"),
-		0666, root_dir_entry, &proc_sigkill_reason_ops);
-	if (g_sigkill_reason_entry == NULL) {
-		pr_err("proc_create failed, no memory!\n");
-		kfree(g_sigkill_records);
-		g_sigkill_records = NULL;
-		return -ENOMEM;
+	g_sigkill_reason_entry = proc_create("oplus_mem/sigkill_reason",
+			0666, NULL, &proc_sigkill_reason_ops);
+
+        if (g_sigkill_reason_entry == NULL) {
+                pr_err("proc_create failed, no memory!\n");
+                kfree(g_sigkill_records);
+                g_sigkill_records = NULL;
+                return -ENOMEM;
 	}
+
 	printk("sigkill_diagnosis_init proc_create succeed!");
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0))

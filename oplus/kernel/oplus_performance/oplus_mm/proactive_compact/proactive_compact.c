@@ -219,19 +219,16 @@ static const struct file_operations proc_fragmentation_index_ops = {
 
 static int __init create_fragmentation_index_proc(void)
 {
-	struct proc_dir_entry *root_dir_entry = proc_mkdir("oplus_mem", NULL);
-
-	fragmentation_index_entry = proc_create((root_dir_entry ?
-				"fragmentation_index" : "oplus_mem/fragmentation_index"),
-				0666, root_dir_entry, &proc_fragmentation_index_ops);
+	fragmentation_index_entry = proc_create("oplus_mem/fragmentation_index",
+				0666, NULL, &proc_fragmentation_index_ops);
 
 	if (fragmentation_index_entry) {
 		pr_info("Register fragmentation_index interface passed!\n");
 		return 0;
+	} else {
+		pr_err("Register fragmentation_index interface failed!\n");
+		return -ENOMEM;
 	}
-
-	pr_err("Register fragmentation_index interface failed!\n");
-	return -ENOMEM;
 }
 
 static void __exit destroy_fragmentation_index_proc(void)
