@@ -68,10 +68,6 @@
 #include <linux/sched_assist/sched_assist_common.h>
 #endif /* OPLUS_FEATURE_SCHED_ASSIST */
 
-#ifdef CONFIG_OPLUS_FEATURE_SIGKILL_DIAGNOSIS
-#include <linux/sigkill_diagnosis/sigkill_diagnosis.h>
-#endif /* CONFIG_OPLUS_FEATURE_SIGKILL_DIAGNOSIS */
-
 /*
  * SLAB caches for signal bits.
  */
@@ -1314,9 +1310,6 @@ int do_send_sig_info(int sig, struct siginfo *info, struct task_struct *p,
 {
 	unsigned long flags;
 	int ret = -ESRCH;
-#ifdef CONFIG_OPLUS_FEATURE_SIGKILL_DIAGNOSIS
-	record_sigkill_reason(NULL, sig, current, p);
-#endif
 
 #ifdef OPLUS_FEATURE_HANS_FREEZE
 	if (is_frozen_tg(p)  /*signal receiver thread group is frozen?*/
