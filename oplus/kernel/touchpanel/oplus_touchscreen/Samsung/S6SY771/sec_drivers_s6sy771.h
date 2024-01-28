@@ -303,6 +303,7 @@ struct chip_data_s6sy771 {
     int                             *in_suspend;
     u8                              default_lock_point_level;
     u8                              sec_charger_sta;
+    bool                            irq_requested;
     bool                            auto_test_need_cal_support;
 #ifdef CONFIG_OPLUS_TP_APK
 
