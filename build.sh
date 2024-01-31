@@ -118,6 +118,12 @@ function exports() {
 }
 
 ##----------------------------------------------------------##
+# Sigint handler
+function sigint() {
+    SIGINT_DETECT=1
+}
+
+##----------------------------------------------------------##
 # Compilation choices
 function choices() {
     echo -e "$green***********************************************"
@@ -130,6 +136,9 @@ function choices() {
         [yY] )
             ZIPNAME=Meteoric-KernelSU
             KSU_CONFIG=ksu.config
+            if [ $(grep -c "KernelSU" Version) -eq 0 ]; then
+                sed -i 's/$/-KernelSU/' Version
+            fi
             if [ ! -d $KERNEL_DIR/KernelSU ]; then
                 git submodule update --init --recursive KernelSU
             fi
@@ -143,12 +152,14 @@ function choices() {
             make O=out clean && make O=out mrproper
             ;;
     esac
-}
-
-##----------------------------------------------------------##
-# Sigint handler
-function sigint() {
-    SIGINT_DETECT=1
+    
+    # Interrupt detected
+    if [ $SIGINT_DETECT -eq 1 ]; then
+        if [ $(grep -c "KernelSU" Version) -ne 0 ]; then
+            sed -i 's/-KernelSU//' Version
+        fi
+        exit
+    fi
 }
 
 ##----------------------------------------------------------##
@@ -174,6 +185,7 @@ function compile() {
     if [ $ZIPNAME = Meteoric-KernelSU ]; then
         sed -i 's/CONFIG_KERNELSU=y/# CONFIG_KERNELSU is not set/g' out/.config
         sed -i '/CONFIG_KERNELSU=y/d' out/defconfig
+        sed -i 's/-KernelSU//' Version
         
         if [ $(grep -c "# KernelSU" arch/arm64/configs/$DEFCONFIG) -eq 1 ]; then
             sed -i 's/CONFIG_KERNELSU=y/# CONFIG_KERNELSU is not set/g' arch/arm64/configs/$DEFCONFIG
@@ -256,8 +268,8 @@ function zipping() {
 ##----------------------------------------------------------##
 cloneTC
 exports
-choices
 trap sigint SIGINT
+choices
 compile
 trap - SIGINT
 BUILD_END=$(date +"%s")
