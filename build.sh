@@ -130,6 +130,9 @@ function choices() {
         [yY] )
             ZIPNAME=Meteoric-KernelSU
             KSU_CONFIG=ksu.config
+            if [ $(grep -c "KernelSU" Version) -eq 0 ]; then
+                sed -i 's/$/-KernelSU/' Version
+            fi
             if [ ! -d $KERNEL_DIR/KernelSU ]; then
                 git submodule update --init --recursive KernelSU
             fi
@@ -174,6 +177,7 @@ function compile() {
     if [ $ZIPNAME = Meteoric-KernelSU ]; then
         sed -i 's/CONFIG_KERNELSU=y/# CONFIG_KERNELSU is not set/g' out/.config
         sed -i '/CONFIG_KERNELSU=y/d' out/defconfig
+        sed -i 's/-KernelSU//' Version
         
         if [ $(grep -c "# KernelSU" arch/arm64/configs/$DEFCONFIG) -eq 1 ]; then
             sed -i 's/CONFIG_KERNELSU=y/# CONFIG_KERNELSU is not set/g' arch/arm64/configs/$DEFCONFIG
