@@ -307,6 +307,8 @@ struct chip_data_s6sy771 {
     u8                              sec_charger_sta;
     bool                            irq_requested;
     bool                            auto_test_need_cal_support;
+	bool                            old_firmware_flag_check;
+	bool				sec_refresh_rate_delay;
 #ifdef CONFIG_OPLUS_TP_APK
 
     bool lock_point_status;
