@@ -20,6 +20,9 @@
 #include <linux/uio.h>
 #include <linux/fs.h>
 
+extern int read_cache_pages(struct address_space *mapping,
+		struct list_head *pages, filler_t *filler, void *data);
+
 static const struct file_operations fuse_direct_io_file_operations;
 
 static int fuse_send_open(struct fuse_conn *fc, u64 nodeid, struct file *file,

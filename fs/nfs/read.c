@@ -385,6 +385,9 @@ out:
 	return error;
 }
 
+extern int read_cache_pages(struct address_space *mapping,
+		struct list_head *pages, void *filler, void *data);
+
 int nfs_readpages(struct file *filp, struct address_space *mapping,
 		struct list_head *pages, unsigned nr_pages)
 {
