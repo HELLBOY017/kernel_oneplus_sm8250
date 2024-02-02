@@ -118,6 +118,12 @@ function exports() {
 }
 
 ##----------------------------------------------------------##
+# Sigint handler
+function sigint() {
+    SIGINT_DETECT=1
+}
+
+##----------------------------------------------------------##
 # Compilation choices
 function choices() {
     echo -e "$green***********************************************"
@@ -146,12 +152,14 @@ function choices() {
             make O=out clean && make O=out mrproper
             ;;
     esac
-}
-
-##----------------------------------------------------------##
-# Sigint handler
-function sigint() {
-    SIGINT_DETECT=1
+    
+    # Interrupt detected
+    if [ $SIGINT_DETECT -eq 1 ]; then
+        if [ $(grep -c "KernelSU" Version) -ne 0 ]; then
+            sed -i 's/-KernelSU//' Version
+        fi
+        exit
+    fi
 }
 
 ##----------------------------------------------------------##
@@ -260,8 +268,8 @@ function zipping() {
 ##----------------------------------------------------------##
 cloneTC
 exports
-choices
 trap sigint SIGINT
+choices
 compile
 trap - SIGINT
 BUILD_END=$(date +"%s")

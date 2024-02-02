@@ -75,20 +75,20 @@ static int sec_enable_black_gesture(struct chip_data_s6sy791 *chip_info, bool en
 	bool single_tap_support_b = 0;
 	bool ear_sense_support_b = 0;
 	struct touchpanel_data *ts = i2c_get_clientdata(chip_info->client);
-	
+
 	if (ts) {
 		single_tap_support_b = ts->single_tap_support;
 		ear_sense_support_b = ts->ear_sense_support;
 	}
 
-    TPD_INFO("%s, enable = %d,single_tap_support_b = %d,ear_sense_support_b =%d\n", __func__, enable, single_tap_support_b, ear_sense_support_b);
-
+	TPD_INFO("%s, enable = %d,single_tap_support_b = %d,ear_sense_support_b =%d\n", __func__, enable, single_tap_support_b, ear_sense_support_b);
     if (enable) {
-        	if (single_tap_support_b) {
+		if (single_tap_support_b) {
 		        touch_i2c_write_word(chip_info->client, SEC_CMD_WAKEUP_GESTURE_MODE, 0xFFFF);
 		} else {
 		        touch_i2c_write_word(chip_info->client, SEC_CMD_WAKEUP_GESTURE_MODE, 0xFF1F);
 		}
+
         for (i = 0; i < 20; i++) {
             touch_i2c_write_byte(chip_info->client, SEC_CMD_SET_POWER_MODE, 0x01);
             sec_mdelay(10);
@@ -146,15 +146,16 @@ static void sec_enable_gesture_mask(void *chip_data, uint32_t enable)
 		single_tap_support_b = ts->single_tap_support;
 	}
 
-    TPD_INFO("%s, enable = %d,single_tap_support_b =%d\n", __func__, enable, single_tap_support_b);
+	TPD_INFO("%s, enable = %d,single_tap_support_b =%d\n", __func__, enable, single_tap_support_b);
 
     if (enable) {
         for (i = 0; i < 20; i++) {
-            		if (single_tap_support_b) {
+			if (single_tap_support_b) {
 				touch_i2c_write_word(chip_info->client, SEC_CMD_WAKEUP_GESTURE_MODE, 0xFFFF);
 			} else {
 				touch_i2c_write_word(chip_info->client, SEC_CMD_WAKEUP_GESTURE_MODE, 0xFF1F);
 			}
+
             touch_i2c_write_byte(chip_info->client, SEC_CMD_SET_POWER_MODE, 0x01);
             sec_mdelay(10);
             ret = touch_i2c_read_byte(chip_info->client, SEC_CMD_SET_POWER_MODE);
@@ -224,8 +225,11 @@ static int sec_enable_game_mode(struct chip_data_s6sy791 *chip_info, bool enable
     int ret = -1;
     char buf[4] = {0x00, 0x00, 0x00, 0x00};
 
-    buf[3] = enable ? 0x12 : 0x18;  //default value 0x18
-    ret = touch_i2c_write_block(chip_info->client, SEC_CMD_SENSETIVE_CTRL, sizeof(buf), buf);
+
+	if (!chip_info->oos_game_switch_support) {
+		buf[3] = enable ? 0x12 : 0x18;  /*default value 0x18*/
+		ret = touch_i2c_write_block(chip_info->client, SEC_CMD_SENSETIVE_CTRL, sizeof(buf), buf);
+	}
     ret |= touch_i2c_write_byte(chip_info->client, SEC_CMD_GAME_MODE, enable ? 1 : 0);
     TPD_INFO("%s: state: %d %s!\n", __func__, enable, ret < 0 ? "failed" : "success");
     return ret;
@@ -1250,7 +1254,7 @@ static int sec_get_gesture_info(void *chip_data, struct gesture_info *gesture)
         p_event_gesture->coordLen = 18;
     }
 
-    if ((p_event_gesture->gestureId == GESTURE_EARSENSE) && (ear_sense_support_b)) {
+	if ((p_event_gesture->gestureId == GESTURE_EARSENSE) && (ear_sense_support_b)) {
         TPD_DETAIL("earsense gesture: away from panel\n");
         return 0;
     }
@@ -1266,7 +1270,7 @@ static int sec_get_gesture_info(void *chip_data, struct gesture_info *gesture)
         }
     }
 
-    switch (p_event_gesture->gestureId) {   //judge gesture type
+	switch (p_event_gesture->gestureId) {   /*judge gesture type*/
     case GESTURE_RIGHT:
         gesture->gesture_type  = Left2RightSwip;
         gesture->Point_start.x = (coord[0] << 4) | ((coord[2] >> 4) & 0x0F);
@@ -1407,25 +1411,22 @@ static int sec_get_gesture_info(void *chip_data, struct gesture_info *gesture)
         gesture->Point_end.x   = (coord[12] << 4) | ((coord[14] >> 4) & 0x0F);
         gesture->Point_end.y   = (coord[13] << 4) | ((coord[14] >> 0) & 0x0F);
         break;
-        
-    case GESTURE_SINGLE_TAP:
-	gesture->gesture_type  = SingleTap;
-	gesture->Point_start.x = (coord[0] << 4) | ((coord[2] >> 4) & 0x0F);
-	gesture->Point_start.y = (coord[1] << 4) | ((coord[2] >> 0) & 0x0F);
-	break;
-	
-    case GESTURE_S:
-	gesture->gesture_type  = SGESTRUE;
-	gesture->Point_start.x = (coord[0] << 4) | ((coord[2] >> 4) & 0x0F);
-	gesture->Point_start.y = (coord[1] << 4) | ((coord[2] >> 0) & 0x0F);
-	gesture->Point_1st.x   = (coord[3] << 4) | ((coord[5] >> 4) & 0x0F);
-	gesture->Point_1st.y   = (coord[4] << 4) | ((coord[5] >> 0) & 0x0F);
-	gesture->Point_2nd.x   = (coord[6] << 4) | ((coord[8] >> 4) & 0x0F);
-	gesture->Point_2nd.y   = (coord[7] << 4) | ((coord[8] >> 0) & 0x0F);
-	gesture->Point_end.x   = (coord[9] << 4) | ((coord[11] >> 4) & 0x0F);
-	gesture->Point_end.y   = (coord[10] << 4) | ((coord[11] >> 0) & 0x0F);
-	break;
-
+	case GESTURE_SINGLE_TAP:
+		gesture->gesture_type  = SingleTap;
+		gesture->Point_start.x = (coord[0] << 4) | ((coord[2] >> 4) & 0x0F);
+		gesture->Point_start.y = (coord[1] << 4) | ((coord[2] >> 0) & 0x0F);
+		break;
+	case GESTURE_S:
+		gesture->gesture_type  = SGESTRUE;
+		gesture->Point_start.x = (coord[0] << 4) | ((coord[2] >> 4) & 0x0F);
+		gesture->Point_start.y = (coord[1] << 4) | ((coord[2] >> 0) & 0x0F);
+		gesture->Point_1st.x   = (coord[3] << 4) | ((coord[5] >> 4) & 0x0F);
+		gesture->Point_1st.y   = (coord[4] << 4) | ((coord[5] >> 0) & 0x0F);
+		gesture->Point_2nd.x   = (coord[6] << 4) | ((coord[8] >> 4) & 0x0F);
+		gesture->Point_2nd.y   = (coord[7] << 4) | ((coord[8] >> 0) & 0x0F);
+		gesture->Point_end.x   = (coord[9] << 4) | ((coord[11] >> 4) & 0x0F);
+		gesture->Point_end.y   = (coord[10] << 4) | ((coord[11] >> 0) & 0x0F);
+		break;
     default:
         gesture->gesture_type = UnkownGesture;
         break;
@@ -1491,7 +1492,8 @@ static void sec_enable_fingerprint_mode(void *chip_data, uint32_t enable)
         chip_info->fp_info.touch_state = 0;
     }
     TPD_INFO("%s: touchhold_enable: %d %s!\n", __func__, enable, ret < 0 ? "failed" : "success");
-    if (*chip_info->fp_enable == 2) {
+	/*old_firmware_flag_check for old 19813 project not support SEC_QUICK_LAUNCH_ENABLE*/
+	if (*chip_info->fp_enable == 2 && !chip_info->old_firmware_flag_check) {
        ret = touch_i2c_write_byte(chip_info->client, SEC_QUICK_LAUNCH_ENABLE, 1);
        sec_mdelay(10);
        ret = touch_i2c_read_byte(chip_info->client, SEC_QUICK_LAUNCH_ENABLE);
@@ -1525,67 +1527,67 @@ static int sec_mode_switch(void *chip_data, work_mode mode, bool flag)
         sec_power_control(chip_info, true);
     }
 
-    switch(mode) {
-    case MODE_NORMAL:
-        ret = 0;
-        break;
+	switch(mode) {
+	case MODE_NORMAL:
+	    ret = 0;
+	    break;
 
-    case MODE_SLEEP:
-        ret = sec_power_control(chip_info, false);
-        if (ret < 0) {
-            TPD_INFO("%s: power down failed\n", __func__);
-        }
-        break;
+	case MODE_SLEEP:
+	    ret = sec_power_control(chip_info, false);
+	    if (ret < 0) {
+	        TPD_INFO("%s: power down failed\n", __func__);
+	    }
+	    break;
 
-    case MODE_GESTURE:
-        ret = sec_enable_black_gesture(chip_info, flag);
-        if (ret < 0) {
-            TPD_INFO("%s: sec enable gesture failed.\n", __func__);
-            return ret;
-        }
-        break;
+	case MODE_GESTURE:
+	    ret = sec_enable_black_gesture(chip_info, flag);
+	    if (ret < 0) {
+	        TPD_INFO("%s: sec enable gesture failed.\n", __func__);
+	        return ret;
+	    }
+	    break;
 
-    case MODE_EDGE:
-        //ret = sec_enable_edge_limit(chip_info, flag);
-        //if (ret < 0) {
-        //    TPD_INFO("%s: sec enable edg limit failed.\n", __func__);
-        //    return ret;
-        //}
-        break;
+	case MODE_EDGE:
+	    /*ret = sec_enable_edge_limit(chip_info, flag);
+	        if (ret < 0) {
+	        TPD_INFO("%s: sec enable edg limit failed.\n", __func__);
+	        return ret;
+	     }*/
+	    break;
 
-    case MODE_CHARGE:
-        ret = sec_enable_charge_mode(chip_info, flag);
-        if (ret < 0) {
-            TPD_INFO("%s: enable charge mode : %d failed\n", __func__, flag);
-        }
-        break;
+	case MODE_CHARGE:
+	    ret = sec_enable_charge_mode(chip_info, flag);
+	    if (ret < 0) {
+	        TPD_INFO("%s: enable charge mode : %d failed\n", __func__, flag);
+	    }
+	    break;
 
-    case MODE_EARSENSE:
-        ret = sec_enable_earsense_mode(chip_info, flag);
-        if (ret < 0) {
-            TPD_INFO("%s: enable earsense mode : %d failed\n", __func__, flag);
-        }
-        break;
+	case MODE_EARSENSE:
+	    ret = sec_enable_earsense_mode(chip_info, flag);
+	    if (ret < 0) {
+	        TPD_INFO("%s: enable earsense mode : %d failed\n", __func__, flag);
+	    }
+	    break;
 
-    case MODE_PALM_REJECTION:
-        ret = sec_enable_palm_reject(chip_info, flag);
-        if (ret < 0) {
-            TPD_INFO("%s: enable palm rejection: %d failed\n", __func__, flag);
-        }
-        break;
+	case MODE_PALM_REJECTION:
+	    ret = sec_enable_palm_reject(chip_info, flag);
+	    if (ret < 0) {
+	        TPD_INFO("%s: enable palm rejection: %d failed\n", __func__, flag);
+	    }
+	    break;
 
-    case MODE_GAME:
-        ret = sec_enable_game_mode(chip_info, flag);
-        if (ret < 0) {
-            TPD_INFO("%s: enable game mode: %d failed\n", __func__, flag);
-        }
-        break;
-    case MODE_HEADSET:
-        ret = sec_enable_headset_mode(chip_info, flag);
-        if (ret < 0) {
-            TPD_INFO("%s: enable headset mode: %d failed\n", __func__, flag);
-        }
-        break;
+	case MODE_GAME:
+	    ret = sec_enable_game_mode(chip_info, flag);
+	    if (ret < 0) {
+	        TPD_INFO("%s: enable game mode: %d failed\n", __func__, flag);
+	    }
+	    break;
+	case MODE_HEADSET:
+	    ret = sec_enable_headset_mode(chip_info, flag);
+	    if (ret < 0) {
+	        TPD_INFO("%s: enable headset mode: %d failed\n", __func__, flag);
+	    }
+	    break;
 
     default:
         TPD_INFO("%s: Wrong mode.\n", __func__);
@@ -2156,6 +2158,7 @@ static struct debug_info_proc_operations debug_info_proc_ops = {
     .self_raw_read      = sec_self_raw_read,
     .main_register_read = sec_main_register_read,
     .reserve_read       = sec_reserve_read,
+	.baseline_blackscreen_read = sec_baseline_read,
 };
 
 static void sec_start_aging_test(void *chip_data){
@@ -2359,7 +2362,11 @@ static int sec_execute_selftest(struct seq_file *s, int fd, struct chip_data_s6s
     int result_size = SEC_SELFTEST_REPORT_SIZE + sec_testdata->TX_NUM * sec_testdata->RX_NUM * 2;
 
     /* save selftest result in flash */
-    tpara[0] = 0x27;
+	if (chip_info->old_firmware_flag_check) {
+	    tpara[0] = 0x21;
+	} else {
+		tpara[0] = 0x27;
+	}
 
     rBuff = kzalloc(result_size, GFP_KERNEL);
     if (!rBuff) {
@@ -3291,6 +3298,7 @@ static int sec_tp_probe(struct i2c_client *client, const struct i2c_device_id *i
     ts->ts_ops = &sec_ops;
     ts->aging_test_ops = &aging_test_proc_ops;
     ts->earsense_ops = &earsense_proc_ops;
+    ts->auto_test_need_cal_support = true;
 
     /* 5. register common touch device*/
     ret = register_common_touch_device(ts);
@@ -3299,6 +3307,10 @@ static int sec_tp_probe(struct i2c_client *client, const struct i2c_device_id *i
     }
     chip_info->irq_requested = true;
     ts->tp_suspend_order = TP_LCD_SUSPEND;
+	chip_info->auto_test_need_cal_support = of_property_read_bool(ts->dev->of_node, "auto_test_need_cal_support");
+	chip_info->old_firmware_flag_check = of_property_read_bool(ts->dev->of_node, "old_firmware_flag_check");
+	chip_info->oos_lcd_tp_refresh_support = of_property_read_bool(ts->dev->of_node, "oos_lcd_tp_refresh_support");
+	chip_info->oos_game_switch_support = of_property_read_bool(ts->dev->of_node, "oos_game_switch_support");
 
     /* 6. create debug interface*/
     sec_raw_device_init(ts);
