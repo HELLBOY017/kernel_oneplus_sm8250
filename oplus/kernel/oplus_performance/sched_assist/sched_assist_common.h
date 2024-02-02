@@ -115,7 +115,6 @@ enum ANMATION_TYPE
 	SYSTEMUI_SPLIT_STARTM,
 };
 
-#ifdef CONFIG_OPLUS_UX_IM_FLAG
 /*
  * new flag should be add before MAX_IM_FLAG_TYPE,
  * never change the value of those existed flag type.
@@ -146,7 +145,6 @@ enum IM_FLAG_TYPE {
 	*/
 	IM_FLAG_FORBID_SET_CPU_AFFINITY = 11, /* forbid setting cpu affinity from app */
 };
-#endif
 
 struct ux_sched_cluster {
         struct cpumask cpus;

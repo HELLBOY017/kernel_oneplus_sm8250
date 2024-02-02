@@ -2152,7 +2152,9 @@ struct decompress_io_ctx *f2fs_alloc_dic(struct compress_ctx *cc)
 	struct decompress_io_ctx *dic;
 	struct page *page;
 	pgoff_t start_idx = start_idx_of_cluster(cc);
+#ifdef CONFIG_F2FS_FS_COMPRESSION_FIXED_OUTPUT
 	struct f2fs_sb_info *sbi = F2FS_I_SB(cc->inode);
+#endif
 	int i;
 
 	dic = kmem_cache_zalloc(dic_entry_slab, GFP_NOFS);

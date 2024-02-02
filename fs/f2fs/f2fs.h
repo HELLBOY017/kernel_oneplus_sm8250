@@ -1952,11 +1952,17 @@ struct decompress_io_ctx {
 	pgoff_t cluster_idx;		/* cluster index number */
 	unsigned int cluster_size;	/* page count in cluster */
 	unsigned int log_cluster_size;	/* log of cluster size */
+#ifdef CONFIG_F2FS_FS_COMPRESSION_FIXED_OUTPUT
 	struct page *rpages[MAX_BLKS_PER_CLUSTER];		/* pages store raw data in cluster */
-	unsigned int nr_rpages;		/* total page number in rpages */
+        struct page *tpages[MAX_BLKS_PER_CLUSTER];		/* temp pages to pad holes in cluster */
 	struct page *cpages[MAX_BLKS_PER_CLUSTER];		/* pages store compressed data in cluster */
+#else
+	struct page **rpages;		/* pages store raw data in cluster */
+        struct page **tpages;		/* temp pages to pad holes in cluster */
+	struct page **cpages;		/* pages store compressed data in cluster */
+#endif
+	unsigned int nr_rpages;		/* total page number in rpages */
 	unsigned int nr_cpages;		/* total page number in cpages */
-	struct page *tpages[MAX_BLKS_PER_CLUSTER];		/* temp pages to pad holes in cluster */
 	void *rbuf;			/* virtual mapped address on rpages */
 	struct compress_data *cbuf;	/* virtual mapped address on cpages */
 	size_t rlen;			/* valid data length in rbuf */

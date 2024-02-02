@@ -6,6 +6,11 @@
 
 #ifndef _OPLUS_SA_CPUJANKINFO_H_
 #define _OPLUS_SA_CPUJANKINFO_H_
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0)
+struct rq;
+#endif
 
 #if IS_ENABLED(CONFIG_OPLUS_FEATURE_CPU_JANKINFO)
 typedef void (*jank_callback_t)(struct task_struct *p,
