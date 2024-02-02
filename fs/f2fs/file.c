@@ -1689,7 +1689,7 @@ static vm_fault_t f2fs_vm_page_mkwrite(struct vm_fault *vmf)
 	inode_unlock(inode);
 #endif
 
-#ifdef CONFIG_F2FS_FS_COMPRESSION
+#ifdef CONFIG_F2FS_FS_COMPRESSION_FIXED_OUTPUT
 	if (f2fs_compressed_file(inode)) {
 		int ret;
 		CLEAR_IFLAG_IF_SET(inode, F2FS_NOCOMP_FL);
@@ -1701,11 +1701,9 @@ static vm_fault_t f2fs_vm_page_mkwrite(struct vm_fault *vmf)
 		} else if (ret) {
 			need_alloc = false;
 		}
-#ifdef CONFIG_F2FS_FS_COMPRESSION_FIXED_OUTPUT
 		inode_lock(inode);
 		clear_inode_flag(inode, FI_ENABLE_COMPRESS);
 		inode_unlock(inode);
-#endif
 	}
 #endif
 	/* should do out of any locked page */
