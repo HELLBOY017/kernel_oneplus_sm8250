@@ -136,11 +136,16 @@ function choices() {
         [yY] )
             ZIPNAME=Meteoric-KernelSU
             KSU_CONFIG=ksu.config
-            if [ $(grep -c "KernelSU" Version) -eq 0 ]; then
-                sed -i 's/$/-KernelSU/' Version
+            if [ $(grep -c "KSU" arch/arm64/configs/$DEFCONFIG) -eq 0 ]; then
+                sed -i "s/-Meteoric/-Meteoric-$VERSION-KSU/" arch/arm64/configs/$DEFCONFIG
             fi
             if [ ! -d $KERNEL_DIR/KernelSU ]; then
                 git submodule update --init --recursive KernelSU
+            fi
+            ;;
+         *)
+            if [ $(grep -c $VERSION arch/arm64/configs/$DEFCONFIG) -eq 0 ]; then
+                sed -i "s/-Meteoric/-Meteoric-$VERSION/" arch/arm64/configs/$DEFCONFIG
             fi
             ;;
     esac
@@ -155,8 +160,11 @@ function choices() {
     
     # Interrupt detected
     if [ $SIGINT_DETECT -eq 1 ]; then
-        if [ $(grep -c "KernelSU" Version) -ne 0 ]; then
-            sed -i 's/-KernelSU//' Version
+        if [ $(grep -c "KSU" arch/arm64/configs/$DEFCONFIG) -ne 0 ]; then
+            sed -i "s/-Meteoric-$VERSION-KSU/-Meteoric/" arch/arm64/configs/$DEFCONFIG
+        fi
+        if [ $(grep -c $VERSION arch/arm64/configs/$DEFCONFIG) -ne 0 ]; then
+            sed -i "s/-Meteoric-$VERSION/-Meteoric/" arch/arm64/configs/$DEFCONFIG
         fi
         exit
     fi
@@ -185,14 +193,16 @@ function compile() {
     if [ $ZIPNAME = Meteoric-KernelSU ]; then
         sed -i 's/CONFIG_KERNELSU=y/# CONFIG_KERNELSU is not set/g' out/.config
         sed -i '/CONFIG_KERNELSU=y/d' out/defconfig
-        sed -i 's/-KernelSU//' Version
+        sed -i "s/-Meteoric-$VERSION-KSU/-Meteoric/" out/defconfig out/.config arch/arm64/configs/$DEFCONFIG
         
         if [ $(grep -c "# KernelSU" arch/arm64/configs/$DEFCONFIG) -eq 1 ]; then
             sed -i 's/CONFIG_KERNELSU=y/# CONFIG_KERNELSU is not set/g' arch/arm64/configs/$DEFCONFIG
         else   
             sed -i '/CONFIG_KERNELSU=y/d' arch/arm64/configs/$DEFCONFIG
         fi
-    fi   
+    else
+        sed -i "s/-Meteoric-$VERSION/-Meteoric/" out/defconfig out/.config arch/arm64/configs/$DEFCONFIG
+    fi
 
     # Verify build
     if [ $(grep -c "Error 2" out/error.log) -ne 0 ] || [ $SIGINT_DETECT -eq 1 ]; then 
