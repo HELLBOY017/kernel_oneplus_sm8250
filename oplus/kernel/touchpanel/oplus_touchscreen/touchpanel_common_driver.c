@@ -19,6 +19,7 @@
 #include <linux/alarmtimer.h>
 #include <linux/pm_wakeup.h>
 #include <linux/version.h>
+#include <linux/namei.h>
 #ifdef CONFIG_OPLUS_SYSTEM_SEC_DEBUG
 #include <soc/oplus/system/sec_debug.h>
 #endif
@@ -4528,43 +4529,6 @@ static const struct file_operations proc_touch_apk_fops = {
 
 #endif //end of CONFIG_OPLUS_TP_APK
 
-#define GESTURE_ATTR(name, out) \
-    static ssize_t name##_read_func(struct file *file, char __user *user_buf, size_t count, loff_t *ppos) \
-    { \
-    	int ret = 0; \
-    	char page[PAGESIZE]; \
-    	ret = sprintf(page, "%d\n", out); \
-    	ret = simple_read_from_buffer(user_buf, count, ppos, page, strlen(page)); \
-    	return ret; \
-    } \
-    static ssize_t name##_write_func(struct file *file, const char __user *user_buf, size_t count, loff_t *ppos) \
-    { \
-    	int enabled = 0; \
-    	char page[PAGESIZE] = {0}; \
-    	copy_from_user(page, user_buf, count); \
-    	sscanf(page, "%d", &enabled); \
-    	out = enabled > 0 ? 1 : 0; \
-    	return count; \
-    } \
-    static const struct file_operations name##_proc_fops = { \
-        .write = name##_write_func, \
-        .read =  name##_read_func, \
-        .open = simple_open, \
-        .owner = THIS_MODULE, \
-    };
-
-GESTURE_ATTR(aosp_gesture_enable, custom_gesture_enable);
-
-#define CREATE_PROC_NODE(PARENT, NAME, MODE) \
-    prEntry_tmp = proc_create(#NAME, MODE, PARENT, &NAME##_proc_fops); \
-    if (prEntry_tmp == NULL) { \
-    	ret = -ENOMEM; \
-    	TPD_INFO("%s: Couldn't create proc entry, %d\n", __func__, __LINE__); \
-    }
-
-#define CREATE_GESTURE_NODE(NAME) \
-    CREATE_PROC_NODE(prEntry_tp, NAME, 0666)
-
 /**
  * init_touchpanel_proc - Using for create proc interface
  * @ts: touchpanel_data struct using for common driver
@@ -4574,11 +4538,19 @@ GESTURE_ATTR(aosp_gesture_enable, custom_gesture_enable);
  */
 static int init_touchpanel_proc(struct touchpanel_data *ts)
 {
+    const char *oplus_bigball = "/my_bigball/build.prop";
+    int is_aosp;
     int ret = 0;
+    struct path path;
     struct proc_dir_entry *prEntry_tp = NULL;
     struct proc_dir_entry *prEntry_tmp = NULL;
 
     TPD_INFO("%s entry\n", __func__);
+    
+    /* If oplus bigball partition is not present then consider that the device is running a custom OS */
+    is_aosp = kern_path(oplus_bigball, LOOKUP_FOLLOW, &path);
+    if (is_aosp)
+	    custom_gesture_enable = 1;
 
     //proc files-step1:/proc/devinfo/tp  (touchpanel device info)
     if(ts->fw_update_app_support) {
@@ -4644,7 +4616,6 @@ static int init_touchpanel_proc(struct touchpanel_data *ts)
 
     //proc files-step2-4:/proc/touchpanel/double_tap_enable (black gesture related interface)
     if (ts->black_gesture_support) {
-        CREATE_GESTURE_NODE(aosp_gesture_enable);
         prEntry_tmp = proc_create_data("double_tap_enable", 0666, prEntry_tp, &proc_gesture_control_fops, ts);
         if (prEntry_tmp == NULL) {
             ret = -ENOMEM;
