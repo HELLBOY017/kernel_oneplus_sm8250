@@ -19,6 +19,7 @@
 #include <linux/alarmtimer.h>
 #include <linux/pm_wakeup.h>
 #include <linux/version.h>
+#include <linux/namei.h>
 #ifdef CONFIG_OPLUS_SYSTEM_SEC_DEBUG
 #include <soc/oplus/system/sec_debug.h>
 #endif
@@ -4539,7 +4540,10 @@ static const struct file_operations proc_touch_apk_fops = {
  */
 static int init_touchpanel_proc(struct touchpanel_data *ts)
 {
+    const char *oplus_bigball = "/my_bigball/build.prop";
+    int is_aosp;
     int ret = 0;
+    struct path path;
     struct proc_dir_entry *prEntry_tp = NULL;
     struct proc_dir_entry *prEntry_tmp = NULL;
     struct filename *filename = getname(MY_BIGBALL_PREFIX);
@@ -4552,6 +4556,11 @@ static int init_touchpanel_proc(struct touchpanel_data *ts)
     }
 
     TPD_INFO("%s entry\n", __func__);
+    
+    /* If oplus bigball partition is not present then consider that the device is running a custom OS */
+    is_aosp = kern_path(oplus_bigball, LOOKUP_FOLLOW, &path);
+    if (is_aosp)
+	    custom_gesture_enable = 1;
 
     //proc files-step1:/proc/devinfo/tp  (touchpanel device info)
     if(ts->fw_update_app_support) {
