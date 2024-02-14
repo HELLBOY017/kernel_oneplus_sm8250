@@ -134,13 +134,15 @@ function choices() {
     read -p "Include KernelSU? If unsure, say N. (Y/N) " KSU_RESP 
     case $KSU_RESP in
         [yY] )
-            ZIPNAME=Meteoric-KernelSU
-            KSU_CONFIG=ksu.config
-            if [ $(grep -c "KSU" arch/arm64/configs/$DEFCONFIG) -eq 0 ]; then
-                sed -i "s/-Meteoric/-Meteoric-$VERSION-KSU/" arch/arm64/configs/$DEFCONFIG
-            fi
-            if [ ! -d $KERNEL_DIR/KernelSU ]; then
+            if [ $(ls $KERNEL_DIR/KernelSU 2>/dev/null | wc -l) -eq 0 ]; then
+                rm -rf $KERNEL_DIR/KernelSU
                 git submodule update --init --recursive KernelSU
+            elif [ $(ls $KERNEL_DIR/KernelSU 2>/dev/null | wc -l) -ne 0 ]; then
+            	ZIPNAME=Meteoric-KernelSU
+            	KSU_CONFIG=ksu.config
+            	if [ $(grep -c "KSU" arch/arm64/configs/$DEFCONFIG) -eq 0 ]; then
+                    sed -i "s/-Meteoric/-Meteoric-$VERSION-KSU/" arch/arm64/configs/$DEFCONFIG
+            	fi
             fi
             ;;
          *)
