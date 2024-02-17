@@ -476,16 +476,6 @@ CFLAGS_KERNEL +=   -DOPLUS_FEATURE_POWER_EFFICIENCY
 CFLAGS_MODULE +=   -DOPLUS_FEATURE_POWER_EFFICIENCY
 # endif
 
--include OplusKernelEnvConfig.mk
-
-#ifdef VENDOR_EDIT
-ifneq (,$(findstring Aging,$(SPECIAL_VERSION)))
-OPLUS_F2FS_DEBUG := true
-endif
-
-export OPLUS_F2FS_DEBUG
-#endif /* VENDOR_EDIT */
-
 #ifdef OPLUS_BUG_STABILITY
 #Add for Debug Config, slub/kmemleak/kasan config
 ifeq ($(AGING_DEBUG_MASK),1)

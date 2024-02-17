@@ -2383,8 +2383,12 @@ static inline void __queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
 	locking_vh_alter_futex_plist_add(&q->list, &hb->chain, &already_on_hb);
 #endif
 */
+
+#ifdef CONFIG_OPLUS_LOCKING_STRATEGY
 	if (!already_on_hb)
 		plist_add(&q->list, &hb->chain);
+#endif
+
 	q->task = current;
 }
 

@@ -1,8 +1,8 @@
 # project: oplus/kernel/cpu
-obj-y += sched_assist_common.o
-obj-y += sched_assist_workqueue.o
+obj-$(CONFIG_OPLUS_FEATURE_SCHED_ASSIST) += sched_assist_common.o
+obj-$(CONFIG_OPLUS_FEATURE_SCHED_ASSIST) += sched_assist_workqueue.o
 #ifdef CONFIG_OPLUS_FEATURE_CPU_JANKINFO
-obj-y += sa_jankinfo.o
+obj-$(CONFIG_OPLUS_FEATURE_CPU_JANKINFO) += sa_jankinfo.o
 #endif
 obj-$(CONFIG_LOCKING_PROTECT) += sched_assist_locking.o
 

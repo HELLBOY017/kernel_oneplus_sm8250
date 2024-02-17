@@ -3051,7 +3051,9 @@ EXPORT_SYMBOL(blk_peek_request);
 
 static void blk_dequeue_request(struct request *rq)
 {
+#ifdef OPLUS_FEATURE_HEALTHINFO
 	struct request_queue *q = rq->q;
+#endif
 
 	BUG_ON(list_empty(&rq->queuelist));
 	BUG_ON(ELV_ON_HASH(rq));

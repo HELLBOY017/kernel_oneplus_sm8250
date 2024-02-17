@@ -7253,6 +7253,7 @@ static int get_start_cpu(struct task_struct *p)
         }
 #endif
 
+#ifdef CONFIG_OPLUS_FEATURE_SCHED_ASSIST
 	trace_sched_cpu_sel(p,
 			task_boost,
 			task_skip_min,
@@ -7264,6 +7265,7 @@ static int get_start_cpu(struct task_struct *p)
 			task_demand_fits(p, rd->min_cap_orig_cpu),
 			sysctl_prefer_silver,
 			start_cpu);
+#endif
 
 	return start_cpu;
 }
@@ -7310,9 +7312,11 @@ static void find_best_target(struct sched_domain *sd, cpumask_t *cpus,
 	unsigned int target_nr_rtg_high_prio = UINT_MAX;
 	bool rtg_high_prio_task = task_rtg_high_prio(p);
 	cpumask_t new_allowed_cpus;
+#ifdef OPLUS_FEATURE_SCHED_ASSIST
 	bool skip_big_cluster = false;
-#if defined(OPLUS_FEATURE_SCHED_ASSIST) && defined(CONFIG_OPLUS_FEATURE_SCHED_SPREAD)
+#ifdef CONFIG_OPLUS_FEATURE_SCHED_SPREAD
 	bool strict = fbt_env->strict_max;
+#endif
 #endif
 	/*
 	 * In most cases, target_capacity tracks capacity_orig of the most
@@ -9514,7 +9518,9 @@ static int detach_tasks(struct lb_env *env)
 	int detached = 0;
 	int orig_loop = env->loop;
 	u64 start_t = rq_clock(env->src_rq);
+#ifdef OPLUS_FEATURE_SCHED_ASSIST
 	bool skip_big_cluster = false;
+#endif
 
 	lockdep_assert_held(&env->src_rq->lock);
 
