@@ -100,6 +100,8 @@ static int pointy[2] = {0, 0};
 
 #define ABS(a, b) ((a - b > 0) ? a - b : b - a)
 
+#define MY_BIGBALL_PREFIX "/my_bigball/build.prop"
+
 uint8_t custom_gesture_enable = 0; // aosp gestures
 
 /*******Part2:declear Area********************************/
@@ -4544,6 +4546,14 @@ static int init_touchpanel_proc(struct touchpanel_data *ts)
     struct path path;
     struct proc_dir_entry *prEntry_tp = NULL;
     struct proc_dir_entry *prEntry_tmp = NULL;
+    struct filename *filename = getname(MY_BIGBALL_PREFIX);
+    
+    /* Enable custom gesture support on custom rom if Nothing settings is not present */
+    if (!unlikely(!strncmp(filename->name,
+	                   MY_BIGBALL_PREFIX, 
+		           strlen(MY_BIGBALL_PREFIX)))) {
+	custom_gesture_enable = 1;
+    }
 
     TPD_INFO("%s entry\n", __func__);
     
