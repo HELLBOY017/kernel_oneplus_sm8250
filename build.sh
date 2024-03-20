@@ -193,14 +193,14 @@ function compile() {
 
     # KernelSU
     if [ $ZIPNAME = Meteoric-KernelSU ]; then
-        sed -i 's/CONFIG_KERNELSU=y/# CONFIG_KERNELSU is not set/g' out/.config
-        sed -i '/CONFIG_KERNELSU=y/d' out/defconfig
+        sed -i 's/CONFIG_KSU=y/# CONFIG_KSU is not set/g' out/.config
+        sed -i '/CONFIG_KSU=y/d' out/defconfig
         sed -i "s/-Meteoric-$VERSION-KSU/-Meteoric/" out/defconfig out/.config arch/arm64/configs/$DEFCONFIG
         
         if [ $(grep -c "# KernelSU" arch/arm64/configs/$DEFCONFIG) -eq 1 ]; then
-            sed -i 's/CONFIG_KERNELSU=y/# CONFIG_KERNELSU is not set/g' arch/arm64/configs/$DEFCONFIG
+            sed -i 's/CONFIG_KSU=y/# CONFIG_KSU is not set/g' arch/arm64/configs/$DEFCONFIG
         else   
-            sed -i '/CONFIG_KERNELSU=y/d' arch/arm64/configs/$DEFCONFIG
+            sed -i '/CONFIG_KSU=y/d' arch/arm64/configs/$DEFCONFIG
         fi
     else
         sed -i "s/-Meteoric-$VERSION/-Meteoric/" out/defconfig out/.config arch/arm64/configs/$DEFCONFIG

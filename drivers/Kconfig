@@ -240,9 +240,10 @@ source "drivers/nfc/p73-spi/Kconfig"
 #endif /*OPLUS_NFC_BRINGUP*/
 
 menu "KernelSU"
-config KERNELSU
-	bool "Ship kernelsu with kernel"
-	default n
+
+config KSU
+        bool "Ship KernelSU with kernel"
+
 endmenu
 
 endmenu
